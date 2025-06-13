@@ -1,0 +1,50 @@
+{
+	"name": "Development Container",
+
+	"dockerComposeFile": "../docker-compose.yaml",
+
+	// If you are working on backend, change this to backend and you can enter backend folder
+	"service": "frontend",
+
+	"workspaceFolder": "/app",
+	"features": {
+		"ghcr.io/devcontainers/features/python:1": {},
+		"ghcr.io/warrenbuckley/codespace-features/sqlite:1": {},
+		"ghcr.io/devcontainers-extra/features/vue-cli:2": {}
+	},
+
+	// If you have any vscode extensions, they go here, do `ls ~/.vscode-server/extensions in your linux to find them
+	// for windows use %USERPROFILE%\.vscode-server\extensions in RUN
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"ms-python.python",
+				"ms-python.vscode-pylance",
+				"ms-python.debugpy",
+				"ms-toolsai.jupyter",
+				"ms-toolsai.jupyter-keymap",
+				"ms-toolsai.jupyter-renderers",
+				"ms-toolsai.vscode-jupyter-cell-tags",
+				"ms-toolsai.vscode-jupyter-slideshow",
+				"docker.docker",
+				"ms-azuretools.vscode-docker",
+				"ms-azuretools.vscode-containers",
+				"github.copilot",
+				"github.copilot-chat",
+				"googlecloudtools.cloudcode",
+				"vue.volar",
+				"qwtel.sqlite-viewer",
+				"postman.postman-for-vscode",
+				"redhat.vscode-yaml",
+				"ms-vscode.cpptools",
+				"codeium.codeium"
+			],
+			"settings": {
+				"terminal.integrated.shell.linux": "/bin/bash",
+				"python.languageServer": "Pylance",
+				"python.defaultInterpreterPath": "/usr/local/bin/python"
+			}
+		}
+	}
+
+}
