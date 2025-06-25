@@ -10,16 +10,16 @@
       <form @submit.prevent="login">
         <label>Your Username</label>
         <div class="input-group">
-          <span class="input-icon">👤</span>
+          <i class="ri-user-line input-icon"></i>
           <input v-model="username" type="text" required placeholder="your username" />
         </div>
         <label>Your Secret Password</label>
         <div class="input-group">
-          <span class="input-icon">🔒</span>
+          <i class="ri-lock-2-line input-icon"></i>
           <input :type="showPassword ? 'text' : 'password'" v-model="password" required placeholder="Enter your password" />
-          <span class="input-icon eye" @click="showPassword = !showPassword">{{ showPassword ? '🙈' : '👁️' }}</span>
+          <i class="input-icon eye" :class="showPassword ? 'ri-eye-off-line' : 'ri-eye-line'" @click="showPassword = !showPassword"></i>
         </div>
-        <button class="login-btn" type="submit">🚀 Let's Go!</button>
+        <button class="login-btn" type="submit">�� Let's Go!</button>
       </form>
       <div class="divider"><span>or</span></div>
       <div class="demo-btns">
@@ -33,7 +33,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
-import { useAuthStore } from '@/stores/auth';
+import { useAuthStore } from '../../stores/auth';
 import { useRouter } from 'vue-router';
 
 const username = ref('');
@@ -102,30 +102,35 @@ label {
   color: #333;
 }
 .input-group {
+  position: relative;
   display: flex;
   align-items: center;
   background: #f7f7fa;
   border-radius: 10px;
-  padding: 0.5rem 0.8rem;
   margin-bottom: 0.7rem;
   border: 1px solid #eee;
 }
-.input-icon {
-  margin-right: 0.5rem;
-  font-size: 1.2rem;
-  cursor: pointer;
-}
-.input-icon.eye {
-  margin-left: auto;
-  margin-right: 0;
-}
-input[type="text"], input[type="password"] {
+.input-group input {
+  width: 100%;
   border: none;
   background: transparent;
   outline: none;
-  flex: 1;
   font-size: 1rem;
-  padding: 0.7rem 0;
+  padding: 0.7rem 2.2rem 0.7rem 2.2rem;
+  border-radius: 10px;
+}
+.input-icon {
+  position: absolute;
+  left: 0.8rem;
+  font-size: 1.2rem;
+  color: #888;
+  pointer-events: none;
+}
+.input-icon.eye {
+  left: auto;
+  right: 0.8rem;
+  cursor: pointer;
+  pointer-events: auto;
 }
 .login-btn {
   width: 100%;
