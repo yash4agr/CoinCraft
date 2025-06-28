@@ -43,6 +43,7 @@
     --spacing-lg: 1.5rem;
     --spacing-xl: 2rem;
     --spacing-xxl: 3rem;
+    --spacing-xxxl: 6rem;
     
     /* Border Radius */
     --radius-sm: 8px;
@@ -215,6 +216,14 @@ body {
     color: var(--primary-purple);
 }
 
+.main {
+  min-height: 100vh;
+}
+
+.section{
+    padding: var(--spacing-xxl) 0;
+    min-height: 80vh;
+}
 /* Hero Section */
 .hero {
     padding: var(--spacing-xxl) 0;
@@ -224,9 +233,6 @@ body {
 }
 
 .hero-container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 var(--spacing-lg);
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: var(--spacing-xxl);
@@ -247,7 +253,7 @@ body {
     border-radius: var(--radius-full);
     font-weight: 600;
     margin-bottom: var(--spacing-lg);
-    animation: pulse 2s infinite;
+    /* animation: pulse 2s infinite; */
 }
 
 .badge-icon {
@@ -361,7 +367,7 @@ body {
 
 /* Features Section */
 .features {
-    padding: var(--spacing-xxl) 0;
+    padding: var(--spacing-xxxl) 0;
     background: var(--white);
 }
 

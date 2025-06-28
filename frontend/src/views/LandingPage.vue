@@ -1,5 +1,5 @@
 <template>
-  <div class="landing-page">
+  <div class="main">
     <!-- Navigation -->
     <nav class="navbar">
       <div class="nav-container">
@@ -15,8 +15,8 @@
     </nav>
 
     <!-- Hero Section -->
-    <section class="hero">
-      <div class="hero-container">
+    <section class="section hero">
+      <div class="container hero-container">
         <div class="hero-content">
           <div class="hero-badge">
             <span class="badge-icon">⭐</span>
@@ -74,7 +74,7 @@
     </section>
 
     <!-- Features Section -->
-    <section id="features" class="features">
+    <section id="features" class="section features">
       <div class="container">
         <h2 class="section-title">Why Kids Love CoinCraft! 🌟</h2>
         <div class="features-grid">
@@ -88,7 +88,7 @@
     </section>
 
     <!-- CTA Section -->
-    <section class="cta">
+    <section class="section cta">
       <div class="container">
         <div class="cta-content">
           <h2>Ready to Start Your Money Adventure? 🚀</h2>
@@ -164,10 +164,6 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.landing-page {
-  min-height: 100vh;
-}
-
 /* Hero Section */
 .hero {
   padding: var(--spacing-xxl) 0;
@@ -177,9 +173,6 @@ onMounted(() => {
 }
 
 .hero-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 var(--spacing-lg);
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--spacing-xxl);
@@ -200,7 +193,7 @@ onMounted(() => {
   border-radius: var(--radius-full);
   font-weight: 600;
   margin-bottom: var(--spacing-lg);
-  animation: pulse 2s infinite;
+  /* animation: pulse 2s infinite; */
 }
 
 .badge-icon {
@@ -314,7 +307,7 @@ onMounted(() => {
 
 /* Features Section */
 .features {
-  padding: var(--spacing-xxl) 0;
+  padding: var(--spacing-xxxl) 0;
   background: var(--white);
 }
 
