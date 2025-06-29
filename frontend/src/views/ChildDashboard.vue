@@ -1,479 +1,271 @@
 <template>
-    
+  <div class="min-h-screen bg-gray-100 p-4 lg:pl-64 pt-20 pb-20 lg:pb-8">
+    <div class="max-w-6xl mx-auto space-y-6">
+      
+      <!-- Today's Goals Section -->
+      <div class="bg-white rounded-2xl shadow-sm p-4 md:p-6">
+        <div class="flex items-center gap-2 mb-4">
+          <i class="ri-target-line text-green-500 text-xl"></i>
+          <h2 class="text-lg md:text-xl font-semibold text-gray-800">Today's Goals</h2>
+        </div>
+        
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <!-- Read Lessons Goal -->
+          <div class="text-center">
+            <div class="relative w-16 h-16 md:w-20 md:h-20 mx-auto mb-2">
+              <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="40" stroke="rgb(229 231 235)" stroke-width="8" fill="none" />
+                <circle cx="50" cy="50" r="40" stroke="rgb(34 197 94)" stroke-width="8" fill="none" 
+                        stroke-dasharray="251" stroke-dashoffset="75" stroke-linecap="round" />
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <i class="ri-book-open-line text-green-500 text-xl md:text-2xl"></i>
+              </div>
+            </div>
+            <h3 class="font-medium text-gray-800 text-sm md:text-base">Read Lessons</h3>
+            <p class="text-xs md:text-sm text-gray-500">2/3 lessons</p>
+          </div>
 
-    
+          <!-- Earn Coins Goal -->
+          <div class="text-center">
+            <div class="relative w-16 h-16 md:w-20 md:h-20 mx-auto mb-2">
+              <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="40" stroke="rgb(229 231 235)" stroke-width="8" fill="none" />
+                <circle cx="50" cy="50" r="40" stroke="rgb(245 158 11)" stroke-width="8" fill="none" 
+                        stroke-dasharray="251" stroke-dashoffset="25" stroke-linecap="round" />
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <i class="ri-coins-line text-yellow-500 text-xl md:text-2xl"></i>
+              </div>
+            </div>
+            <h3 class="font-medium text-gray-800 text-sm md:text-base">Earn Coins</h3>
+            <p class="text-xs md:text-sm text-gray-500">45/50 coins</p>
+          </div>
 
-    <!-- Main Content Area -->
-    <main class="content" :class="{ 'sidebar-collapsed': sidebarCollapsed, 'mobile-view': isMobileView }">
-      <div class="dashboard">
-        <!-- Dummy content box -->
-        <div class="dummy-content">
-          <h2>Dashboard Content</h2>
-          <p>This is where the main dashboard content will go. The Activity Hub, Piggy Bank, Goals, and Shop features will be redesigned here.</p>
-          <div class="placeholder-box">
-            <div class="placeholder-item">Activity Hub</div>
-            <div class="placeholder-item">My Piggy Bank</div>
-            <div class="placeholder-item">My Goals</div>
-            <div class="placeholder-item">Shop</div>
+          <!-- Complete Games Goal -->
+          <div class="text-center">
+            <div class="relative w-16 h-16 md:w-20 md:h-20 mx-auto mb-2">
+              <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="40" stroke="rgb(229 231 235)" stroke-width="8" fill="none" />
+                <circle cx="50" cy="50" r="40" stroke="rgb(34 197 94)" stroke-width="8" fill="none" 
+                        stroke-dasharray="251" stroke-dashoffset="126" stroke-linecap="round" />
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <i class="ri-gamepad-line text-green-500 text-xl md:text-2xl"></i>
+              </div>
+            </div>
+            <h3 class="font-medium text-gray-800 text-sm md:text-base">Complete Games</h3>
+            <p class="text-xs md:text-sm text-gray-500">1/2 games</p>
+          </div>
+
+          <!-- Practice Time Goal -->
+          <div class="text-center">
+            <div class="relative w-16 h-16 md:w-20 md:h-20 mx-auto mb-2">
+              <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="40" stroke="rgb(229 231 235)" stroke-width="8" fill="none" />
+                <circle cx="50" cy="50" r="40" stroke="rgb(59 130 246)" stroke-width="8" fill="none" 
+                        stroke-dasharray="251" stroke-dashoffset="63" stroke-linecap="round" />
+              </svg>
+              <div class="absolute inset-0 flex items-center justify-center">
+                <i class="ri-time-line text-blue-500 text-xl md:text-2xl"></i>
+              </div>
+            </div>
+            <h3 class="font-medium text-gray-800 text-sm md:text-base">Practice Time</h3>
+            <p class="text-xs md:text-sm text-gray-500">15/20 minutes</p>
           </div>
         </div>
       </div>
-    </main>
 
-    
+      <!-- Choose Your Adventure Section -->
+      <div class="bg-white rounded-2xl shadow-sm p-4 md:p-6">
+        <div class="flex items-center gap-2 mb-6">
+          <i class="ri-gamepad-line text-gray-700 text-xl"></i>
+          <h2 class="text-lg md:text-xl font-semibold text-gray-800">Choose Your Adventure!</h2>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
+          <!-- Piggy Bank Adventure -->
+          <div class="relative bg-gradient-to-br from-pink-400 to-pink-500 rounded-2xl p-6 text-white overflow-hidden">
+            <div class="text-6xl mb-4">🐷</div>
+            <h3 class="text-xl font-bold mb-2">Piggy Bank Adventure</h3>
+            <p class="text-pink-100 text-sm mb-4">Learn about saving money with your virtual piggy bank!</p>
+            <div class="flex items-center justify-between">
+              <span class="bg-white/20 px-2 py-1 rounded text-xs">easy</span>
+              <div class="flex items-center gap-1 text-sm">
+                <i class="ri-coins-fill text-yellow-300"></i>
+                <span>+25</span>
+              </div>
+            </div>
+            <button class="w-full mt-4 bg-white text-pink-500 font-medium py-2 rounded-lg hover:bg-gray-50 transition-colors">
+              Start Adventure
+            </button>
+          </div>
+
+          <!-- Needs vs Wants Game -->
+          <div class="relative bg-gradient-to-br from-teal-400 to-teal-500 rounded-2xl p-6 text-white overflow-hidden">
+            <div class="absolute top-4 right-4 bg-white/20 rounded-full p-2">
+              <i class="ri-check-line text-xl"></i>
+            </div>
+            <div class="text-6xl mb-4">🛒</div>
+            <h3 class="text-xl font-bold mb-2">Needs vs Wants Game</h3>
+            <p class="text-teal-100 text-sm mb-4">Sort items into needs and wants categories.</p>
+            <div class="flex items-center justify-between">
+              <span class="bg-white/20 px-2 py-1 rounded text-xs">medium</span>
+              <div class="flex items-center gap-1 text-sm">
+                <i class="ri-coins-fill text-yellow-300"></i>
+                <span>+35</span>
+              </div>
+            </div>
+            <button class="w-full mt-4 bg-white text-teal-500 font-medium py-2 rounded-lg hover:bg-gray-50 transition-colors">
+              Play Again
+            </button>
+          </div>
+
+          <!-- Coin Counting Challenge -->
+          <div class="relative bg-gradient-to-br from-blue-400 to-blue-500 rounded-2xl p-6 text-white overflow-hidden">
+            <div class="text-6xl mb-4">🪙</div>
+            <h3 class="text-xl font-bold mb-2">Coin Counting Challenge</h3>
+            <p class="text-blue-100 text-sm mb-4">Practice counting different types of coins.</p>
+            <div class="flex items-center justify-between">
+              <span class="bg-white/20 px-2 py-1 rounded text-xs">easy</span>
+              <div class="flex items-center gap-1 text-sm">
+                <i class="ri-coins-fill text-yellow-300"></i>
+                <span>+30</span>
+              </div>
+            </div>
+            <button class="w-full mt-4 bg-white text-blue-500 font-medium py-2 rounded-lg hover:bg-gray-50 transition-colors">
+              Start Adventure
+            </button>
+          </div>
+
+          <!-- Budget Builder -->
+          <div class="relative bg-gradient-to-br from-green-400 to-green-500 rounded-2xl p-6 text-white overflow-hidden">
+            <div class="text-6xl mb-4">📊</div>
+            <h3 class="text-xl font-bold mb-2">Budget Builder</h3>
+            <p class="text-green-100 text-sm mb-4">Create your first budget with fun categories.</p>
+            <div class="flex items-center justify-between">
+              <span class="bg-white/20 px-2 py-1 rounded text-xs">medium</span>
+              <div class="flex items-center gap-1 text-sm">
+                <i class="ri-coins-fill text-yellow-300"></i>
+                <span>+50</span>
+              </div>
+            </div>
+            <button class="w-full mt-4 bg-white text-green-500 font-medium py-2 rounded-lg hover:bg-gray-50 transition-colors">
+              Start Adventure
+            </button>
+          </div>
+
+          <!-- Shopping Smart -->
+          <div class="relative bg-gradient-to-br from-yellow-400 to-yellow-500 rounded-2xl p-6 text-white overflow-hidden">
+            <div class="text-6xl mb-4">🛍️</div>
+            <h3 class="text-xl font-bold mb-2">Shopping Smart</h3>
+            <p class="text-yellow-100 text-sm mb-4">Learn to make smart shopping decisions.</p>
+            <div class="flex items-center justify-between">
+              <span class="bg-white/20 px-2 py-1 rounded text-xs">medium</span>
+              <div class="flex items-center gap-1 text-sm">
+                <i class="ri-coins-fill text-orange-300"></i>
+                <span>+40</span>
+              </div>
+            </div>
+            <button class="w-full mt-4 bg-white text-yellow-600 font-medium py-2 rounded-lg hover:bg-gray-50 transition-colors">
+              Start Adventure
+            </button>
+          </div>
+
+          <!-- Goal Setting Quest -->
+          <div class="relative bg-gradient-to-br from-purple-400 to-purple-500 rounded-2xl p-6 text-white overflow-hidden">
+            <div class="text-6xl mb-4">🎯</div>
+            <h3 class="text-xl font-bold mb-2">Goal Setting Quest</h3>
+            <p class="text-purple-100 text-sm mb-4">Set and track your savings goals.</p>
+            <div class="flex items-center justify-between">
+              <span class="bg-white/20 px-2 py-1 rounded text-xs">easy</span>
+              <div class="flex items-center gap-1 text-sm">
+                <i class="ri-coins-fill text-yellow-300"></i>
+                <span>+45</span>
+              </div>
+            </div>
+            <button class="w-full mt-4 bg-white text-purple-500 font-medium py-2 rounded-lg hover:bg-gray-50 transition-colors">
+              Start Adventure
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Achievements Section -->
+      <div class="bg-white rounded-2xl shadow-sm p-4 md:p-6">
+        <div class="flex items-center gap-2 mb-4">
+          <i class="ri-trophy-line text-yellow-500 text-xl"></i>
+          <h2 class="text-lg md:text-xl font-semibold text-gray-800">Recent Achievements</h2>
+        </div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <!-- First Steps Achievement -->
+          <div class="text-center p-4 bg-yellow-50 rounded-xl">
+            <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <i class="ri-footprint-line text-yellow-600 text-2xl"></i>
+            </div>
+            <h3 class="font-medium text-gray-800 mb-1">First Steps</h3>
+            <p class="text-sm text-gray-600">Completed your first lesson!</p>
+          </div>
+
+          <!-- Coin Collector Achievement -->
+          <div class="text-center p-4 bg-yellow-50 rounded-xl">
+            <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <i class="ri-coins-line text-yellow-600 text-2xl"></i>
+            </div>
+            <h3 class="font-medium text-gray-800 mb-1">Coin Collector</h3>
+            <p class="text-sm text-gray-600">Earned 100 coins!</p>
+          </div>
+
+          <!-- Streak Master Achievement -->
+          <div class="text-center p-4 bg-yellow-50 rounded-xl">
+            <div class="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-3">
+              <i class="ri-fire-line text-yellow-600 text-2xl"></i>
+            </div>
+            <h3 class="font-medium text-gray-800 mb-1">Streak Master</h3>
+            <p class="text-sm text-gray-600">5 days in a row!</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Your Learning Journey Section -->
+      <div class="bg-white rounded-2xl shadow-sm p-4 md:p-6">
+        <div class="flex items-center gap-2 mb-4">
+          <i class="ri-map-pin-line text-blue-500 text-xl"></i>
+          <h2 class="text-lg md:text-xl font-semibold text-gray-800">Your Learning Journey</h2>
+        </div>
+        
+        <div class="space-y-4">
+          <!-- Welcome to Money World -->
+          <div class="flex items-center gap-4 p-4 bg-green-50 rounded-xl">
+            <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center flex-shrink-0">
+              <i class="ri-check-line text-white"></i>
+            </div>
+            <div class="flex-1">
+              <h3 class="font-medium text-gray-800">Welcome to Money World</h3>
+              <p class="text-sm text-gray-600">Learn the basics of money</p>
+            </div>
+          </div>
+
+          <!-- More journey items would be added here -->
+          <div class="flex items-center gap-4 p-4 bg-gray-50 rounded-xl opacity-50">
+            <div class="w-10 h-10 bg-gray-300 rounded-full flex items-center justify-center flex-shrink-0">
+              <i class="ri-lock-line text-gray-500"></i>
+            </div>
+            <div class="flex-1">
+              <h3 class="font-medium text-gray-600">Saving Strategies</h3>
+              <p class="text-sm text-gray-500">Coming soon...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </template>
 
-<script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-
-const sidebarCollapsed = ref(false)
-const isMobileView = ref(false)
-
-const checkScreenSize = () => {
-  const width = window.innerWidth
-  const wasMobileView = isMobileView.value
-  
-  if (width <= 768) {
-    isMobileView.value = true
-    // Force collapse sidebar on mobile
-    if (!wasMobileView) {
-      sidebarCollapsed.value = true
-    }
-  } else if (width <= 1024) {
-    isMobileView.value = false
-    // Force collapse sidebar on tablet
-    if (wasMobileView) {
-      sidebarCollapsed.value = true
-    }
-  } else {
-    isMobileView.value = false
-    // Reset to expanded on desktop if coming from mobile/tablet
-    if (wasMobileView) {
-      sidebarCollapsed.value = false
-    }
-  }
-}
-
-const toggleSidebar = () => {
-  sidebarCollapsed.value = !sidebarCollapsed.value
-}
-
-const navigateToProfile = () => {
-  console.log('Navigate to profile page')
-}
-
-onMounted(() => {
-  checkScreenSize()
-  window.addEventListener('resize', checkScreenSize)
-})
-
-onUnmounted(() => {
-  window.removeEventListener('resize', checkScreenSize)
-})
+<script setup lang="ts">
+// Dashboard content - all navigation handled by ChildLayout
 </script>
 
-<style scoped>
-/* CSS Variables */
-:root {
-  --primary-blue: #3b82f6;
-  --light-blue: #dbeafe;
-  --light-yellow: #fef3c7;
-  --primary-orange: #ff6b35;
-  --light-orange: #fff5f2;
-  --dark-gray: #2d3748;
-  --medium-gray: #718096;
-  --light-gray: #e2e8f0;
-  --white: #ffffff;
-  
-  --spacing-xs: 0.25rem;
-  --spacing-sm: 0.5rem;
-  --spacing-md: 1rem;
-  --spacing-lg: 1.5rem;
-  --spacing-xl: 2rem;
-  --spacing-xxl: 3rem;
-  --spacing-xxxl: 4rem;
-  
-  --radius-sm: 0.25rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 1rem;
-  --radius-full: 50%;
-  
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
-  --gradient-primary: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
-}
-
-/* Desktop Navigation with Profile */
-.desktop-nav {
-  display: block;
-  background-color: var(--white);
-  border-bottom: 1px solid var(--light-gray);
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  padding: var(--spacing-sm) 0;
-  height: 60px;
-}
-
-.nav-container {
-  max-width: 100%;
-  margin: 0 auto;
-  padding: 0 var(--spacing-lg);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 100%;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  font-weight: 700;
-  font-size: 1.25rem;
-  color: var(--primary-orange);
-}
-
-.logo-icon {
-  font-size: 1.5rem;
-}
-
-.nav-profile {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  cursor: pointer;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-md);
-  transition: all 0.3s ease;
-}
-
-.nav-profile:hover {
-  background-color: var(--light-gray);
-}
-
-.user-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  border: 2px solid var(--primary-blue);
-}
-
-.avatar-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.welcome-text {
-  font-weight: 600;
-  color: var(--dark-gray);
-  font-size: 1rem;
-}
-
-.coin-balance {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  background: var(--light-yellow);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-md);
-  border: 2px solid var(--primary-orange);
-}
-
-.coin-icon {
-  font-size: 1rem;
-}
-
-.balance {
-  font-weight: 700;
-  color: var(--primary-orange);
-  font-size: 1rem;
-}
-
-/* Collapsible Sidebar */
-.sidebar {
-  position: fixed;
-  top: 60px;
-  left: 0;
-  width: 250px;
-  height: calc(100vh - 60px);
-  background: var(--white);
-  border-right: 1px solid var(--light-gray);
-  transition: width 0.3s ease;
-  z-index: 999;
-  overflow: hidden;
-}
-
-.sidebar.collapsed {
-  width: 70px;
-}
-
-/* Mobile view sidebar - stacked layout */
-.sidebar.mobile-view {
-  width: 70px;
-}
-
-.sidebar.mobile-view.collapsed {
-  width: 250px;
-}
-
-.sidebar-header {
-  padding: var(--spacing-md);
-  border-bottom: 1px solid var(--light-gray);
-}
-
-.collapse-btn {
-  width: 100%;
-  padding: var(--spacing-sm);
-  background: var(--light-gray);
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 1rem;
-}
-
-.collapse-btn:hover {
-  background: var(--medium-gray);
-  color: var(--white);
-}
-
-.chevron-icon {
-  font-size: 1.5rem;
-  font-weight: bold;
-  font-family: monospace;
-}
-
-.sidebar-nav {
-  padding: var(--spacing-md) 0;
-}
-
-.sidebar-item {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md) var(--spacing-lg);
-  text-decoration: none;
-  color: var(--dark-gray);
-  transition: all 0.3s ease;
-  white-space: nowrap;
-  border-left: 3px solid transparent;
-}
-
-/* Mobile view - stacked layout for sidebar items */
-.sidebar.mobile-view .sidebar-item {
-  flex-direction: column;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-md) var(--spacing-sm);
-  text-align: center;
-}
-
-.sidebar.mobile-view.collapsed .sidebar-item {
-  flex-direction: row;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md) var(--spacing-lg);
-  text-align: left;
-}
-
-.sidebar-item:hover {
-  background: var(--light-orange);
-  color: var(--primary-orange);
-  border-left-color: var(--primary-orange);
-}
-
-.sidebar-item.active {
-  background: var(--light-orange);
-  color: var(--primary-orange);
-  border-left-color: var(--primary-orange);
-  font-weight: 600;
-}
-
-.sidebar-icon {
-  font-size: 1.25rem;
-  min-width: 24px;
-  text-align: center;
-}
-
-.sidebar-text {
-  font-weight: 500;
-  opacity: 1;
-  transition: opacity 0.3s ease;
-  font-size: 0.9rem;
-}
-
-/* Hide text when collapsed (except in mobile view) */
-.sidebar.collapsed:not(.mobile-view) .sidebar-text {
-  opacity: 0;
-}
-
-/* In mobile view, text is always visible but positioned differently */
-.sidebar.mobile-view .sidebar-text {
-  opacity: 1;
-  font-size: 0.75rem;
-}
-
-/* Content Area */
-.content {
-  margin-left: 250px;
-  margin-top: 60px;
-  padding: var(--spacing-lg);
-  transition: margin-left 0.3s ease;
-  min-height: calc(100vh - 60px);
-  background: #f8f9fa;
-}
-
-.content.sidebar-collapsed {
-  margin-left: 70px;
-}
-
-/* Mobile view content adjustments */
-.content.mobile-view {
-  margin-left: 70px;
-}
-
-.content.mobile-view.sidebar-collapsed {
-  margin-left: 250px;
-}
-
-.dashboard {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-/* Dummy Content Styles */
-.dummy-content {
-  background: var(--white);
-  padding: var(--spacing-xl);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  margin-bottom: var(--spacing-xl);
-}
-
-.dummy-content h2 {
-  color: var(--dark-gray);
-  margin-bottom: var(--spacing-lg);
-  font-size: 1.5rem;
-}
-
-.dummy-content p {
-  color: var(--medium-gray);
-  margin-bottom: var(--spacing-xl);
-  line-height: 1.6;
-}
-
-.placeholder-box {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--spacing-md);
-}
-
-.placeholder-item {
-  background: var(--light-gray);
-  padding: var(--spacing-lg);
-  border-radius: var(--radius-md);
-  text-align: center;
-  font-weight: 600;
-  color: var(--dark-gray);
-  border: 2px dashed var(--medium-gray);
-}
-
-/* Mobile Bottom Navigation */
-.mobile-bottom-nav {
-  display: none;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: var(--white);
-  border-top: 1px solid var(--light-gray);
-  z-index: 1000;
-  padding: var(--spacing-sm) 0;
-}
-
-.bottom-nav-container {
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  max-width: 100%;
-}
-
-.bottom-nav-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-decoration: none;
-  color: var(--medium-gray);
-  padding: var(--spacing-sm);
-  border-radius: var(--radius-md);
-  transition: all 0.3s ease;
-  min-width: 60px;
-}
-
-.bottom-nav-item.active,
-.bottom-nav-item:hover {
-  color: var(--primary-orange);
-  background-color: var(--light-orange);
-}
-
-.bottom-nav-item .nav-icon {
-  font-size: 1.5rem;
-  margin-bottom: var(--spacing-xs);
-}
-
-.nav-label {
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .desktop-nav,
-  .sidebar {
-    display: none;
-  }
-  
-  .content {
-    margin-left: 0 !important;
-    margin-top: 0;
-    padding-bottom: 100px;
-  }
-  
-  .mobile-bottom-nav {
-    display: block;
-  }
-  
-  .nav-profile {
-    gap: var(--spacing-sm);
-  }
-  
-  .welcome-text {
-    font-size: 0.9rem;
-  }
-  
-  .coin-balance {
-    padding: var(--spacing-xs) var(--spacing-sm);
-  }
-}
-
-@media (max-width: 480px) {
-  .nav-container {
-    padding: 0 var(--spacing-md);
-  }
-  
-  .logo-text {
-    display: none;
-  }
-  
-  .nav-profile {
-    gap: var(--spacing-xs);
-  }
-  
-  .welcome-text {
-    display: none;
-  }
-}
+<!-- All styles handled by Tailwind CSS following DRY principle -->
 </style>

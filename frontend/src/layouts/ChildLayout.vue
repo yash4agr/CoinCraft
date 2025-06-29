@@ -1,533 +1,194 @@
 <template>
-  <div class="main">
-    <!-- Desktop/Tablet Navigation with Profile -->
-    <nav class="navbar desktop-nav">
-      <div class="nav-container">
-        <div class="logo">
-          <span class="logo-icon">🪙</span>
-          <span class="logo-text">CoinCraft</span>
+  <div class="min-h-screen bg-gray-50">
+    <!-- Top Navigation Bar - Always Visible -->
+    <nav class="fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50 h-16">
+      <div class="flex items-center justify-between h-full px-4 lg:px-6">
+        <!-- Logo -->
+        <div class="flex items-center gap-3">
+          <i class="ri-coins-fill text-2xl text-orange-500"></i>
+          <span class="text-xl font-bold text-gray-800">CoinCraft</span>
         </div>
         
-        <!-- Profile section in navbar -->
-        <div class="nav-profile" @click="navigateToProfile">
-          <div class="user-avatar">
-            <img src="@/assets/user.svg" alt="User Avatar" class="avatar-image">
+        <!-- Profile Section -->
+        <div class="flex items-center gap-4">
+          <!-- Coin Balance -->
+          <div class="flex items-center gap-1 bg-yellow-100 px-3 py-1 rounded-full border border-yellow-300">
+            <i class="ri-coins-fill text-yellow-600"></i>
+            <span class="font-semibold text-yellow-800">125</span>
           </div>
-          <div class="welcome-text">
-            <span>Hi Luna!</span>
-          </div>
-          <div class="coin-balance">
-            <span class="coin-icon">🪙</span>
-            <span class="balance">125</span>
+          
+          <!-- Profile Dropdown -->
+          <div class="relative profile-dropdown">
+            <button 
+              @click="toggleProfileMenu"
+              class="profile-button flex items-center gap-2 p-1 rounded-lg hover:bg-gray-100 transition-colors"
+            >
+              <img 
+                src="https://avataaars.io/?avatarStyle=Circle&topType=LongHairStraight2&accessoriesType=Blank&hairColor=BrownDark&facialHairType=Blank&clotheType=BlazerShirt&eyeType=Happy&eyebrowType=UpDownNatural&mouthType=Grimace&skinColor=Brown"
+                alt="Luna's Avatar" 
+                class="w-10 h-10 rounded-full border-2 border-orange-300"
+              />
+              <div class="hidden sm:block">
+                <div class="text-sm font-medium text-gray-800">Hi Luna!</div>
+              </div>
+              <i class="ri-arrow-down-s-line text-gray-500 hidden sm:block"></i>
+            </button>
+            
+            <!-- Profile Dropdown Menu -->
+            <div 
+              v-if="showProfileMenu"
+              class="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50"
+            >
+              <div class="px-4 py-2 border-b border-gray-100">
+                <div class="font-medium text-gray-800">Luna</div>
+                <div class="text-sm text-gray-500">Level 3 Saver</div>
+              </div>
+              
+              <button class="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors">
+                <i class="ri-settings-3-line text-gray-400"></i>
+                <span>Settings</span>
+              </button>
+              
+              <button class="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors">
+                <i class="ri-user-3-line text-gray-400"></i>
+                <span>Profile</span>
+              </button>
+              
+              <button class="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors">
+                <i class="ri-parent-line text-gray-400"></i>
+                <span>Parent Dashboard</span>
+              </button>
+              
+              <div class="border-t border-gray-100 mt-2 pt-2">
+                <button class="w-full flex items-center gap-3 px-4 py-2 text-red-600 hover:bg-red-50 transition-colors">
+                  <i class="ri-logout-box-line text-red-400"></i>
+                  <span>Logout</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </nav>
 
-    <!-- Collapsible Sidebar -->
-    <aside class="sidebar" :class="{ 'collapsed': sidebarCollapsed, 'mobile-view': isMobileView }">
-      <div class="sidebar-header">
-        <button class="collapse-btn" @click="toggleSidebar">
-          <span class="chevron-icon">{{ sidebarCollapsed ? '›' : '‹' }}</span>
+    <!-- Sidebar for Desktop -->
+    <aside 
+      class="fixed left-0 top-16 h-full bg-white border-r border-gray-200 z-40 transition-all duration-300 hidden lg:block"
+      :class="sidebarCollapsed ? 'w-16' : 'w-64'"
+    >
+      <!-- Sidebar Toggle -->
+      <div class="flex justify-end p-3 border-b border-gray-100">
+        <button 
+          @click="toggleSidebar"
+          class="p-1 rounded-lg hover:bg-gray-100 transition-colors"
+        >
+          <i :class="sidebarCollapsed ? 'ri-arrow-right-s-line' : 'ri-arrow-left-s-line'" class="text-gray-500"></i>
         </button>
       </div>
-      
-      <nav class="sidebar-nav">
-        <a href="#home" class="sidebar-item active">
-          <span class="sidebar-icon">🏠</span>
-          <span class="sidebar-text">Home</span>
-        </a>
-        <a href="#play" class="sidebar-item">
-          <span class="sidebar-icon">🎮</span>
-          <span class="sidebar-text">Play</span>
-        </a>
-        <a href="#money" class="sidebar-item">
-          <span class="sidebar-icon">💰</span>
-          <span class="sidebar-text">Money</span>
-        </a>
-        <a href="#more" class="sidebar-item">
-          <span class="sidebar-icon">⋯</span>
-          <span class="sidebar-text">More</span>
-        </a>
+
+      <!-- Navigation Links -->
+      <nav class="p-4 space-y-2">
+        <router-link 
+          v-for="item in navigationItems" 
+          :key="item.name"
+          :to="item.path"
+          class="flex items-center gap-3 px-3 py-3 rounded-lg transition-colors hover:bg-orange-50"
+          :class="$route.name === item.name ? 'bg-orange-100 text-orange-600' : 'text-gray-700 hover:text-orange-600'"
+        >
+          <i :class="item.icon" class="text-xl min-w-[1.25rem]"></i>
+          <span v-if="!sidebarCollapsed" class="font-medium">{{ item.label }}</span>
+        </router-link>
       </nav>
     </aside>
 
-    <RouterView/>
-    
-    <nav class="mobile-bottom-nav">
-      <div class="bottom-nav-container">
-        <a href="#home" class="bottom-nav-item active">
-          <span class="nav-icon">🏠</span>
-          <span class="nav-label">Home</span>
-        </a>
-        <a href="#play" class="bottom-nav-item">
-          <span class="nav-icon">🎮</span>
-          <span class="nav-label">Play</span>
-        </a>
-        <a href="#money" class="bottom-nav-item">
-          <span class="nav-icon">💰</span>
-          <span class="nav-label">Money</span>
-        </a>
-        <a href="#more" class="bottom-nav-item">
-          <span class="nav-icon">⋯</span>
-          <span class="nav-label">More</span>
-        </a>
+    <!-- Main Content Area -->
+    <main 
+      class="transition-all duration-300 pt-16 lg:pt-16 pb-20 lg:pb-4"
+      :class="sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-64'"
+    >
+      <router-view />
+    </main>
+
+    <!-- Bottom Navigation for Mobile/Tablet -->
+    <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 lg:hidden">
+      <div class="grid grid-cols-4 h-16">
+        <router-link 
+          v-for="item in navigationItems" 
+          :key="item.name"
+          :to="item.path"
+          class="flex flex-col items-center justify-center gap-1 transition-colors"
+          :class="$route.name === item.name ? 'text-orange-600 bg-orange-50' : 'text-gray-500 hover:text-orange-600'"
+        >
+          <i :class="item.icon" class="text-xl"></i>
+          <span class="text-xs font-medium">{{ item.label }}</span>
+        </router-link>
       </div>
     </nav>
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 
 const sidebarCollapsed = ref(false)
-const isMobileView = ref(false)
-
-const checkScreenSize = () => {
-  const width = window.innerWidth
-  const wasMobileView = isMobileView.value
-  
-  if (width <= 768) {
-    isMobileView.value = true
-    // Force collapse sidebar on mobile
-    if (!wasMobileView) {
-      sidebarCollapsed.value = true
-    }
-  } else if (width <= 1024) {
-    isMobileView.value = false
-    // Force collapse sidebar on tablet
-    if (wasMobileView) {
-      sidebarCollapsed.value = true
-    }
-  } else {
-    isMobileView.value = false
-    // Reset to expanded on desktop if coming from mobile/tablet
-    if (wasMobileView) {
-      sidebarCollapsed.value = false
-    }
-  }
-}
+const showProfileMenu = ref(false)
 
 const toggleSidebar = () => {
   sidebarCollapsed.value = !sidebarCollapsed.value
 }
 
-const navigateToProfile = () => {
-  console.log('Navigate to profile page')
+const toggleProfileMenu = () => {
+  showProfileMenu.value = !showProfileMenu.value
+}
+
+// Close profile menu when clicking outside
+const handleClickOutside = (event: Event) => {
+  const target = event.target as HTMLElement
+  const profileDropdown = document.querySelector('.profile-dropdown')
+  const profileButton = document.querySelector('.profile-button')
+  
+  if (profileDropdown && profileButton && 
+      !profileDropdown.contains(target) && 
+      !profileButton.contains(target)) {
+    showProfileMenu.value = false
+  }
 }
 
 onMounted(() => {
-  checkScreenSize()
-  window.addEventListener('resize', checkScreenSize)
+  document.addEventListener('click', handleClickOutside)
 })
 
 onUnmounted(() => {
-  window.removeEventListener('resize', checkScreenSize)
+  document.removeEventListener('click', handleClickOutside)
 })
+
+// Navigation items following DRY principle - optimized for mobile
+const navigationItems = [
+  {
+    name: 'ChildDashboard',
+    path: '/child/dashboard',
+    label: 'Home',
+    icon: 'ri-home-4-fill'
+  },
+  {
+    name: 'ChildGames',
+    path: '/child/games',
+    label: 'Games',
+    icon: 'ri-gamepad-fill'
+  },
+  {
+    name: 'ChildSavings',
+    path: '/child/savings',
+    label: 'Piggy Bank',
+    icon: 'ri-piggy-bank-fill'
+  },
+  {
+    name: 'ChildGoals',
+    path: '/child/goals',
+    label: 'Goals',
+    icon: 'ri-flag-fill'
+  }
+]
 </script>
 
-<style scoped>
-/* CSS Variables */
-:root {
-  --primary-blue: #3b82f6;
-  --light-blue: #dbeafe;
-  --light-yellow: #fef3c7;
-  --primary-orange: #ff6b35;
-  --light-orange: #fff5f2;
-  --dark-gray: #2d3748;
-  --medium-gray: #718096;
-  --light-gray: #e2e8f0;
-  --white: #ffffff;
-  
-  --spacing-xs: 0.25rem;
-  --spacing-sm: 0.5rem;
-  --spacing-md: 1rem;
-  --spacing-lg: 1.5rem;
-  --spacing-xl: 2rem;
-  --spacing-xxl: 3rem;
-  --spacing-xxxl: 4rem;
-  
-  --radius-sm: 0.25rem;
-  --radius-md: 0.5rem;
-  --radius-lg: 1rem;
-  --radius-full: 50%;
-  
-  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.1);
-  --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
-  --gradient-primary: linear-gradient(135deg, #ff6b35 0%, #f7931e 100%);
-}
-
-/* Desktop Navigation with Profile */
-.desktop-nav {
-  display: block;
-  background-color: var(--white);
-  border-bottom: 1px solid var(--light-gray);
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  z-index: 1000;
-  padding: var(--spacing-sm) 0;
-  height: 60px;
-}
-
-.nav-container {
-  max-width: 100%;
-  margin: 0 auto;
-  padding: 0 var(--spacing-lg);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 100%;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  font-weight: 700;
-  font-size: 1.25rem;
-  color: var(--primary-orange);
-}
-
-.logo-icon {
-  font-size: 1.5rem;
-}
-
-.nav-profile {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  cursor: pointer;
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-md);
-  transition: all 0.3s ease;
-}
-
-.nav-profile:hover {
-  background-color: var(--light-gray);
-}
-
-.user-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: var(--radius-md);
-  overflow: hidden;
-  border: 2px solid var(--primary-blue);
-}
-
-.avatar-image {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-}
-
-.welcome-text {
-  font-weight: 600;
-  color: var(--dark-gray);
-  font-size: 1rem;
-}
-
-.coin-balance {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-sm);
-  background: var(--light-yellow);
-  padding: var(--spacing-sm) var(--spacing-md);
-  border-radius: var(--radius-md);
-  border: 2px solid var(--primary-orange);
-}
-
-.coin-icon {
-  font-size: 1rem;
-}
-
-.balance {
-  font-weight: 700;
-  color: var(--primary-orange);
-  font-size: 1rem;
-}
-
-/* Collapsible Sidebar */
-.sidebar {
-  position: fixed;
-  top: 60px;
-  left: 0;
-  width: 250px;
-  height: calc(100vh - 60px);
-  background: var(--white);
-  border-right: 1px solid var(--light-gray);
-  transition: width 0.3s ease;
-  z-index: 999;
-  overflow: hidden;
-}
-
-.sidebar.collapsed {
-  width: 70px;
-}
-
-/* Mobile view sidebar - stacked layout */
-.sidebar.mobile-view {
-  width: 70px;
-}
-
-.sidebar.mobile-view.collapsed {
-  width: 250px;
-}
-
-.sidebar-header {
-  padding: var(--spacing-md);
-  border-bottom: 1px solid var(--light-gray);
-}
-
-.collapse-btn {
-  width: 100%;
-  padding: var(--spacing-sm);
-  background: var(--light-gray);
-  border: none;
-  border-radius: var(--radius-md);
-  cursor: pointer;
-  transition: all 0.3s ease;
-  font-size: 1rem;
-}
-
-.collapse-btn:hover {
-  background: var(--medium-gray);
-  color: var(--white);
-}
-
-.chevron-icon {
-  font-size: 1.5rem;
-  font-weight: bold;
-  font-family: monospace;
-}
-
-.sidebar-nav {
-  padding: var(--spacing-md) 0;
-}
-
-.sidebar-item {
-  display: flex;
-  align-items: center;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md) var(--spacing-lg);
-  text-decoration: none;
-  color: var(--dark-gray);
-  transition: all 0.3s ease;
-  white-space: nowrap;
-  border-left: 3px solid transparent;
-}
-
-/* Mobile view - stacked layout for sidebar items */
-.sidebar.mobile-view .sidebar-item {
-  flex-direction: column;
-  gap: var(--spacing-xs);
-  padding: var(--spacing-md) var(--spacing-sm);
-  text-align: center;
-}
-
-.sidebar.mobile-view.collapsed .sidebar-item {
-  flex-direction: row;
-  gap: var(--spacing-md);
-  padding: var(--spacing-md) var(--spacing-lg);
-  text-align: left;
-}
-
-.sidebar-item:hover {
-  background: var(--light-orange);
-  color: var(--primary-orange);
-  border-left-color: var(--primary-orange);
-}
-
-.sidebar-item.active {
-  background: var(--light-orange);
-  color: var(--primary-orange);
-  border-left-color: var(--primary-orange);
-  font-weight: 600;
-}
-
-.sidebar-icon {
-  font-size: 1.25rem;
-  min-width: 24px;
-  text-align: center;
-}
-
-.sidebar-text {
-  font-weight: 500;
-  opacity: 1;
-  transition: opacity 0.3s ease;
-  font-size: 0.9rem;
-}
-
-/* Hide text when collapsed (except in mobile view) */
-.sidebar.collapsed:not(.mobile-view) .sidebar-text {
-  opacity: 0;
-}
-
-/* In mobile view, text is always visible but positioned differently */
-.sidebar.mobile-view .sidebar-text {
-  opacity: 1;
-  font-size: 0.75rem;
-}
-
-/* Content Area */
-.content {
-  margin-left: 250px;
-  margin-top: 60px;
-  padding: var(--spacing-lg);
-  transition: margin-left 0.3s ease;
-  min-height: calc(100vh - 60px);
-  background: #f8f9fa;
-}
-
-.content.sidebar-collapsed {
-  margin-left: 70px;
-}
-
-/* Mobile view content adjustments */
-.content.mobile-view {
-  margin-left: 70px;
-}
-
-.content.mobile-view.sidebar-collapsed {
-  margin-left: 250px;
-}
-
-.dashboard {
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-/* Dummy Content Styles */
-.dummy-content {
-  background: var(--white);
-  padding: var(--spacing-xl);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
-  margin-bottom: var(--spacing-xl);
-}
-
-.dummy-content h2 {
-  color: var(--dark-gray);
-  margin-bottom: var(--spacing-lg);
-  font-size: 1.5rem;
-}
-
-.dummy-content p {
-  color: var(--medium-gray);
-  margin-bottom: var(--spacing-xl);
-  line-height: 1.6;
-}
-
-.placeholder-box {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: var(--spacing-md);
-}
-
-.placeholder-item {
-  background: var(--light-gray);
-  padding: var(--spacing-lg);
-  border-radius: var(--radius-md);
-  text-align: center;
-  font-weight: 600;
-  color: var(--dark-gray);
-  border: 2px dashed var(--medium-gray);
-}
-
-/* Mobile Bottom Navigation */
-.mobile-bottom-nav {
-  display: none;
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: var(--white);
-  border-top: 1px solid var(--light-gray);
-  z-index: 1000;
-  padding: var(--spacing-sm) 0;
-}
-
-.bottom-nav-container {
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
-  max-width: 100%;
-}
-
-.bottom-nav-item {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-decoration: none;
-  color: var(--medium-gray);
-  padding: var(--spacing-sm);
-  border-radius: var(--radius-md);
-  transition: all 0.3s ease;
-  min-width: 60px;
-}
-
-.bottom-nav-item.active,
-.bottom-nav-item:hover {
-  color: var(--primary-orange);
-  background-color: var(--light-orange);
-}
-
-.bottom-nav-item .nav-icon {
-  font-size: 1.5rem;
-  margin-bottom: var(--spacing-xs);
-}
-
-.nav-label {
-  font-size: 0.75rem;
-  font-weight: 500;
-}
-
-/* Responsive Design */
-@media (max-width: 768px) {
-  .desktop-nav,
-  .sidebar {
-    display: none;
-  }
-  
-  .content {
-    margin-left: 0 !important;
-    margin-top: 0;
-    padding-bottom: 100px;
-  }
-  
-  .mobile-bottom-nav {
-    display: block;
-  }
-  
-  .nav-profile {
-    gap: var(--spacing-sm);
-  }
-  
-  .welcome-text {
-    font-size: 0.9rem;
-  }
-  
-  .coin-balance {
-    padding: var(--spacing-xs) var(--spacing-sm);
-  }
-}
-
-@media (max-width: 480px) {
-  .nav-container {
-    padding: 0 var(--spacing-md);
-  }
-  
-  .logo-text {
-    display: none;
-  }
-  
-  .nav-profile {
-    gap: var(--spacing-xs);
-  }
-  
-  .welcome-text {
-    display: none;
-  }
-}
-</style>
+<!-- All styles now handled by Tailwind CSS - following DRY principle -->
