@@ -10,113 +10,14 @@
     <div class="mb-8">
       <h2 class="text-xl font-bold text-gray-800 mb-6">Financial Knowledge Cards</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <!-- Taxes Card -->
-        <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow cursor-pointer">
-          <div class="p-6">
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-bold text-gray-800">TAXES</h3>
-              <div class="flex items-center gap-1 text-sm text-yellow-600">
-                <i class="ri-coins-fill"></i>
-                <span>245</span>
-              </div>
-            </div>
-            <div class="text-center py-8">
-              <div class="text-4xl mb-4">🧾</div>
-              <p class="text-gray-600 text-sm mb-4">[Tap to flip]</p>
-              <p class="text-gray-700">What are taxes and why do we pay them?</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Global Economy Card -->
-        <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow cursor-pointer">
-          <div class="p-6">
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-bold text-gray-800">GLOBAL ECONOMY</h3>
-              <div class="flex items-center gap-1 text-sm text-yellow-600">
-                <i class="ri-coins-fill"></i>
-                <span>245</span>
-              </div>
-            </div>
-            <div class="text-center py-8">
-              <div class="text-4xl mb-4">🌍</div>
-              <p class="text-gray-600 text-sm mb-4">[Tap to flip]</p>
-              <p class="text-gray-700">How does money work around the world?</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Banking Basics Card -->
-        <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow cursor-pointer">
-          <div class="p-6">
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-bold text-gray-800">BANKING BASICS</h3>
-              <div class="flex items-center gap-1 text-sm text-yellow-600">
-                <i class="ri-coins-fill"></i>
-                <span>245</span>
-              </div>
-            </div>
-            <div class="text-center py-8">
-              <div class="text-4xl mb-4">🏦</div>
-              <p class="text-gray-600 text-sm mb-4">[Tap to flip]</p>
-              <p class="text-gray-700">Interest, loans, and bank accounts</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Credit Cards Card -->
-        <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow cursor-pointer">
-          <div class="p-6">
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-bold text-gray-800">CREDIT CARDS</h3>
-              <div class="flex items-center gap-1 text-sm text-yellow-600">
-                <i class="ri-coins-fill"></i>
-                <span>245</span>
-              </div>
-            </div>
-            <div class="text-center py-8">
-              <div class="text-4xl mb-4">💳</div>
-              <p class="text-gray-600 text-sm mb-4">[Tap to flip]</p>
-              <p class="text-gray-700">How credit works and building good credit</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Investing Card -->
-        <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow cursor-pointer">
-          <div class="p-6">
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-bold text-gray-800">INVESTING</h3>
-              <div class="flex items-center gap-1 text-sm text-yellow-600">
-                <i class="ri-coins-fill"></i>
-                <span>245</span>
-              </div>
-            </div>
-            <div class="text-center py-8">
-              <div class="text-4xl mb-4">📈</div>
-              <p class="text-gray-600 text-sm mb-4">[Tap to flip]</p>
-              <p class="text-gray-700">Stocks, bonds, and growing your money</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Entrepreneurship Card -->
-        <div class="bg-white rounded-xl shadow-md hover:shadow-lg transition-shadow cursor-pointer">
-          <div class="p-6">
-            <div class="flex items-center justify-between mb-4">
-              <h3 class="text-lg font-bold text-gray-800">ENTREPRENEURSHIP</h3>
-              <div class="flex items-center gap-1 text-sm text-yellow-600">
-                <i class="ri-coins-fill"></i>
-                <span>245</span>
-              </div>
-            </div>
-            <div class="text-center py-8">
-              <div class="text-4xl mb-4">🚀</div>
-              <p class="text-gray-600 text-sm mb-4">[Tap to flip]</p>
-              <p class="text-gray-700">Starting and running your own business</p>
-            </div>
-          </div>
-        </div>
+        <KnowledgeCard
+          v-for="card in knowledgeCards"
+          :key="card.id"
+          :title="card.title"
+          :description="card.description"
+          :emoji="card.emoji"
+          :coins="card.coins"
+        />
       </div>
     </div>
 
@@ -209,5 +110,52 @@
 </template>
 
 <script setup lang="ts">
-// Teen exploration of advanced financial concepts
+import { ref } from 'vue'
+import KnowledgeCard from '@/components/shared/KnowledgeCard.vue'
+
+// Knowledge cards data - following DRY principle
+const knowledgeCards = ref([
+  {
+    id: 1,
+    title: 'TAXES',
+    description: 'What are taxes and why do we pay them?',
+    emoji: '🧾',
+    coins: 245
+  },
+  {
+    id: 2,
+    title: 'GLOBAL ECONOMY',
+    description: 'How does money work around the world?',
+    emoji: '🌍',
+    coins: 245
+  },
+  {
+    id: 3,
+    title: 'BANKING BASICS',
+    description: 'Interest, loans, and bank accounts',
+    emoji: '🏦',
+    coins: 245
+  },
+  {
+    id: 4,
+    title: 'CREDIT CARDS',
+    description: 'How credit works and building good credit',
+    emoji: '💳',
+    coins: 245
+  },
+  {
+    id: 5,
+    title: 'INVESTING',
+    description: 'Stocks, bonds, and growing your money',
+    emoji: '📈',
+    coins: 245
+  },
+  {
+    id: 6,
+    title: 'ENTREPRENEURSHIP',
+    description: 'Starting and running your own business',
+    emoji: '🚀',
+    coins: 245
+  }
+])
 </script> 
