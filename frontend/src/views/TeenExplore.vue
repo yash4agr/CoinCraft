@@ -15,7 +15,7 @@
           <div class="p-6">
             <div class="flex items-center justify-between mb-4">
               <h3 class="text-lg font-bold text-gray-800">TAXES</h3>
-              <div class="flex items-center gap-1 text-sm text-blue-600">
+              <div class="flex items-center gap-1 text-sm text-yellow-600">
                 <i class="ri-coins-fill"></i>
                 <span>245</span>
               </div>
@@ -33,7 +33,7 @@
           <div class="p-6">
             <div class="flex items-center justify-between mb-4">
               <h3 class="text-lg font-bold text-gray-800">GLOBAL ECONOMY</h3>
-              <div class="flex items-center gap-1 text-sm text-blue-600">
+              <div class="flex items-center gap-1 text-sm text-yellow-600">
                 <i class="ri-coins-fill"></i>
                 <span>245</span>
               </div>
@@ -51,7 +51,7 @@
           <div class="p-6">
             <div class="flex items-center justify-between mb-4">
               <h3 class="text-lg font-bold text-gray-800">BANKING BASICS</h3>
-              <div class="flex items-center gap-1 text-sm text-blue-600">
+              <div class="flex items-center gap-1 text-sm text-yellow-600">
                 <i class="ri-coins-fill"></i>
                 <span>245</span>
               </div>
@@ -69,7 +69,7 @@
           <div class="p-6">
             <div class="flex items-center justify-between mb-4">
               <h3 class="text-lg font-bold text-gray-800">CREDIT CARDS</h3>
-              <div class="flex items-center gap-1 text-sm text-blue-600">
+              <div class="flex items-center gap-1 text-sm text-yellow-600">
                 <i class="ri-coins-fill"></i>
                 <span>245</span>
               </div>
@@ -87,7 +87,7 @@
           <div class="p-6">
             <div class="flex items-center justify-between mb-4">
               <h3 class="text-lg font-bold text-gray-800">INVESTING</h3>
-              <div class="flex items-center gap-1 text-sm text-blue-600">
+              <div class="flex items-center gap-1 text-sm text-yellow-600">
                 <i class="ri-coins-fill"></i>
                 <span>245</span>
               </div>
@@ -105,7 +105,7 @@
           <div class="p-6">
             <div class="flex items-center justify-between mb-4">
               <h3 class="text-lg font-bold text-gray-800">ENTREPRENEURSHIP</h3>
-              <div class="flex items-center gap-1 text-sm text-blue-600">
+              <div class="flex items-center gap-1 text-sm text-yellow-600">
                 <i class="ri-coins-fill"></i>
                 <span>245</span>
               </div>

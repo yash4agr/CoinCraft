@@ -5,7 +5,7 @@
       <div class="flex items-center justify-between h-full px-4 lg:px-6">
         <!-- Logo -->
         <div class="flex items-center gap-3">
-          <i class="ri-coins-fill text-2xl text-orange-500"></i>
+          <i class="ri-coins-fill text-2xl text-yellow-500"></i>
           <span class="text-xl font-bold text-gray-800">CoinCraft</span>
         </div>
         

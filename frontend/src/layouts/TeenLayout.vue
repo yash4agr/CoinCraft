@@ -5,16 +5,16 @@
       <div class="flex items-center justify-between h-full px-4 lg:px-6">
         <!-- Logo -->
         <div class="flex items-center gap-3">
-          <i class="ri-coins-fill text-2xl text-blue-500"></i>
+          <i class="ri-coins-fill text-2xl text-yellow-500"></i>
           <span class="text-xl font-bold text-gray-800">CoinCraft</span>
         </div>
         
         <!-- Profile Section -->
         <div class="flex items-center gap-4">
           <!-- Coin Balance -->
-          <div class="flex items-center gap-1 bg-blue-100 px-3 py-1 rounded-full border border-blue-300">
-            <i class="ri-coins-fill text-blue-600"></i>
-            <span class="font-semibold text-blue-800">245</span>
+          <div class="flex items-center gap-1 bg-yellow-100 px-3 py-1 rounded-full border border-yellow-300">
+            <i class="ri-coins-fill text-yellow-600"></i>
+            <span class="font-semibold text-yellow-800">245</span>
           </div>
           
           <!-- Profile Dropdown -->
