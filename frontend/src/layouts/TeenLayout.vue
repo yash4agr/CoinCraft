@@ -5,16 +5,16 @@
       <div class="flex items-center justify-between h-full px-4 lg:px-6">
         <!-- Logo -->
         <div class="flex items-center gap-3">
-          <i class="ri-coins-fill text-2xl text-orange-500"></i>
+          <i class="ri-coins-fill text-2xl text-blue-500"></i>
           <span class="text-xl font-bold text-gray-800">CoinCraft</span>
         </div>
         
         <!-- Profile Section -->
         <div class="flex items-center gap-4">
           <!-- Coin Balance -->
-          <div class="flex items-center gap-1 bg-yellow-100 px-3 py-1 rounded-full border border-yellow-300">
-            <i class="ri-coins-fill text-yellow-600"></i>
-            <span class="font-semibold text-yellow-800">125</span>
+          <div class="flex items-center gap-1 bg-blue-100 px-3 py-1 rounded-full border border-blue-300">
+            <i class="ri-coins-fill text-blue-600"></i>
+            <span class="font-semibold text-blue-800">245</span>
           </div>
           
           <!-- Profile Dropdown -->
@@ -24,12 +24,12 @@
               class="profile-button flex items-center gap-2 p-1 rounded-lg hover:bg-gray-100 transition-colors"
             >
               <img 
-                src="https://avataaars.io/?avatarStyle=Circle&topType=LongHairStraight2&accessoriesType=Blank&hairColor=BrownDark&facialHairType=Blank&clotheType=BlazerShirt&eyeType=Happy&eyebrowType=UpDownNatural&mouthType=Grimace&skinColor=Brown"
-                alt="Luna's Avatar" 
-                class="w-10 h-10 rounded-full border-2 border-orange-300"
+                src="https://avataaars.io/?avatarStyle=Circle&topType=ShortHairShortFlat&accessoriesType=Blank&hairColor=Brown&facialHairType=Blank&clotheType=Hoodie&clotheColor=Blue01&eyeType=Default&eyebrowType=Default&mouthType=Smile&skinColor=Light"
+                alt="Harry's Avatar" 
+                class="w-10 h-10 rounded-full border-2 border-blue-300"
               />
               <div class="hidden sm:block">
-                <div class="text-sm font-medium text-gray-800">Hi Luna!</div>
+                <div class="text-sm font-medium text-gray-800">Hi Harry!</div>
               </div>
               <i class="ri-arrow-down-s-line text-gray-500 hidden sm:block"></i>
             </button>
@@ -40,8 +40,8 @@
               class="absolute right-0 top-full mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50"
             >
               <div class="px-4 py-2 border-b border-gray-100">
-                <div class="font-medium text-gray-800">Luna</div>
-                <div class="text-sm text-gray-500">Level 3 Saver</div>
+                <div class="font-medium text-gray-800">Harry</div>
+                <div class="text-sm text-gray-500">Level 5 Investor</div>
               </div>
               
               <button class="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors">
@@ -87,8 +87,8 @@
           v-for="item in navigationItems" 
           :key="item.name"
           :to="item.path"
-          class="flex items-center gap-3 px-3 py-3 rounded-lg transition-colors hover:bg-orange-50"
-          :class="$route.name === item.name ? 'bg-orange-100 text-orange-600' : 'text-gray-700 hover:text-orange-600'"
+          class="flex items-center gap-3 px-3 py-3 rounded-lg transition-colors hover:bg-blue-50"
+          :class="$route.name === item.name ? 'bg-blue-100 text-blue-600' : 'text-gray-700 hover:text-blue-600'"
         >
           <i :class="item.icon" class="text-xl min-w-[1.25rem]"></i>
           <span v-if="!sidebarCollapsed" class="font-medium">{{ item.label }}</span>
@@ -106,13 +106,13 @@
 
     <!-- Bottom Navigation for Mobile/Tablet -->
     <nav class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-40 lg:hidden">
-      <div class="grid grid-cols-4 h-16">
+      <div class="grid grid-cols-5 h-16">
         <router-link 
           v-for="item in navigationItems" 
           :key="item.name"
           :to="item.path"
           class="flex flex-col items-center justify-center gap-1 transition-colors"
-          :class="$route.name === item.name ? 'text-orange-600 bg-orange-50' : 'text-gray-500 hover:text-orange-600'"
+          :class="$route.name === item.name ? 'text-blue-600 bg-blue-50' : 'text-gray-500 hover:text-blue-600'"
         >
           <i :class="item.icon" class="text-xl"></i>
           <span class="text-xs font-medium">{{ item.label }}</span>
@@ -157,33 +157,37 @@ onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
 })
 
-// Navigation items following DRY principle - optimized for mobile
+// Teen navigation items - more sophisticated than child version
 const navigationItems = [
   {
-    name: 'ChildDashboard',
-    path: '/child/dashboard',
-    label: 'Home',
-    icon: 'ri-home-4-fill'
+    name: 'TeenDashboard',
+    path: '/teen/dashboard',
+    label: 'Dashboard',
+    icon: 'ri-dashboard-3-fill'
   },
   {
-    name: 'ChildGames',
-    path: '/child/games',
-    label: 'Games',
-    icon: 'ri-gamepad-fill'
+    name: 'TeenBudget',
+    path: '/teen/budget',
+    label: 'My Budget',
+    icon: 'ri-pie-chart-fill'
   },
   {
-    name: 'ChildSavings',
-    path: '/child/savings',
-    label: 'Piggy Bank',
-    icon: 'ri-bank-fill'
+    name: 'TeenGoals',
+    path: '/teen/goals',
+    label: 'My Goals',
+    icon: 'ri-target-fill'
   },
   {
-    name: 'ChildGoals',
-    path: '/child/goals',
-    label: 'Goals',
-    icon: 'ri-flag-fill'
+    name: 'TeenActivities',
+    path: '/teen/activities',
+    label: 'Activity Hub',
+    icon: 'ri-brain-fill'
+  },
+  {
+    name: 'TeenExplore',
+    path: '/teen/explore',
+    label: 'Explore',
+    icon: 'ri-compass-3-fill'
   }
 ]
-</script>
-
-<!-- All styles now handled by Tailwind CSS - following DRY principle -->
+</script> 
