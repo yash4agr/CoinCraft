@@ -175,7 +175,7 @@ const navigationItems = [
     name: 'TeenGoals',
     path: '/teen/goals',
     label: 'My Goals',
-    icon: 'ri-target-fill'
+    icon: 'ri-flag-fill'
   },
   {
     name: 'TeenActivities',
