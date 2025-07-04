@@ -1,198 +1,368 @@
 <template>
-  <div class="login-wrapper">
-    <div class="login-header">
-      <span class="back-arrow">←</span>
-      <span class="logo"><img src="/vite.svg" alt="CoinCraft" /> CoinCraft</span>
-    </div>
-    <div class="login-content">
-      <h2>Welcome Back, Money Hero! <span class="emoji">🦸‍♂️</span></h2>
-      <p class="subtitle">Ready to continue your awesome adventure?</p>
-      <form @submit.prevent="login">
-        <label>Your Username</label>
-        <div class="input-group">
-          <i class="ri-user-line input-icon"></i>
-          <input v-model="username" type="text" required placeholder="your username" />
-        </div>
-        <label>Your Secret Password</label>
-        <div class="input-group">
-          <i class="ri-lock-2-line input-icon"></i>
-          <input :type="showPassword ? 'text' : 'password'" v-model="password" required placeholder="Enter your password" />
-          <i class="input-icon eye" :class="showPassword ? 'ri-eye-off-line' : 'ri-eye-line'" @click="showPassword = !showPassword"></i>
-        </div>
-        <button class="login-btn" type="submit">�� Let's Go!</button>
-      </form>
-      <div class="divider"><span>or</span></div>
-      <div class="demo-btns">
-        <button class="demo-btn kid">🧒 Kid Demo</button>
-        <button class="demo-btn parent">👨‍👩‍👧‍👦 Parent Demo</button>
-      </div>
-      <p class="register-link">New to CoinCraft? <router-link to="/auth/register">Join the fun!</router-link></p>
-    </div>
+  <div class="auth-container">
+    <v-container fluid class="fill-height">
+      <v-row justify="center" align="center" class="fill-height">
+        <v-col cols="12" sm="8" md="6" lg="4">
+          <v-card class="auth-card" elevation="8">
+            <!-- Header -->
+            <div class="auth-header">
+              <v-btn
+                icon
+                variant="text"
+                color="white"
+                @click="$router.push('/')"
+                class="back-btn"
+              >
+                <v-icon>mdi-arrow-left</v-icon>
+              </v-btn>
+              <div class="logo">
+                <span class="logo-icon">🪙</span>
+                <span class="logo-text">CoinCraft</span>
+              </div>
+            </div>
+
+            <!-- Content -->
+            <v-card-text class="auth-content">
+              <div class="auth-welcome">
+                <h1>Welcome Back! 👋</h1>
+                <p>Sign in to continue your money learning adventure!</p>
+              </div>
+
+              <!-- Error Alert -->
+              <v-alert
+                v-if="authStore.error"
+                type="error"
+                variant="tonal"
+                closable
+                @click:close="authStore.clearError()"
+                class="mb-4"
+              >
+                {{ authStore.error }}
+              </v-alert>
+
+              <!-- Login Form -->
+              <v-form
+                ref="loginForm"
+                v-model="isFormValid"
+                @submit.prevent="handleLogin"
+                class="auth-form"
+              >
+                <v-text-field
+                  v-model="credentials.username"
+                  label="Username"
+                  prepend-inner-icon="mdi-account"
+                  variant="outlined"
+                  :rules="usernameRules"
+                  :disabled="authStore.isLoading"
+                  class="mb-3"
+                  color="primary"
+                />
+
+                <v-text-field
+                  v-model="credentials.password"
+                  :type="showPassword ? 'text' : 'password'"
+                  label="Password"
+                  prepend-inner-icon="mdi-lock"
+                  :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
+                  @click:append-inner="showPassword = !showPassword"
+                  variant="outlined"
+                  :rules="passwordRules"
+                  :disabled="authStore.isLoading"
+                  class="mb-4"
+                  color="primary"
+                />
+
+                <v-btn
+                  type="submit"
+                  color="primary"
+                  size="large"
+                  block
+                  :loading="authStore.isLoading"
+                  :disabled="!isFormValid"
+                  class="auth-submit mb-4"
+                >
+                  <v-icon start>mdi-login</v-icon>
+                  Sign In
+                </v-btn>
+              </v-form>
+
+              <!-- Demo Login Section -->
+              <div class="demo-section">
+                <v-divider class="mb-4">
+                  <span class="text-medium-emphasis px-4">Try Demo Accounts</span>
+                </v-divider>
+                
+                <div class="demo-text mb-3">
+                  <v-icon color="info" class="me-2">mdi-information</v-icon>
+                  Quick access to explore different user experiences
+                </div>
+
+                <div class="demo-buttons">
+                  <v-btn
+                    variant="outlined"
+                    color="secondary"
+                    size="small"
+                    @click="handleDemoLogin('younger_child')"
+                    :loading="authStore.isLoading"
+                    class="demo-btn"
+                  >
+                    <v-icon start>mdi-emoticon-happy</v-icon>
+                    Younger Child
+                  </v-btn>
+
+                  <v-btn
+                    variant="outlined"
+                    color="secondary"
+                    size="small"
+                    @click="handleDemoLogin('older_child')"
+                    :loading="authStore.isLoading"
+                    class="demo-btn"
+                  >
+                    <v-icon start>mdi-school</v-icon>
+                    Older Child
+                  </v-btn>
+
+                  <v-btn
+                    variant="outlined"
+                    color="secondary"
+                    size="small"
+                    @click="handleDemoLogin('parent')"
+                    :loading="authStore.isLoading"
+                    class="demo-btn"
+                  >
+                    <v-icon start>mdi-account-supervisor</v-icon>
+                    Parent
+                  </v-btn>
+
+                  <v-btn
+                    variant="outlined"
+                    color="secondary"
+                    size="small"
+                    @click="handleDemoLogin('teacher')"
+                    :loading="authStore.isLoading"
+                    class="demo-btn"
+                  >
+                    <v-icon start>mdi-human-male-board</v-icon>
+                    Teacher
+                  </v-btn>
+                </div>
+              </div>
+
+              <!-- Footer -->
+              <div class="auth-footer">
+                <p>
+                  Don't have an account?
+                  <v-btn
+                    variant="text"
+                    color="primary"
+                    @click="$router.push('/auth/register')"
+                    class="pa-0"
+                    style="text-decoration: underline;"
+                  >
+                    Join the Fun!
+                  </v-btn>
+                </p>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+    </v-container>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useAuthStore } from '../../stores/auth';
-import { useRouter } from 'vue-router';
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
+import type { LoginCredentials, User } from '@/stores/auth'
 
-const username = ref('');
-const password = ref('');
-const showPassword = ref(false);
-const auth = useAuthStore();
-const router = useRouter();
+const router = useRouter()
+const authStore = useAuthStore()
 
-function login() {
-  auth.login(username.value, password.value).then(() => {
-    router.push('/');
-  });
+// Form data
+const credentials = ref<LoginCredentials>({
+  username: '',
+  password: ''
+})
+
+const isFormValid = ref(false)
+const showPassword = ref(false)
+const loginForm = ref()
+
+// Validation rules
+const usernameRules = [
+  (v: string) => !!v || 'Username is required',
+  (v: string) => v.length >= 3 || 'Username must be at least 3 characters'
+]
+
+const passwordRules = [
+  (v: string) => !!v || 'Password is required',
+  (v: string) => v.length >= 6 || 'Password must be at least 6 characters'
+]
+
+// Methods
+const handleLogin = async () => {
+  if (!isFormValid.value) return
+
+  try {
+    await authStore.login(credentials.value)
+    
+    // Redirect based on user role
+    const redirectPath = getRedirectPath(authStore.user?.role)
+    router.push(redirectPath)
+  } catch (error) {
+    // Error is handled by the store
+    console.error('Login failed:', error)
+  }
 }
+
+const handleDemoLogin = async (role: User['role']) => {
+  try {
+    await authStore.demoLogin(role)
+    
+    // Redirect based on user role
+    const redirectPath = getRedirectPath(role)
+    router.push(redirectPath)
+  } catch (error) {
+    console.error('Demo login failed:', error)
+  }
+}
+
+const getRedirectPath = (role?: User['role']) => {
+  switch (role) {
+    case 'younger_child':
+    case 'older_child':
+      return '/dashboard/child'
+    case 'parent':
+      return '/dashboard/parent'
+    case 'teacher':
+      return '/dashboard/teacher'
+    default:
+      return '/'
+  }
+}
+
+onMounted(() => {
+  // Clear any previous errors
+  authStore.clearError()
+})
 </script>
 
 <style scoped>
-.login-wrapper {
-  max-width: 400px;
-  margin: 40px auto;
-  background: #fff;
-  border-radius: 24px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.10);
+.auth-container {
+  min-height: 100vh;
+  background: var(--gradient-background);
+}
+
+.auth-card {
+  border-radius: var(--radius-xl) !important;
   overflow: hidden;
+  animation: slideInUp 0.6s ease-out;
 }
-.login-header {
+
+.auth-header {
+  background: var(--gradient-primary);
+  padding: var(--spacing-lg);
   display: flex;
   align-items: center;
-  gap: 12px;
-  background: linear-gradient(90deg, #ff7e5f, #feb47b);
-  padding: 1.2rem 1.5rem;
-  color: #fff;
-  font-size: 1.2rem;
-  font-weight: 700;
+  gap: var(--spacing-md);
 }
-.back-arrow {
+
+.back-btn {
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+.back-btn:hover {
+  background: rgba(255, 255, 255, 0.3) !important;
+  transform: translateX(-2px);
+}
+
+.logo {
+  color: var(--white);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-sm);
   font-size: 1.5rem;
-  cursor: pointer;
+  font-weight: 700;
+  font-family: var(--font-primary);
 }
-.logo img {
-  height: 1.5rem;
-  vertical-align: middle;
-  margin-right: 0.5rem;
+
+.logo-icon {
+  font-size: 2rem;
 }
-.login-content {
-  padding: 2rem 2rem 1.5rem 2rem;
+
+.auth-content {
+  padding: var(--spacing-xl) !important;
+}
+
+.auth-welcome {
   text-align: center;
+  margin-bottom: var(--spacing-xl);
 }
-.login-content h2 {
-  font-size: 1.5rem;
-  font-weight: 800;
-  margin-bottom: 0.5rem;
-  color: #222;
-}
-.emoji {
-  font-size: 1.5rem;
-}
-.subtitle {
-  color: #888;
-  margin-bottom: 1.5rem;
-}
-label {
-  display: block;
-  text-align: left;
-  margin: 1.2rem 0 0.3rem 0.2rem;
-  font-weight: 600;
-  color: #333;
-}
-.input-group {
-  position: relative;
-  display: flex;
-  align-items: center;
-  background: #f7f7fa;
-  border-radius: 10px;
-  margin-bottom: 0.7rem;
-  border: 1px solid #eee;
-}
-.input-group input {
-  width: 100%;
-  border: none;
-  background: transparent;
-  outline: none;
-  font-size: 1rem;
-  padding: 0.7rem 2.2rem 0.7rem 2.2rem;
-  border-radius: 10px;
-}
-.input-icon {
-  position: absolute;
-  left: 0.8rem;
-  font-size: 1.2rem;
-  color: #888;
-  pointer-events: none;
-}
-.input-icon.eye {
-  left: auto;
-  right: 0.8rem;
-  cursor: pointer;
-  pointer-events: auto;
-}
-.login-btn {
-  width: 100%;
-  padding: 0.9rem;
-  margin-top: 1.2rem;
-  background: linear-gradient(90deg, #ff7e5f, #feb47b);
-  color: #fff;
-  border: none;
-  border-radius: 12px;
-  font-size: 1.1rem;
+
+.auth-welcome h1 {
+  font-size: 1.75rem;
   font-weight: 700;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(255,126,95,0.10);
-  transition: background 0.2s;
+  margin-bottom: var(--spacing-sm);
+  color: var(--dark-gray);
+  font-family: var(--font-primary);
 }
-.login-btn:hover {
-  background: linear-gradient(90deg, #feb47b, #ff7e5f);
+
+.auth-welcome p {
+  color: var(--medium-gray);
+  font-family: var(--font-secondary);
 }
-.divider {
+
+.demo-section {
+  text-align: center;
+  margin-bottom: var(--spacing-xl);
+}
+
+.demo-text {
+  color: var(--medium-gray);
+  font-family: var(--font-secondary);
   display: flex;
   align-items: center;
-  margin: 1.5rem 0 1rem 0;
-  color: #bbb;
-  font-size: 0.95rem;
-}
-.divider span {
-  flex: 1;
-  border-bottom: 1px solid #eee;
-  margin: 0 0.5rem;
-}
-.demo-btns {
-  display: flex;
-  gap: 1rem;
   justify-content: center;
-  margin-bottom: 1.2rem;
+  font-size: 0.9rem;
 }
+
+.demo-buttons {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-sm);
+}
+
 .demo-btn {
-  flex: 1;
-  padding: 0.7rem 0;
-  border: none;
-  border-radius: 8px;
-  background: #f7f7fa;
-  color: #333;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
+  font-family: var(--font-primary) !important;
+  font-weight: 600 !important;
 }
-.demo-btn.kid {
-  background: #fffbe7;
+
+.auth-footer {
+  text-align: center;
+  color: var(--medium-gray);
+  font-family: var(--font-secondary);
 }
-.demo-btn.parent {
-  background: #e7f7ff;
+
+@keyframes slideInUp {
+  from { 
+    opacity: 0; 
+    transform: translateY(50px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
 }
-.register-link {
-  margin-top: 1.2rem;
-  color: #222;
-  font-size: 1rem;
-}
-.register-link a {
-  color: #4f46e5;
-  text-decoration: underline;
-  font-weight: 600;
+
+@media (max-width: 600px) {
+  .auth-content {
+    padding: var(--spacing-lg) !important;
+  }
+  
+  .demo-buttons {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
