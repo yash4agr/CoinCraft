@@ -9,6 +9,9 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@vueuse/core": "^13.4.0",
+    "bootstrap": "^5.3.7",
+    "date-fns": "^4.1.0",
     "path": "^0.12.7",
     "pinia": "^3.0.3",
     "remixicon": "^4.6.0",
@@ -17,6 +20,7 @@
     "vuetify": "^3.8.10"
   },
   "devDependencies": {
+    "@types/node": "^24.0.4",
     "@vitejs/plugin-vue": "^5.2.3",
     "@vue/tsconfig": "^0.7.0",
     "typescript": "~5.8.3",
