@@ -126,122 +126,25 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useDashboardStore } from '@/stores/dashboard'
 import AdventureCard from '@/components/shared/AdventureCard.vue'
 import AchievementCard from '@/components/shared/AchievementCard.vue'
 
-// Teen learning modules - more sophisticated than child activities
-const learningModules = ref([
-  {
-    id: 1,
-    title: 'Start a Business',
-    description: 'Interactive story with choices. Earn 25-50 coins based on decisions.',
-    emoji: '🚀',
-    difficulty: 'medium' as const,
-    coins: 35,
-    completed: false,
-    colorScheme: 'blue' as const,
-    buttonText: 'Start Journey'
-  },
-  {
-    id: 2,
-    title: 'Job Earning Scenarios',
-    description: 'Compare different career paths. Bonus: Salary vs hourly decisions.',
-    emoji: '💼',
-    difficulty: 'medium' as const,
-    coins: 30,
-    completed: true,
-    colorScheme: 'green' as const,
-    buttonText: 'Replay'
-  },
-  {
-    id: 3,
-    title: 'Smart Spending',
-    description: 'Real-world shopping challenges. Budget constraints & choices.',
-    emoji: '🛒',
-    difficulty: 'easy' as const,
-    coins: 25,
-    completed: true,
-    colorScheme: 'yellow' as const,
-    buttonText: 'Try Again'
-  },
-  {
-    id: 4,
-    title: 'Investment Basics',
-    description: 'Learn about stocks, bonds, and compound interest.',
-    emoji: '📈',
-    difficulty: 'hard' as const,
-    coins: 45,
-    completed: false,
-    colorScheme: 'purple' as const,
-    buttonText: 'Start Learning'
-  },
-  {
-    id: 5,
-    title: 'Banking & Credit',
-    description: 'Understand bank accounts, loans, and building credit.',
-    emoji: '🏦',
-    difficulty: 'hard' as const,
-    coins: 40,
-    completed: false,
-    colorScheme: 'teal' as const,
-    buttonText: 'Explore'
-  },
-  {
-    id: 6,
-    title: 'Tax Fundamentals',
-    description: 'Why we pay taxes and how they work in society.',
-    emoji: '📊',
-    difficulty: 'medium' as const,
-    coins: 35,
-    completed: false,
-    colorScheme: 'pink' as const,
-    buttonText: 'Learn More'
-  }
-])
+const dashboardStore = useDashboardStore()
+
+// Use learning modules from dashboard store
+const learningModules = dashboardStore.learningModules
 
 // Recent achievements
-const recentAchievements = ref([
-  {
-    id: 1,
-    title: 'Career Explorer',
-    description: 'Completed Job Earning Scenarios module',
-    icon: 'ri-briefcase-line',
-    badge: 'Achiever',
-    coins: 30,
-    date: 'Today',
-    colorScheme: 'green' as const
-  },
-  {
-    id: 2,
-    title: 'Smart Shopper',
-    description: 'Mastered the Smart Spending challenge',
-    icon: 'ri-shopping-cart-line',
-    badge: 'Expert',
-    coins: 25,
-    date: 'Yesterday',
-    colorScheme: 'yellow' as const
-  },
-  {
-    id: 3,
-    title: 'Learning Streak',
-    description: 'Completed modules 5 days in a row',
-    icon: 'ri-fire-line',
-    badge: 'Dedicated',
-    coins: 50,
-    date: '2 days ago',
-    colorScheme: 'orange' as const
-  }
-])
+const recentAchievements = dashboardStore.recentAchievements
 
 // Computed stats
 const completedModules = computed(() => {
-  return learningModules.value.filter(module => module.completed).length
+  return dashboardStore.completedModulesCount
 })
 
 const totalCoinsEarned = computed(() => {
-  return learningModules.value
-    .filter(module => module.completed)
-    .reduce((total, module) => total + module.coins, 0)
+  return dashboardStore.totalCoinsFromModules
 })
 
 const totalTimeSpent = computed(() => {
@@ -249,7 +152,7 @@ const totalTimeSpent = computed(() => {
 })
 
 const nextModuleReward = computed(() => {
-  const nextModule = learningModules.value.find(module => !module.completed)
+  const nextModule = learningModules.find(module => !module.completed)
   return nextModule ? nextModule.coins : 0
 })
 </script> 

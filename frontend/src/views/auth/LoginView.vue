@@ -16,7 +16,7 @@
                 <v-icon>mdi-arrow-left</v-icon>
               </v-btn>
               <div class="logo">
-                <span class="logo-icon">🪙</span>
+                <img src="/coin.svg" class="logo-icon" alt="coin">
                 <span class="logo-text">CoinCraft</span>
               </div>
             </div>
@@ -232,8 +232,9 @@ const handleDemoLogin = async (role: User['role']) => {
 const getRedirectPath = (role?: User['role']) => {
   switch (role) {
     case 'younger_child':
+      return '/child/dashboard'
     case 'older_child':
-      return '/dashboard/child'
+      return '/teen/dashboard'
     case 'parent':
       return '/dashboard/parent'
     case 'teacher':

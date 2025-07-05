@@ -120,4 +120,4 @@ const handleLogout = async () => {
 .coins-chip {
   font-weight: 700;
 }
-</style> 
+</style>

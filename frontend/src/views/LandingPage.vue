@@ -4,7 +4,7 @@
     <nav class="navbar">
       <div class="nav-container">
         <div class="logo">
-          <span class="logo-icon">🪙</span>
+          <img src="/coin.svg" class="logo-icon" alt="coin">
           <span class="logo-text">CoinCraft</span>
         </div>
         <div class="nav-buttons">
@@ -57,12 +57,12 @@
         </div>
         <div class="hero-visual">
           <div class="floating-elements">
-            <div class="floating-coin coin-1">🪙</div>
-            <div class="floating-coin coin-2">💰</div>
-            <div class="floating-coin coin-3">⭐</div>
-            <div class="floating-coin coin-4">🎯</div>
-            <div class="floating-coin coin-5">🏆</div>
-            <div class="floating-coin coin-6">💎</div>
+            <div class="floating-coin coin-1"><CoinIcon size="xl" /></div>
+            <div class="floating-coin coin-2"><CoinIcon size="lg" /></div>
+            <div class="floating-coin coin-3"><CoinIcon size="xl" /></div>
+            <div class="floating-coin coin-4"><CoinIcon size="md" /></div>
+            <div class="floating-coin coin-5"><CoinIcon size="lg" /></div>
+            <div class="floating-coin coin-6"><CoinIcon size="xl" /></div>
           </div>
           <div class="hero-character">
             <div class="character-circle">
@@ -105,6 +105,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import CoinIcon from '@/components/shared/CoinIcon.vue'
 
 const features = ref([
   {
@@ -164,6 +165,14 @@ onMounted(() => {
 </script>
 
 <style scoped>
+.nav-buttons {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
+}
+
+/* Buttons */
+
 /* Hero Section */
 .hero {
   padding: var(--spacing-xxl) 0;
@@ -271,7 +280,6 @@ onMounted(() => {
 
 .floating-coin {
   position: absolute;
-  font-size: 2rem;
   animation: float 3s ease-in-out infinite;
 }
 
@@ -381,6 +389,22 @@ onMounted(() => {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  .nav-container {
+    padding: var(--spacing-md) var(--spacing-md);
+  }
+  
+  .nav-buttons {
+    flex-direction: row;
+    gap: var(--spacing-sm);
+    flex-wrap: nowrap;
+  }
+  
+  .nav-buttons .btn {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: 0.875rem;
+    white-space: nowrap;
+  }
+  
   .hero-container {
     grid-template-columns: 1fr;
     text-align: center;
@@ -416,6 +440,22 @@ onMounted(() => {
   
   .hero-description {
     font-size: 1rem;
+  }
+  
+  .nav-buttons {
+    flex-direction: row;
+    gap: var(--spacing-xs);
+    justify-content: flex-end;
+  }
+  
+  .nav-buttons .btn {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 0.8rem;
+    min-width: auto;
+  }
+  
+  .features-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>

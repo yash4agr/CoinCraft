@@ -250,6 +250,7 @@ import { useUserStore } from '@/stores/user'
 
 const userStore = useUserStore()
 
+// State
 const selectedCategory = ref('digital')
 const showPurchaseModal = ref(false)
 const showConversionModal = ref(false)
@@ -260,6 +261,7 @@ const conversionReason = ref('')
 const successMessage = ref('')
 const recentPurchases = ref<PurchaseHistory[]>([])
 
+// Interfaces
 interface ShopItem {
   id: string
   name: string
@@ -284,6 +286,7 @@ interface PurchaseHistory {
   purchaseDate: string
 }
 
+// Categories - More sophisticated for teens
 const categories = [
   { id: 'digital', name: 'Digital Rewards', icon: 'ri-smartphone-line' },
   { id: 'education', name: 'Learning Tools', icon: 'ri-book-line' },
@@ -291,25 +294,31 @@ const categories = [
   { id: 'tech', name: 'Tech Accessories', icon: 'ri-computer-line' }
 ]
 
+// Shop Items - More mature options for teens
 const shopItems = ref<ShopItem[]>([
+  // Digital Rewards
   { id: '1', name: 'Spotify Premium', description: '1 month subscription', price: 100, emoji: '🎵', category: 'digital', bgColor: 'from-green-400 to-green-500', owned: false },
   { id: '2', name: 'Netflix Credit', description: '$10 streaming credit', price: 100, emoji: '📺', category: 'digital', bgColor: 'from-red-400 to-red-500', owned: false },
   { id: '3', name: 'Gaming Credit', description: '$5 game store credit', price: 50, emoji: '🎮', category: 'digital', bgColor: 'from-blue-400 to-blue-500', owned: false },
   { id: '4', name: 'App Store Credit', description: '$10 app store credit', price: 100, emoji: '📱', category: 'digital', bgColor: 'from-purple-400 to-purple-500', owned: false },
   
+  // Learning Tools
   { id: '5', name: 'Online Course', description: 'Udemy course of choice', price: 200, emoji: '🎓', category: 'education', bgColor: 'from-indigo-400 to-indigo-500', owned: false },
   { id: '6', name: 'E-Book Credit', description: '$15 book store credit', price: 150, emoji: '📚', category: 'education', bgColor: 'from-orange-400 to-orange-500', owned: false },
   { id: '7', name: 'Language App', description: '3 months premium access', price: 180, emoji: '🗣️', category: 'education', bgColor: 'from-teal-400 to-teal-500', owned: false },
   
+  // Experiences
   { id: '8', name: 'Movie Tickets', description: '2 movie theater tickets', price: 250, emoji: '🎬', category: 'experiences', bgColor: 'from-yellow-400 to-yellow-500', owned: false },
   { id: '9', name: 'Restaurant Voucher', description: '$20 dining credit', price: 200, emoji: '🍕', category: 'experiences', bgColor: 'from-red-400 to-orange-500', owned: false },
   { id: '10', name: 'Activity Pass', description: 'Local activity center pass', price: 300, emoji: '🎯', category: 'experiences', bgColor: 'from-pink-400 to-pink-500', owned: false },
   
+  // Tech Accessories
   { id: '11', name: 'Phone Case', description: 'Premium protective case', price: 150, emoji: '📱', category: 'tech', bgColor: 'from-gray-400 to-gray-600', owned: false },
   { id: '12', name: 'Wireless Earbuds', description: 'Bluetooth earbuds', price: 500, emoji: '🎧', category: 'tech', bgColor: 'from-blue-500 to-purple-600', owned: false },
   { id: '13', name: 'Power Bank', description: 'Portable phone charger', price: 200, emoji: '🔋', category: 'tech', bgColor: 'from-green-400 to-blue-500', owned: false }
 ])
 
+// Money conversion amounts - Higher values for teens
 const conversionAmounts: ConversionAmount[] = [
   { coins: 50, dollars: 5 },
   { coins: 100, dollars: 10 },
@@ -317,10 +326,12 @@ const conversionAmounts: ConversionAmount[] = [
   { coins: 500, dollars: 50 }
 ]
 
+// Computed
 const filteredItems = computed(() => 
   shopItems.value.filter(item => item.category === selectedCategory.value)
 )
 
+// Methods
 const handlePurchase = (item: ShopItem) => {
   if (item.owned || userStore.totalCoins < item.price) return
   
@@ -340,6 +351,7 @@ const confirmPurchase = async () => {
   if (success) {
     selectedItem.value.owned = true
     
+    // Add to purchase history
     recentPurchases.value.unshift({
       id: Date.now().toString(),
       name: selectedItem.value.name,
@@ -402,7 +414,10 @@ const formatDate = (dateString: string) => {
   return `${Math.floor(diffInHours / 24)} days ago`
 }
 
+// Load purchase history on mount
 onMounted(() => {
+  // TODO: Load from API
+  // For now, use demo data
   recentPurchases.value = []
 })
-</script> 
+</script>

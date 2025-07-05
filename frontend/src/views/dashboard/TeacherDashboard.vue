@@ -111,4 +111,4 @@ const handleLogout = async () => {
 .user-name {
   font-weight: 600;
 }
-</style> 
+</style>

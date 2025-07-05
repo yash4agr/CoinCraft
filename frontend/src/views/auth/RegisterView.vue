@@ -16,7 +16,7 @@
                 <v-icon>mdi-arrow-left</v-icon>
               </v-btn>
               <div class="logo">
-                <span class="logo-icon">🪙</span>
+                <img src="/coin.svg" class="logo-icon" alt="coin">
                 <span class="logo-text">CoinCraft</span>
               </div>
             </div>
