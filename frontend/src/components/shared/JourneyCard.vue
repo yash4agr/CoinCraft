@@ -1,5 +1,13 @@
 <template>
-  <div :class="cardClasses" class="rounded-xl p-4 flex items-center gap-4">
+  <div 
+    :class="cardClasses" 
+    class="rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:shadow-md transition-all focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+    @click="$emit('click')"
+    role="button"
+    :tabindex="locked ? -1 : 0"
+    @keydown.enter="$emit('click')"
+    @keydown.space.prevent="$emit('click')"
+  >
     <!-- Status Icon -->
     <div :class="iconContainerClass" class="w-12 h-12 rounded-xl flex items-center justify-center">
       <i :class="iconClass" class="text-xl"></i>
@@ -23,6 +31,11 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+
+// Emits
+const emit = defineEmits<{
+  click: []
+}>()
 
 interface Props {
   title: string

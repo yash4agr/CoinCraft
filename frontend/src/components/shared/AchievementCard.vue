@@ -1,5 +1,12 @@
 <template>
-  <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+  <div 
+    class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 cursor-pointer hover:shadow-md transition-shadow focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+    @click="$emit('click')"
+    role="button"
+    tabindex="0"
+    @keydown.enter="$emit('click')"
+    @keydown.space.prevent="$emit('click')"
+  >
     <!-- Achievement Icon and Title -->
     <div class="flex items-center gap-3 mb-2">
       <div :class="iconBgClass" class="w-10 h-10 rounded-full flex items-center justify-center">
@@ -20,7 +27,7 @@
         {{ badge }}
       </span>
       <div class="flex items-center gap-1 text-sm font-medium">
-        <i class="ri-coins-fill text-yellow-500"></i>
+        <img src="/coin.svg" class="coin-icon-sm" alt="coin">
         <span class="text-gray-700">+{{ coins }}</span>
       </div>
     </div>
@@ -29,6 +36,11 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+
+// Emits
+const emit = defineEmits<{
+  click: []
+}>()
 
 interface Props {
   title: string

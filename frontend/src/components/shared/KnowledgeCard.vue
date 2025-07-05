@@ -4,7 +4,7 @@
       <div class="flex items-center justify-between mb-4">
         <h3 class="text-lg font-bold text-gray-800">{{ title }}</h3>
         <div class="flex items-center gap-1 text-sm text-yellow-600">
-          <i class="ri-coins-fill"></i>
+          <img src="/coin.svg" class="coin-icon-sm" alt="coin">
           <span>{{ coins }}</span>
         </div>
       </div>

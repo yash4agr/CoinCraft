@@ -16,7 +16,7 @@
     <div class="flex items-center justify-between">
       <span class="bg-white/20 px-2 py-1 rounded text-xs">{{ difficulty }}</span>
       <div class="flex items-center gap-1 text-sm">
-        <i class="ri-coins-fill" :class="coinIconColor"></i>
+        <img src="/coin.svg" class="coin-icon-sm" alt="coin">
         <span>+{{ coins }}</span>
       </div>
     </div>
@@ -84,7 +84,5 @@ const buttonClasses = computed(() => {
   return colorMap[props.colorScheme]
 })
 
-const coinIconColor = computed(() => {
-  return props.colorScheme === 'yellow' ? 'text-orange-300' : 'text-yellow-300'
-})
+
 </script> 

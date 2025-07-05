@@ -1,5 +1,12 @@
 <template>
-  <div class="bg-white rounded-2xl p-6 shadow-sm">
+  <div 
+    class="bg-white rounded-2xl p-6 shadow-sm cursor-pointer hover:shadow-md transition-shadow focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2"
+    @click="$emit('click')"
+    role="button"
+    tabindex="0"
+    @keydown.enter="$emit('click')"
+    @keydown.space.prevent="$emit('click')"
+  >
     <!-- Progress Circle -->
     <div class="relative w-16 h-16 mx-auto mb-4">
       <svg class="w-16 h-16 transform -rotate-90" viewBox="0 0 64 64">
@@ -42,6 +49,11 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+
+// Emits
+const emit = defineEmits<{
+  click: []
+}>()
 
 interface Props {
   title: string
