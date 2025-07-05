@@ -121,7 +121,22 @@ body {
 .logo-icon {
     font-size: 2rem;
     animation: bounce 2s infinite;
+    width: 24px;
+    height: 24px;
 }
+
+.coin-icon {
+    font-size: 1.5rem;
+    width: 18px;
+    height: 18px;
+}
+
+.coin-icon-sm {
+    font-size: 1rem;
+    width: 14px;
+    height: 14px;
+}
+
 
 .nav-buttons {
     display: flex;
