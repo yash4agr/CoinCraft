@@ -184,7 +184,7 @@ const handleLogout = async () => {
   }
 }
 
-// Navigation items following DRY principle - optimized for mobile
+// Navigation items 
 const navigationItems = [
   {
     name: 'ChildDashboard',
@@ -219,4 +219,3 @@ const navigationItems = [
 ]
 </script>
 
-<!-- All styles now handled by Tailwind CSS - following DRY principle -->

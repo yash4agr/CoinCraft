@@ -466,7 +466,7 @@ const handleCreateGoalClick = async () => {
 
 const handleTransactionClick = async (transaction: any) => {
   try {
-    // For now, just show success - could open modal or navigate to detailed view
+    // show success - could open modal or navigate to detailed view
     showSuccess('Transaction details loaded!')
     
     // Future: Open transaction detail modal or navigate to transactions page

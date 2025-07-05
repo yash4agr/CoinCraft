@@ -9,20 +9,20 @@ import ChildLayout from '@/layouts/ChildLayout.vue'
 import TeenLayout from '@/layouts/TeenLayout.vue'
 
 // Child views
-import ChildDashboard from '@/views/ChildDashboard.vue'
-import ChildGames from '@/views/ChildGames.vue'
-import ChildSavings from '@/views/ChildSavings.vue'
-import ChildGoals from '@/views/ChildGoals.vue'
-import ChildShop from '@/views/ChildShop.vue'
+import ChildDashboard from '@/views/child/ChildDashboard.vue'
+import ChildGames from '@/views/child/ChildGames.vue'
+import ChildSavings from '@/views/child/ChildSavings.vue'
+import ChildGoals from '@/views/child/ChildGoals.vue'
+import ChildShop from '@/views/child/ChildShop.vue'
 import UserProfile from '@/views/UserProfile.vue'
 
 // Teen views
-import TeenDashboard from '@/views/TeenDashboard.vue'
-import TeenBudget from '@/views/TeenBudget.vue'
-import TeenGoals from '@/views/TeenGoals.vue'
-import TeenActivities from '@/views/TeenActivities.vue'
-import TeenExplore from '@/views/TeenExplore.vue'
-import TeenShop from '@/views/TeenShop.vue'
+import TeenDashboard from '@/views/teen/TeenDashboard.vue'
+import TeenBudget from '@/views/teen/TeenBudget.vue'
+import TeenGoals from '@/views/teen/TeenGoals.vue'
+import TeenActivities from '@/views/teen/TeenActivities.vue'
+import TeenExplore from '@/views/teen/TeenExplore.vue'
+import TeenShop from '@/views/teen/TeenShop.vue'
 
 // Auth pages
 import LoginView from '@/views/auth/LoginView.vue'

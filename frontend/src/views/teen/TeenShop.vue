@@ -286,7 +286,7 @@ interface PurchaseHistory {
   purchaseDate: string
 }
 
-// Categories - More sophisticated for teens
+// Categories for teens
 const categories = [
   { id: 'digital', name: 'Digital Rewards', icon: 'ri-smartphone-line' },
   { id: 'education', name: 'Learning Tools', icon: 'ri-book-line' },
@@ -294,7 +294,7 @@ const categories = [
   { id: 'tech', name: 'Tech Accessories', icon: 'ri-computer-line' }
 ]
 
-// Shop Items - More mature options for teens
+// Shop Items for teens
 const shopItems = ref<ShopItem[]>([
   // Digital Rewards
   { id: '1', name: 'Spotify Premium', description: '1 month subscription', price: 100, emoji: '🎵', category: 'digital', bgColor: 'from-green-400 to-green-500', owned: false },
@@ -318,7 +318,7 @@ const shopItems = ref<ShopItem[]>([
   { id: '13', name: 'Power Bank', description: 'Portable phone charger', price: 200, emoji: '🔋', category: 'tech', bgColor: 'from-green-400 to-blue-500', owned: false }
 ])
 
-// Money conversion amounts - Higher values for teens
+// Money conversion amounts for teens
 const conversionAmounts: ConversionAmount[] = [
   { coins: 50, dollars: 5 },
   { coins: 100, dollars: 10 },

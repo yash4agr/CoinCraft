@@ -184,7 +184,7 @@ const handleLogout = async () => {
   }
 }
 
-// Teen navigation items - more sophisticated than child version
+// Teen navigation items 
 const navigationItems = [
   {
     name: 'TeenDashboard',
