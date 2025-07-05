@@ -161,6 +161,19 @@ export const useAuthStore = defineStore('auth', () => {
   const logout = async (): Promise<void> => {
     try {
       // TODO: add backend api endpoint for logout
+      isLoading.value = true
+      
+      // Clear all user-related stores
+      const { useUserStore } = await import('./user')
+      const { useDashboardStore } = await import('./dashboard')
+      const userStore = useUserStore()
+      const dashboardStore = useDashboardStore()
+      
+      // Reset all store states
+      userStore.$reset()
+      dashboardStore.$reset()
+      
+      // Clear authentication state
       user.value = null
       isAuthenticated.value = false
       
@@ -168,8 +181,14 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.removeItem('coincraft_user')
       localStorage.removeItem('coincraft_token')
       
+      // Clear any cached data
+      sessionStorage.clear()
+      
     } catch (err) {
       console.error('Logout error:', err)
+      throw err
+    } finally {
+      isLoading.value = false
     }
   }
 
