@@ -5,6 +5,9 @@ import { useDashboardStore } from '@/stores/dashboard'
 
 // Landing page
 import LandingPage from '@/views/LandingPage.vue'
+
+// Layouts
+import TeacherLayout from '@/layouts/TeacherLayout.vue'
 import ChildLayout from '@/layouts/ChildLayout.vue'
 import TeenLayout from '@/layouts/TeenLayout.vue'
 
@@ -35,6 +38,12 @@ import RedemptionSetting from '../views/RedemptionSetting.vue'
 import TaskHistory from '../views/TaskHistory.vue'
 import AddChild from '../views/AddChild.vue'
 import ChildProgress from '../views/ChildProgress.vue'
+
+// Teacher views
+import TeacherDashboard from '@/views/teacher/TeacherDashboard.vue'
+import ClassProgress from '@/views/teacher/ClassProgress.vue'
+import ModuleManagement from '@/views/teacher/ModuleManagement.vue'
+import ClassManagement from '@/views/teacher/ClassManagement.vue'
 
 const routes = [
   {
@@ -175,24 +184,47 @@ const routes = [
         path: 'childprogress/:id',
         name: 'ChildProgressDetail',
         component: ChildProgress,
+      },
+    ]
+  },
+  // Teacher routes
+  {
+    path: '/teacher',
+    component: TeacherLayout,
+    meta: { requiresAuth: true, role: 'teacher' },
+    redirect: '/teacher/dashboard',
+    children: [
+      {
+        path: 'dashboard',
+        name: 'TeacherDashboard',
+        component: TeacherDashboard
+      },
+      {
+        path: 'class-progress/:id?',
+        name: 'ClassProgress',
+        component: ClassProgress,
+        props: true
+      },
+      {
+        path: 'module-management',
+        name: 'ModuleManagement',
+        component: ModuleManagement
+      },
+      {
+        path: 'class-management/:id?',
+        name: 'ClassManagement',
+        component: ClassManagement,
         props: true
       }
     ]
   },
-
-  // Uncomment and implement teacher routes when ready
-  // {
-  //   path: '/dashboard/teacher',
-  //   name: 'TeacherDashboard',
-  //   component: () => import('@/views/dashboard/TeacherDashboard.vue'),
-  //   meta: { requiresAuth: true, roles: ['teacher'] }
-  // },
   // Catch all route - redirect to landing
   {
     path: '/:pathMatch(.*)*',
     redirect: '/'
   }
 ]
+
 
 const router = createRouter({
   history: createWebHistory(),
@@ -285,9 +317,9 @@ function getRedirectPath(role?: string) {
     case 'older_child':
       return '/teen/dashboard'
     case 'parent':
-      return '/dashboard/parent'
+      return '/parent/dashboard'
     case 'teacher':
-      return '/dashboard/teacher'
+      return '/teacher/dashboard'
     default:
       return '/'
   }

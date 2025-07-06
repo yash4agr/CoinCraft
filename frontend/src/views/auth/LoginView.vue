@@ -236,9 +236,9 @@ const getRedirectPath = (role?: User['role']) => {
     case 'older_child':
       return '/teen/dashboard'
     case 'parent':
-      return '/dashboard/parent'
+      return '/parent/dashboard'
     case 'teacher':
-      return '/dashboard/teacher'
+      return '/teacher/dashboard'
     default:
       return '/'
   }
