@@ -10,6 +10,7 @@ import LandingPage from '@/views/LandingPage.vue'
 import TeacherLayout from '@/layouts/TeacherLayout.vue'
 import ChildLayout from '@/layouts/ChildLayout.vue'
 import TeenLayout from '@/layouts/TeenLayout.vue'
+import ParentLayout from '@/layouts/ParentLayout.vue'
 
 // Child views
 import ChildDashboard from '@/views/child/ChildDashboard.vue'
@@ -147,6 +148,7 @@ const routes = [
   // Parent dashboard and related routes
     {
     path: '/parent',
+    component: ParentLayout,
     meta: { requiresAuth: true, role: 'parent' },
     redirect: '/parent/dashboard',
     children: [
