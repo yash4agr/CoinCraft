@@ -32,12 +32,12 @@ import LoginView from '@/views/auth/LoginView.vue'
 import RegisterView from '@/views/auth/RegisterView.vue'
 
 // Parent views
-import ParentDashboard from '@/views/ParentDashboard.vue'
-import AssignTask from '../views/AssignTask.vue'
-import RedemptionSetting from '../views/RedemptionSetting.vue'
-import TaskHistory from '../views/TaskHistory.vue'
-import AddChild from '../views/AddChild.vue'
-import ChildProgress from '../views/ChildProgress.vue'
+import ParentDashboard from '@/views/parent/ParentDashboard.vue'
+import AssignTask from '../views/parent/AssignTask.vue'
+import RedemptionSetting from '../views/parent/RedemptionSetting.vue'
+import TaskHistory from '../views/parent/TaskHistory.vue'
+import AddChild from '../views/parent/AddChild.vue'
+import ChildProgress from '../views/parent/ChildProgress.vue'
 
 // Teacher views
 import TeacherDashboard from '@/views/teacher/TeacherDashboard.vue'
