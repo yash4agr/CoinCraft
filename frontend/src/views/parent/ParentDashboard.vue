@@ -1,532 +1,602 @@
 <template>
-    <div class="parent-container">
-      <div class="nav-card-body">
-        <span><h2 style="margin: 15px;">Welcome back, {{ parent.name }}<button class="btn btn-primary" @click="goToAddChild" style="margin-left: 750px;"> + Add Child</button></h2></span>
+  <div class="parent-dashboard-layout">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <img src="/coin.svg" alt="CoinCraft" class="sidebar-logo" />
+        <span class="sidebar-title">CoinCraft</span>
       </div>
-      <div>
-        <section id="P-features" class="P-features">
-          <div class="container">
-            <div class="P-features-grid">
-              <div class="P-feature-card" v-for="feature in features" :key="feature.id" @click="() => router.push(feature.route)">
-                <div class="P-feature-icon">{{ feature.icon }} {{ feature.title }}</div>           
+      <nav class="sidebar-nav">
+        <ul>
+          <li :class="{active: activeNav === 'dashboard'}" @click="setActiveNav('dashboard')">
+            <v-icon>mdi-view-dashboard</v-icon> Dashboard
+          </li>
+          <li :class="{active: activeNav === 'child-progress'}" @click="setActiveNav('child-progress')">
+            <v-icon>mdi-account-child</v-icon> Child Progress
+          </li>
+          <li :class="{active: activeNav === 'tasks'}" @click="setActiveNav('tasks')">
+            <v-icon>mdi-format-list-checkbox</v-icon> Tasks
+          </li>
+          <li :class="{active: activeNav === 'reports'}" @click="setActiveNav('reports')">
+            <v-icon>mdi-chart-bar</v-icon> Reports
+          </li>
+          <li :class="{active: activeNav === 'settings'}" @click="setActiveNav('settings')">
+            <v-icon>mdi-cog</v-icon> Settings
+          </li>
+        </ul>
+      </nav>
+      <div class="sidebar-actions">
+        <v-btn color="primary" block class="mb-2" @click="handleAddChild">
+          <v-icon start>mdi-account-plus</v-icon> Add Child
+        </v-btn>
+        <v-btn color="secondary" block class="mb-2" @click="handleAssignTask">
+          <v-icon start>mdi-plus-box</v-icon> Assign Task
+        </v-btn>
+        <v-btn color="success" block class="mb-2" @click="handleRedemption">
+          <v-icon start>mdi-gift</v-icon> Redemption
+        </v-btn>
+        <v-btn color="info" block @click="handleReports">
+          <v-icon start>mdi-chart-bar</v-icon> Reports
+        </v-btn>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="dashboard-main">
+      <template v-if="currentView === VIEW_DASHBOARD">
+        <!-- Top Bar -->
+        <header class="dashboard-header">
+          <h2>Welcome back, {{ parent.name }} <span class="wave">👋</span></h2>
+        </header>
+        <!-- Summary Cards -->
+        <section class="summary-cards">
+          <div class="summary-card">
+            <div class="summary-title">Total Children</div>
+            <div class="summary-value">{{ parentDashboardChildren.length }}</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-title">Total Coins Awarded</div>
+            <div class="summary-value">{{ totalCoinsAwarded }}</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-title">Tasks Assigned</div>
+            <div class="summary-value">{{ totalTasksAssigned }}</div>
+          </div>
+          <div class="summary-card">
+            <div class="summary-title">Pending Redemptions</div>
+            <div class="summary-value">{{ pendingRedemptions }}</div>
+          </div>
+        </section>
+        <!-- Children Grid -->
+        <section class="children-section">
+          <h3>Your Children</h3>
+          <div class="children-grid">
+            <div class="child-card" v-for="(child, idx) in parentDashboardChildren" :key="child.id">
+              <div class="child-header">
+                <div class="avatar" :style="{ backgroundColor: avatarColors[idx % avatarColors.length] }">{{ child.name.charAt(0) }}</div>
+                <div class="child-info">
+                  <div class="child-name">{{ child.name }}</div>
+                  <div class="child-age">{{ child.age }} years old</div>
+                </div>
+              </div>
+              <div class="child-stats">
+                <div class="stat">
+                  <span class="stat-label">Coins</span>
+                  <span class="stat-value coins">{{ child.coins }}</span>
+                </div>
+                <div class="stat">
+                  <span class="stat-label">Tasks Done</span>
+                  <span class="stat-value tasks">{{ child.completedTasks || 0 }}</span>
+                </div>
+              </div>
+              <div class="child-progress-section">
+                <div class="progress-title">Current Goals</div>
+                <div v-if="child.currentGoals.length > 0">
+                  <div class="goal-progress-card" v-for="goal in child.currentGoals" :key="goal.id">
+                    <div class="goal-header">
+                      <span class="goal-icon">{{ goal.icon }}</span>
+                      <span class="goal-title">{{ goal.title }}</span>
+                      <span class="goal-progress">{{ goal.currentAmount }}/{{ goal.targetAmount }}</span>
+                    </div>
+                    <div class="progress-bar">
+                      <div class="fill" :style="{ width: Math.min((goal.currentAmount/goal.targetAmount)*100, 100)+ '%', backgroundColor: goal.color }"></div>
+                    </div>
+                  </div>
+                </div>
+                <div v-else class="no-goals">No active goals</div>
+              </div>
+              <div class="child-actions">
+                <v-btn color="primary" size="small" @click="viewChildProgress(child)">
+                  <v-icon start>mdi-eye</v-icon> Details
+                </v-btn>
+                <v-btn color="secondary" size="small" @click="handleAssignTask">
+                  <v-icon start>mdi-plus-box</v-icon> Assign Task
+                </v-btn>
+              </div>
+              <div class="recent-activity-section">
+                <div class="activity-title">Recent Activity</div>
+                <div v-for="activity in child.recentActivity" :key="activity.id" class="activity-item">
+                  <span class="activity-icon">{{ activity.icon }}</span>
+                  <span class="activity-title">{{ activity.title }}</span>
+                  <span class="activity-time">{{ formatRelativeTime(activity.timestamp) }}</span>
+                  <span class="activity-points" v-if="activity.coins">+{{ activity.coins }}</span>
+                </div>
               </div>
             </div>
           </div>
         </section>
-      </div>
-      <div>
-          <section id="childcard" class="childcard" >
-            <div class="container">
-              <div class="childcard-grid" style="transform: scale(0.7); transform-origin: top left;">
-                <div class="child-card" v-for=" child in children" :key="child.id">
-                  <div class="row">
-                    <div class="col-sm-6 col-md-4">
-                      <div class="head">
-                        <div class="avatar" :style="{ backgroundColor: child.avatarColor}">{{ child.initials }} </div>
-                          <div class="childname">
-                            <h1 class="text-xl font-semibold mb-1">{{ child.name }}</h1>
-                            <div style="font-weight: lighter;">{{ child.age }} year old</div>
-                          </div>
-                      </div> 
-                        <div class="container">
-                          <div class="row" style="margin-top: 22px;">
-                            <div class="stats-container">
-                              <div class="stat-box">
-                                <div class="stat-number coins">{{ child.coinBalance }}</div>
-                                <div class="stat-label">Coins</div>
-                              </div>
-                              <div class="stat-box">
-                                <div class="stat-number task">{{ child.completedTasks }}</div>
-                                <div class="stat-label">Task Done</div>
-                              </div>
-                            </div>
-                            <div class="activity-goals">
-                                <!-- Recent Activity -->
-                              <section class="section" style="margin-top: 20px;">
-                                <h3 style="text-align: left; font-size: 20px;color: royalblue;">Recent Activity</h3>
-                                <div v-for="activity in child.recentActivity" :key="activity.id">
-                                  <div class="activity-item" >
-                                    <span class="icon success" style="margin-bottom: 15px;">{{ activity.icon }}</span>
-                                    <div class="activity-content" style="margin-left: 20px;">
-                                      <div class="title">{{ activity.title }}</div>
-                                      <div class="time">{{ formatRelativeTime(activity.timestamp) }}</div>
-                                    </div>
-                                    <span class="points" v-if="activity.coins" size="x-small" color="warning"> +{{ activity.coins }}</span>
-                                  </div>
-                                </div>
-                              </section>
-                                <!-- Current Goals -->
-                              <section class="section">
-                                <h3 style="text-align: left; font-size: 20px; color: royalblue;">Current Goals</h3>
-                                <div v-if="child.currentGoals.length > 0">
-                                <!-- Goal 1 -->
-                                  <div class="goal-card" v-for="goal in child.currentGoals" :key="goal.id">
-                                    <div class="goal-header">
-                                      <span class="goal-icon purple">{{ goal.icon }}</span>
-                                      <span class="goal-title">{{ goal.name }}</span>
-                                      <span class="goal-progress">{{ goal.saved }}/{{ goal.target }}</span>
-                                    </div>
-                                    <div class="progress-bar purple"> 
-                                      <div class="fill" :style="{ width: Math.min((goal.saved/goal.target)*100, 100)+ '%', backgroundColor: goal.color}"></div>
-                                    </div>
-                                  </div>            
-                                </div>
-                                <button class="btn-tonal" @click="viewChildProgress(child)">
-                                  <i class="mdi mdi-eye"></i>
-                                  Details
-                                </button>
-                              </section>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </section>
-          </div>   
-    </div>
-
+      </template>
+      <template v-else>
+        <component :is="asyncViews[currentView as Exclude<ParentViewKey, 'dashboard'>]" />
+      </template>
+    </main>
+  </div>
 </template>
 
 <script setup lang="ts">
-
-import { ref } from 'vue'
-import type { Parent, Child} from  '@/types'
+import { ref, computed, defineAsyncComponent } from 'vue'
+import type { Parent, Child, Goal } from '@/types'
 import { useRouter } from 'vue-router'
 import { formatDistanceToNow } from 'date-fns'
 
+const router = useRouter();
+const activeNav = ref('dashboard');
 
+type ParentViewKey = 'dashboard' | 'addchild' | 'assigntask' | 'redemptionsetting' | 'taskhistory';
 
-// Reactive data
+const VIEW_DASHBOARD: ParentViewKey = 'dashboard';
+const VIEW_ADD_CHILD: ParentViewKey = 'addchild';
+const VIEW_ASSIGN_TASK: ParentViewKey = 'assigntask';
+const VIEW_REDEMPTION: ParentViewKey = 'redemptionsetting';
+const VIEW_REPORTS: ParentViewKey = 'taskhistory';
 
+const currentView = ref<ParentViewKey>(VIEW_DASHBOARD);
 
+function setActiveNav(nav: string) {
+  activeNav.value = nav;
+  switch (nav) {
+    case 'dashboard':
+      currentView.value = VIEW_DASHBOARD;
+      break;
+    case 'addchild':
+      currentView.value = VIEW_ADD_CHILD;
+      break;
+    case 'tasks':
+      currentView.value = VIEW_ASSIGN_TASK;
+      break;
+    case 'reports':
+      currentView.value = VIEW_REPORTS;
+      break;
+    case 'settings':
+      // For now, just show dashboard
+      currentView.value = VIEW_DASHBOARD;
+      break;
+    case 'child-progress':
+      // For now, just show dashboard
+      currentView.value = VIEW_DASHBOARD;
+      break;
+    default:
+      currentView.value = VIEW_DASHBOARD;
+  }
+}
 
-
-// Parent data
 const parent = ref<Parent>({
   id: '1',
   name: 'Priya',
   email: 'priya@example.com',
+  role: 'parent',
   children: ['1', '2'],
   createdAt: new Date(),
   updatedAt: new Date()
-})
+});
 
-const router = useRouter();
-function goToAddChild() {
-  router.push('/addchild')
-}
+function goToAddChild() { router.push('/addchild'); }
+function goToAssignTask() { router.push('/assigntask'); }
+function goToRedemption() { router.push('/redeptionsetting'); }
+function goToReports() { router.push('/childprogress'); }
 
-// feature data
-const features = ref([
-  {
-    id: 1,
-    icon: '➕',
-    title: 'Assign Task',
-    route:  '/assigntask'
-    
-  },
-  {
-    id: 2,
-    icon: '🏆',
-    title: 'Award Bonus',
-    route:  ''
-    
-  },
-  {
-    id: 3,
-    icon: '🎁',
-    title: 'Redumption',
-    route:  '/redeptionsetting'
-    
-  },
-  {
-    id: 4,
-    icon: '📊',
-    title: 'Reports',
-    route:  '/childprogress'
-    
-  }
-])
+// Dashboard-specific child data (not part of Child type)
+type DashboardChild = Child & {
+  completedTasks: number;
+  currentGoals: Goal[];
+  recentActivity: { id: string; title: string; icon: string; coins: number; timestamp: Date }[];
+};
 
-
-// Children data
-const children = ref<Child[]>([
+const parentDashboardChildren = ref<DashboardChild[]>([
   {
     id: '1',
     name: 'Luna',
-    age: 9,
     email: 'luna@example.com',
-    initials: 'L',
-    avatarColor: 'purple',
-    coinBalance: 125,
+    role: 'child',
+    age: 9,
+    coins: 125,
+    level: 1,
+    parentId: '1',
+    createdAt: new Date(),
+    updatedAt: new Date(),
     completedTasks: 23,
     currentGoals: [
       {
-        id: '1',
-        name: 'Magic Hat',
-        target: 50,
-        saved: 35,
+        id: 'g1',
+        userId: '1',
+        title: 'Magic Hat',
+        description: '',
+        targetAmount: 50,
+        currentAmount: 35,
         icon: '🎩',
-        color: 'purple'
+        color: 'purple',
+        completed: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
       },
       {
-        id: '2',
-        name: 'Art Supplies',
-        target: 30,
-        saved: 18,
+        id: 'g2',
+        userId: '1',
+        title: 'Art Supplies',
+        description: '',
+        targetAmount: 30,
+        currentAmount: 18,
         icon: '🎨',
-        color: 'orange'
+        color: 'orange',
+        completed: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
       }
     ],
     recentActivity: [
       {
-        id: '1',
+        id: 'a1',
         title: 'Completed homework',
         icon: '✅',
-        color: 'success',
         coins: 15,
         timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000)
       },
       {
-        id: '2',
+        id: 'a2',
         title: 'Finished "Smart Shopping" module',
         icon: '🎓',
-        color: 'info',
         coins: 25,
         timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
       }
-    ],
-    parentId: '1',
-    createdAt: new Date(),
-    updatedAt: new Date()
+    ]
   },
   {
     id: '2',
     name: 'Harry',
-    age: 12,
     email: 'harry@example.com',
-    initials: 'H',
-    avatarColor: 'blue',
-    coinBalance: 280,
+    role: 'child',
+    age: 12,
+    coins: 280,
+    level: 1,
+    parentId: '1',
+    createdAt: new Date(),
+    updatedAt: new Date(),
     completedTasks: 24,
     currentGoals: [
       {
-        id: '3',
-        name: 'Headphones',
-        target: 120,
-        saved: 95,
+        id: 'g3',
+        userId: '2',
+        title: 'Headphones',
+        description: '',
+        targetAmount: 120,
+        currentAmount: 95,
         icon: '🎧',
-        color: 'blue'
+        color: 'blue',
+        completed: false,
+        createdAt: new Date(),
+        updatedAt: new Date()
       }
     ],
     recentActivity: [
       {
-        id: '3',
+        id: 'a3',
         title: 'Created budget plan',
         icon: '📝',
-        color: 'primary',
         coins: 20,
         timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000)
       },
       {
-        id: '4',
+        id: 'a4',
         title: 'Cleaned room',
         icon: '🧹',
-        color: 'success',
         coins: 10,
         timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
       }
-    ],
-    parentId: '1',
-    createdAt: new Date(),
-    updatedAt: new Date()
+    ]
   }
-])
+]);
+
+const totalCoinsAwarded = computed(() => parentDashboardChildren.value.reduce((sum, c) => sum + c.coins, 0));
+const totalTasksAssigned = computed(() => parentDashboardChildren.value.reduce((sum, c) => sum + (c.completedTasks || 0), 0));
+const pendingRedemptions = computed(() => 2); // Placeholder, replace with real data
 
 function formatRelativeTime(timestamp: Date | string | number): string {
   return formatDistanceToNow(new Date(timestamp), { addSuffix: true })
 }
-
 const viewChildProgress = (child: Child) => {
   router.push(`/childprogress/${child.id}`)
 }
 
+const avatarColors = ['#9C27B0', '#2196F3', '#FF9800', '#43A047', '#E91E63', '#00BCD4'];
+
+function handleAddChild() {
+  setActiveNav('addchild');
+}
+function handleAssignTask() {
+  setActiveNav('tasks');
+}
+function handleRedemption() {
+  setActiveNav('redemptionsetting');
+}
+function handleReports() {
+  setActiveNav('reports');
+}
+
+const asyncViews: Record<Exclude<ParentViewKey, 'dashboard'>, any> = {
+  [VIEW_ADD_CHILD]: defineAsyncComponent(() => import('./AddChild.vue')),
+  [VIEW_ASSIGN_TASK]: defineAsyncComponent(() => import('./AssignTask.vue')),
+  [VIEW_REDEMPTION]: defineAsyncComponent(() => import('./RedemptionSetting.vue')),
+  [VIEW_REPORTS]: defineAsyncComponent(() => import('./TaskHistory.vue')),
+};
 </script>
 
 <style scoped>
-  .nav-card-body {
-    background-color: white;
-    border-radius: 20px;
-    height: 80px;
-    margin-top: 20px;
-    margin-bottom: 20px;
-    margin-left: 50px;
-    margin-right: 50px;
-    color: var(--primary-orange);
-    box-shadow: var(--shadow-lg);
-    transition: all 0.3s ease;
-    border: 2px solid transparent;
-    align-items: center;
-  }
-
-/* Features Section */
-.P-features {
-  padding: var(--spacing-s) 0;
-
-  
+/* Layout */
+.parent-dashboard-layout {
+  display: flex;
+  min-height: 100vh;
+  background: #f8f9fb;
 }
-
-.P-features-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-  gap: var(--spacing-xl);
-  
+.sidebar {
+  width: 260px;
+  background: #fff;
+  box-shadow: 2px 0 8px rgba(0,0,0,0.04);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 0 0 0;
 }
-
-.P-feature-card {
-  
-  padding: var(--spacing-s);
-  border-radius: var(--radius-lg);
-  text-align: center;
-  box-shadow: var(--shadow-lg);
-  transition: all 0.3s ease;
-  border: 2px solid transparent;
-  background-color: aqua;
+.sidebar-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 24px 24px 24px;
 }
-
-.P-feature-card:hover {
-  transform: translateY(-8px);
-  box-shadow: var(--shadow-lg);
-  border-color: var(--primary-orange);
+.sidebar-logo {
+  width: 36px;
+  height: 36px;
 }
-
-.P-feature-icon {
-  font-size: 1rem;
-  font-weight: 600;
-  margin-bottom: var(--spacing-lg);
-  margin-top: var(--spacing-lg);
+.sidebar-title {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: #ff9800;
 }
-
-/* child view */
-
-.childcard {
-  padding: var(--spacing-l);
-  font-size: x-large;
-  margin-left: 0%;
-  margin: 10px;
-  margin-top: 20px;
-
+.sidebar-nav ul {
+  list-style: none;
+  padding: 0 24px;
+  margin: 0;
 }
-
-.childcard-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: var(--spacing-l);
-}
-
-.child-card {
-  background: var(--white);
-  padding: var(--spacing-xl);
-  border-radius: var(--radius-lg);
-  text-align: center;
-  box-shadow: var(--shadow-lg);
-  transition: all 0.3s ease;
-  border: 2px solid transparent;
-  width: 500px;
-  
-}
-
-
-
-.child-card p {
-  color: var(--medium-gray);
-  font-family: var(--font-secondary);
-}
-
-.head {
+.sidebar-nav li {
   display: flex;
   align-items: center;
   gap: 10px;
-  font-size: large;
+  padding: 12px 0;
+  font-size: 1.08rem;
+  color: #333;
+  cursor: pointer;
+  border-radius: 8px;
+  transition: background 0.2s;
 }
-
-.avatar{
-  width: 90px;
-  height: 90px;
-  border-radius: 100%;
-  color: white;
-  font-weight: bold;
+.sidebar-nav li.active, .sidebar-nav li:hover {
+  background: #f5f5f5;
+  color: #1976d2;
+}
+.sidebar-actions {
+  margin-top: auto;
+  padding: 24px;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+}
+.dashboard-main {
+  flex: 1;
+  padding: 32px 48px;
+  display: flex;
+  flex-direction: column;
+}
+.dashboard-header {
+  margin-bottom: 24px;
+}
+.dashboard-header h2 {
   font-size: 2rem;
-  margin-right: 12px;
-}
-
-.childname{
   font-weight: 700;
-  font-size: 1.5rem;
-  }
-
-.stats-container{
+  color: #222;
+}
+.wave { font-size: 1.5rem; }
+.summary-cards {
   display: flex;
-  justify-content: center;
-  gap: 250px;
-  padding: 10px;
+  gap: 24px;
+  margin-bottom: 32px;
 }
-
-.stat-box{
-  text-align: center;
+.summary-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  padding: 24px 32px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
-
-.stat-number{
-  font-size: 20px;
-  
+.summary-title {
+  font-size: 1.1rem;
+  color: #888;
+  margin-bottom: 8px;
 }
-
-.coins{
-  color: orange;
-  font-size: xxx-large;
-  font-weight: lighter;
+.summary-value {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1976d2;
 }
-
-.task{
-  color: green;
-  font-size: xxx-large;
-  font-weight: lighter;
+.children-section {
+  margin-top: 16px;
 }
-
-
-/* recent activity */
-
-.activity-goals {
-  font-family: 'Courier New', Courier, monospace;
-  max-width: 400px;
-  margin: 0; 
-  font-size: 20px;
+.children-section h3 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 18px;
+  color: #222;
 }
-
-.section {
-  margin-bottom: 10px;
+.children-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 32px;
 }
-
-h3 {
-  font-size: 16px;
-  margin-bottom: 12px;
-  color: #333;
+.child-card {
+  background: #fff;
+  border-radius: 16px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+  padding: 24px 20px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
-
-/* === Activity === */
-.activity-item {
+.child-header {
   display: flex;
   align-items: center;
-  margin-bottom: 12px;
-  text-align: left;
-  margin-top: 20px;
-  
+  gap: 16px;
 }
-
-.icon {
-  font-size: 18px;
-  margin-right: 10px;
+.avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  color: #fff;
+  font-weight: 700;
+  font-size: 1.7rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
-
-.success {
-  color: green;
+.child-info {
+  display: flex;
+  flex-direction: column;
 }
-
-.activity-content {
-  flex-grow: 1;
+.child-name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #222;
 }
-
-.title {
-  font-weight: bold;
-  color: #333;
+.child-age {
+  font-size: 0.98rem;
+  color: #888;
 }
-
-.time {
-  font-size: 12px;
-  color: gray;
+.child-stats {
+  display: flex;
+  gap: 32px;
+  margin: 8px 0 0 0;
 }
-
-.points {
-  font-size: 13px;
-  background: #ffe8c8;
-  color: #f39c12;
-  padding: 2px 8px;
-  border-radius: 12px;
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
-
-.points.orange {
-  background: #ffe2cc;
-  color: #e67e22;
+.stat-label {
+  font-size: 0.95rem;
+  color: #888;
 }
-
-/* === Goals === */
-.goal-card {
-  background: white;
-  border: 1px solid #ddd;
-  border-radius: 12px;
-  padding: 10px 14px;
-  margin-bottom: 10px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+.stat-value {
+  font-size: 1.3rem;
+  font-weight: 700;
 }
-
+.stat-value.coins { color: #ff9800; }
+.stat-value.tasks { color: #43a047; }
+.child-progress-section {
+  margin-top: 8px;
+}
+.progress-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #1976d2;
+  margin-bottom: 6px;
+}
+.goal-progress-card {
+  margin-bottom: 8px;
+}
 .goal-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
+  font-size: 1rem;
 }
-
 .goal-icon {
-  font-size: 18px;
-  margin-right: 8px;
+  font-size: 1.2rem;
 }
-
 .goal-title {
-  flex-grow: 1;
-  font-weight: bold;
+  font-weight: 600;
   color: #333;
 }
-
 .goal-progress {
-  font-size: 13px;
-  color: #666;
+  margin-left: auto;
+  font-size: 0.95rem;
+  color: #888;
 }
-
-/* Progress Bar */
 .progress-bar {
-  height: 6px;
+  height: 7px;
   background: #eee;
   border-radius: 4px;
-  margin-top: 6px;
+  margin-top: 4px;
   overflow: hidden;
 }
-
 .progress-bar .fill {
   height: 100%;
   border-radius: 4px;
 }
-
-.purple .fill {
-  background: #9b59b6;
+.child-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 8px;
 }
-
-.orange .fill {
-  background: #f39c12;
+.recent-activity-section {
+  margin-top: 10px;
 }
-
-@media(max-width: 768px){
-  .desktop-nav {
-    display: none;
-  }
-
-  .mobile-nav {
-    display: block;
-  }
+.activity-title {
+  font-size: 1.02rem;
+  font-weight: 600;
+  color: #1976d2;
+  margin-bottom: 4px;
 }
-
+.activity-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.98rem;
+  margin-bottom: 4px;
+}
+.activity-icon {
+  font-size: 1.1rem;
+}
+.activity-time {
+  font-size: 0.92rem;
+  color: #888;
+}
+.activity-points {
+  font-size: 0.92rem;
+  color: #ff9800;
+  margin-left: 4px;
+}
+.no-goals {
+  color: #aaa;
+  font-size: 0.98rem;
+  margin-bottom: 8px;
+}
+@media (max-width: 900px) {
+  .dashboard-main { padding: 24px 8px; }
+  .sidebar { width: 60px; padding: 12px 0 0 0; }
+  .sidebar-header, .sidebar-title { display: none; }
+  .sidebar-nav ul { padding: 0 8px; }
+  .sidebar-actions { padding: 8px; }
+}
+@media (max-width: 600px) {
+  .summary-cards { flex-direction: column; gap: 12px; }
+  .children-grid { grid-template-columns: 1fr; gap: 16px; }
+}
 </style>
