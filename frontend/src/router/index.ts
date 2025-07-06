@@ -5,6 +5,9 @@ import { useDashboardStore } from '@/stores/dashboard'
 
 // Landing page
 import LandingPage from '@/views/LandingPage.vue'
+
+// Layouts
+import TeacherLayout from '@/layouts/TeacherLayout.vue'
 import ChildLayout from '@/layouts/ChildLayout.vue'
 import TeenLayout from '@/layouts/TeenLayout.vue'
 
@@ -27,6 +30,13 @@ import TeenShop from '@/views/teen/TeenShop.vue'
 // Auth pages
 import LoginView from '@/views/auth/LoginView.vue'
 import RegisterView from '@/views/auth/RegisterView.vue'
+
+
+// Teacher views
+import TeacherDashboard from '@/views/teacher/TeacherDashboard.vue'
+import ClassProgress from '@/views/teacher/ClassProgress.vue'
+import ModuleManagement from '@/views/teacher/ModuleManagement.vue'
+import ClassManagement from '@/views/teacher/ClassManagement.vue'
 
 const routes = [
   {
@@ -134,12 +144,37 @@ const routes = [
   //   component: () => import('@/views/dashboard/ParentDashboard.vue'),
   //   meta: { requiresAuth: true, roles: ['parent'] }
   // },
-  // {
-  //   path: '/dashboard/teacher',
-  //   name: 'TeacherDashboard',
-  //   component: () => import('@/views/dashboard/TeacherDashboard.vue'),
-  //   meta: { requiresAuth: true, roles: ['teacher'] }
-  // },
+// Teacher routes
+  {
+    path: '/teacher',
+    component: TeacherLayout,
+    meta: { requiresAuth: true, role: 'teacher' },
+    redirect: '/teacher/dashboard',
+    children: [
+      {
+        path: 'dashboard',
+        name: 'TeacherDashboard',
+        component: TeacherDashboard
+      },
+      {
+        path: 'class-progress/:id?',
+        name: 'ClassProgress',
+        component: ClassProgress,
+        props: true
+      },
+      {
+        path: 'module-management',
+        name: 'ModuleManagement',
+        component: ModuleManagement
+      },
+      {
+        path: 'class-management/:id?',
+        name: 'ClassManagement',
+        component: ClassManagement,
+        props: true
+      }
+    ]
+  },
   // Catch all route - redirect to landing
   {
     path: '/:pathMatch(.*)*',
@@ -238,9 +273,9 @@ function getRedirectPath(role?: string) {
     case 'older_child':
       return '/teen/dashboard'
     case 'parent':
-      return '/dashboard/parent'
+      return '/parent/dashboard'
     case 'teacher':
-      return '/dashboard/teacher'
+      return '/teacher/dashboard'
     default:
       return '/'
   }
