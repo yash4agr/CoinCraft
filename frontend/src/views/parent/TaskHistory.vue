@@ -1,6 +1,6 @@
 <template>
   <section class="task-history-display">
-    <h2 class="section-title">📋 Task History</h2>
+    <h2 class="section-title">📋 Reports </h2>
 
     <table class="data-table">
       <thead>
@@ -74,7 +74,7 @@ function getStatusClass(status: string): string {
 
 <style scoped>
 .task-history-display {
-  max-width: 900px;
+  width: 100%;
   margin: 2rem auto;
   padding: 1.5rem;
   background-color: #f9f9f9;

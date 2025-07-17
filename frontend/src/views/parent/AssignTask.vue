@@ -1,359 +1,392 @@
 <template>
-    <div class="container" style="align-items: center;">
-      
-        <div class="row">
-          
-            <div class="col" style="width: 100%;">
-                <div class="nav-card-body">
-                    <h2 class="welcome-text"> 📋  Assign Task</h2>
-                    <button class="add-child-btn" @click="goToTaskHistory"> 🕒 Task History</button>
-                </div>
-            </div>
-        </div>
-      <div class="row" style="border-spacing: 0.1rem;">
-          <div class="col">
-           <div class="create-task"> 
-            <div class="form-container">
-              <h2 class="welcome-text" style="display: flex;">Create New Task</h2>
-              <form @submit.prevent="assignTask">
-                
-                <!-- Task Type -->
-                <div class="section">
-                  <label>Task Type</label>
-                  <div class="radio-group">
-                    <label 
-                      v-for="type in taskTypes"
-                      :key="type.value"
-                      class="icon-with-text"
-                    >
-                      <input
-                        type="radio"
-                        v-model="task.type"
-                        :value="type.value"
-                        name="taskType"
-                      />
-                      <span class="logo">{{ type.icon }}</span>
-                      <div class="text-block">
-                        <div class="title">{{ type.title }}</div>
-                        <div class="subtitle">{{ type.description }}</div>
+  <v-container fluid class="pa-4">
+    <!-- Header -->
+    <v-row>
+      <v-col cols="12">
+        <v-card>
+          <v-card-title class="d-flex align-center">
+            <v-icon class="me-2" color="orange">mdi-clipboard-text</v-icon>
+            Assign Task
+            <v-spacer />
+            <v-btn
+              prepend-icon="mdi-history"
+              variant="tonal"
+              @click="showTaskHistory = true"
+            >
+              Task History
+            </v-btn>
+          </v-card-title>
+        </v-card>
+      </v-col>
+    </v-row>
+
+    <v-row>
+      <!-- Task Creation Form -->
+      <v-col cols="12" md="8">
+        <v-card>
+          <v-card-title>Create New Task</v-card-title>
+          <v-card-text>
+            <v-form ref="taskForm" v-model="taskFormValid">
+              <!-- Task Type Selection -->
+              <div class="text-subtitle-1 font-weight-medium mb-3">Task Type</div>
+              <v-radio-group v-model="task.type" class="mb-4">
+                <v-radio
+                  v-for="type in taskTypes"
+                  :key="type.value"
+                  :label="type.title"
+                  :value="type.value"
+                >
+                  <template #label>
+                    <div class="d-flex align-center">
+                      <v-icon :color="type.color" class="me-2">{{ type.icon }}</v-icon>
+                      <div>
+                        <div class="font-weight-medium">{{ type.title }}</div>
+                        <div class="text-caption text-medium-emphasis">{{ type.description }}</div>
                       </div>
-                    </label>
-                  </div>
-                </div>
+                    </div>
+                  </template>
+                </v-radio>
+              </v-radio-group>
 
-                <!-- Title + Assign To -->
-                <div class="row">
-                  <div class="field">
-                    <label>Task Title</label>
-                    <div class="input-icon">
-                      <input style="height: 150%;"
-                        v-model="task.title"
-                        type="text"
-                        placeholder="e.g., Complete homework, Clean room"
-                        required
+              <!-- Task Details -->
+              <v-row>
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    v-model="task.title"
+                    label="Task Title"
+                    :rules="[rules.required]"
+                    prepend-inner-icon="mdi-format-title"
+                    variant="outlined"
+                    placeholder="e.g., Complete homework, Clean room"
+                  />
+                </v-col>
+                <v-col cols="12" md="6">
+                  <v-select
+                    v-select="task.assignedTo"
+                    label="Assign to"
+                    :items="children"
+                    item-title="name"
+                    item-value="id"
+                    :rules="[rules.required]"
+                    prepend-inner-icon="mdi-account"
+                    variant="outlined"
+                    multiple
+                    chips
+                  />
+                </v-col>
+              </v-row>
+
+              <v-textarea
+                v-model="task.description"
+                label="Task Description"
+                prepend-inner-icon="mdi-text"
+                variant="outlined"
+                rows="3"
+                placeholder="Provide detailed instructions for the task..."
+                class="mb-3"
+              />
+
+              <!-- Reward Configuration -->
+              <v-row>
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    v-model.number="task.coinReward"
+                    label="Coin Reward"
+                    type="number"
+                    :rules="[rules.required, rules.positive]"
+                    prepend-inner-icon="mdi-star"
+                    variant="outlined"
+                    min="1"
+                    max="100"
+                  />
+                </v-col>
+                <v-col cols="12" md="6">
+                  <v-select
+                    v-model="task.priority"
+                    label="Priority"
+                    :items="priorities"
+                    prepend-inner-icon="mdi-flag"
+                    variant="outlined"
+                  />
+                </v-col>
+              </v-row>
+
+              <!-- Scheduling -->
+              <v-row>
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    v-model="task.dueDate"
+                    label="Due Date (Optional)"
+                    type="date"
+                    prepend-inner-icon="mdi-calendar"
+                    variant="outlined"
+                  />
+                </v-col>
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    v-model="task.dueTime"
+                    label="Due Time (Optional)"
+                    type="time"
+                    prepend-inner-icon="mdi-clock"
+                    variant="outlined"
+                  />
+                </v-col>
+              </v-row>
+
+              <!-- Task Options -->
+              <div class="text-subtitle-1 font-weight-medium mb-3">Task Options</div>
+              <v-row>
+                <v-col cols="12" md="6">
+                  <v-checkbox
+                    v-model="task.requiresApproval"
+                    label="Requires parent approval"
+                    density="compact"
+                  />
+                  <v-checkbox
+                    v-model="task.recurring"
+                    label="Recurring task"
+                    density="compact"
+                  />
+                  <v-checkbox
+                    v-model="task.allowPartialCompletion"
+                    label="Allow partial completion"
+                    density="compact"
+                  />
+                </v-col>
+                <v-col cols="12" md="6">
+                  <v-checkbox
+                    v-model="task.notifyOnDue"
+                    label="Send reminder notifications"
+                    density="compact"
+                  />
+                  <v-checkbox
+                    v-model="task.photoRequired"
+                    label="Photo proof required"
+                    density="compact"
+                  />
+                  <v-checkbox
+                    v-model="task.bonusAvailable"
+                    label="Bonus coins for early completion"
+                    density="compact"
+                  />
+                </v-col>
+              </v-row>
+
+              <!-- Recurring Task Settings -->
+              <v-expand-transition>
+                <div v-if="task.recurring" class="mb-4">
+                  <v-divider class="mb-3" />
+                  <div class="text-subtitle-2 font-weight-medium mb-3">Recurring Settings</div>
+                  <v-row>
+                    <v-col cols="12" md="6">
+                      <v-select
+                        v-model="task.recurringFrequency"
+                        label="Frequency"
+                        :items="frequencies"
+                        variant="outlined"
                       />
-                    </div>
-                  </div>
-
-                  <div class="field">
-                    <label>Assign to</label>
-                    <div class="input-icon">
-                      <select style="height: 150%;" v-model="task.assignedTo" required>
-                        <option value="" disabled>Select a child</option>
-                        <option
-                          v-for="child in children"
-                          :key="child.id"
-                          :value="child.id">
-                          {{ child.name }}
-                        </option>
-                      </select>
-                    </div>
-                    <div class="chips">
-                      <span
-                        class="chip"
-                        v-for="id in task.assignedTo"
-                        :key="id"
-                      >
-                        {{ getChildName(id) }}
-                      </span>
-                    </div>
-                  </div>
+                    </v-col>
+                    <v-col cols="12" md="6">
+                      <v-text-field
+                        v-model="task.recurringEnd"
+                        label="End Date (Optional)"
+                        type="date"
+                        variant="outlined"
+                      />
+                    </v-col>
+                  </v-row>
                 </div>
+              </v-expand-transition>
 
-                <!-- Description -->
-                <div class="field">
-                  <label>Task Description</label>
-                  <textarea
-                    v-model="task.description"
-                    rows="3"
-                    placeholder="Provide detailed instructions for the task..."
-                  ></textarea>
-                </div>
-
-                <!-- Reward & Priority -->
-                <div class="row">
-                  <div class="field">
-                    <label>Coin Reward</label>
-                    <div class="input-icon">
               
-                      <input style="height: 150%;"
-                        v-model.number="task.coinReward"
-                        type="number"
-                        min="1"
-                        max="100"
-                        required
-                      />
-                    </div>
-                  </div>
-                  <div class="field">
-                    <label>Priority</label>
-                    <div class="input-icon">
+            </v-form>
+          </v-card-text>
+          
+          <v-card-actions>
+            <v-spacer />
+            <v-btn @click="resetForm">Reset</v-btn>
+            <v-btn
+              color="orange"
+              variant="tonal"
+              prepend-icon="mdi-content-save-outline"
+              @click="saveDraft"
+            >
+              Save as Draft
+            </v-btn>
+            <v-btn
+              color="primary"
+              prepend-icon="mdi-send"
+              @click="assignTask"
+              :loading="assigning"
+              :disabled="!taskFormValid"
+            >
+              Assign Task
+            </v-btn>
+          </v-card-actions>
+        </v-card>
+      </v-col>
 
-                      <select style="height: 150%;" v-model="task.priority">
-                        <option v-for="p in priorities" :key="p" :value="p">
-                          {{ p }}
-                        </option>
-                      </select>
-                    </div>
-                  </div>
-                </div>
+      <!-- Quick Actions & Templates -->
+      <v-col cols="12" md="4">
+        <!-- Quick Templates -->
+        <v-card class="mb-4">
+          <v-card-title class="d-flex align-center">
+            <v-icon class="me-2" color="purple">mdi-lightning-bolt</v-icon>
+            Quick Templates
+          </v-card-title>
+          <v-card-text>
+            <v-list>
+              <v-list-item
+                v-for="template in taskTemplates"
+                :key="template.id"
+                @click="applyTemplate(template)"
+                class="mb-1"
+              >
+                <template #prepend>
+                  <v-icon :color="template.color">{{ template.icon }}</v-icon>
+                </template>
+                <v-list-item-title class="text-body-2">{{ template.title }}</v-list-item-title>
+                <v-list-item-subtitle class="text-caption">{{ template.reward }} coins</v-list-item-subtitle>
+              </v-list-item>
+            </v-list>
+          </v-card-text>
+        </v-card>
 
-                <!-- Scheduling -->
-                <div class="row">
-                  <div class="field">
-                    <label>Due Date</label>
-                    <div class="input-icon">
-                      <input style="height: 150%;" v-model="task.dueDate" type="date" />
-                    </div>
-                  </div>
-                  <div class="field">
-                    <label>Due Time</label>
-                    <div class="input-icon">
-                    <input style="height: 150%;" v-model="task.dueTime" type="time" />
-                  </div>
-                  </div>
-                </div>
+        <!-- Active Tasks Summary -->
+        <v-card class="mb-4">
+          <v-card-title class="d-flex align-center">
+            <v-icon class="me-2" color="info">mdi-chart-donut</v-icon>
+            Active Tasks Summary
+          </v-card-title>
+          <v-card-text>
+            <v-list>
+              <v-list-item
+                v-for="child in children"
+                :key="child.id"
+                density="compact"
+              >
+                <template #prepend>
+                  <v-avatar size="24" :color="child.color">
+                    <span class="text-caption text-white">{{ child.initials }}</span>
+                  </v-avatar>
+                </template>
+                <v-list-item-title class="text-body-2">{{ child.name }}</v-list-item-title>
+                <template #append>
+                  <v-chip size="small" :color="getTaskStatusColor(child.activeTasks)">
+                    {{ child.activeTasks }} tasks
+                  </v-chip>
+                </template>
+              </v-list-item>
+            </v-list>
+          </v-card-text>
+        </v-card>
 
-                <!-- Task Options -->
-                <div class="section">
-                  <label class="welcome-text">Task Options</label>
-                  <div class="checkbox-grid" style="margin: 10px;">
-                    <label><input type="checkbox" v-model="task.requiresApproval" /> Requires parent approval</label>
-                    <label><input type="checkbox" v-model="task.recurring" /> Recurring task</label>
-                    <label><input type="checkbox" v-model="task.allowPartialCompletion" /> Allow partial completion</label>
-                    <label><input type="checkbox" v-model="task.notifyOnDue" /> Send reminders</label>
-                    <label><input type="checkbox" v-model="task.photoRequired" /> Photo proof required</label>
-                    <label><input type="checkbox" v-model="task.bonusAvailable" /> Bonus coins for early completion</label>
-                  </div>
-                </div>
+        <!-- Task Tips -->
+        <v-card>
+          <v-card-title class="d-flex align-center">
+            <v-icon class="me-2" color="success">mdi-lightbulb</v-icon>
+            Task Tips
+          </v-card-title>
+          <v-card-text>
+            <v-alert
+              v-for="tip in taskTips"
+              :key="tip.id"
+              :type="tip.type"
+              variant="tonal"
+              density="compact"
+              class="mb-2"
+            >
+              {{ tip.message }}
+            </v-alert>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
 
-                <!-- Recurring Settings -->
-                <div v-if="task.recurring" class="section">
-                  <label class="welcome-text">Recurring Settings</label>
-                  <div class="row">
-                    <div class="field">
-                      <label>Frequency</label>
-                      <div class="input-icon">
-                      <select style="height: 150%;" v-model="task.recurringFrequency">
-                        <option v-for="f in frequencies" :key="f" :value="f">{{ f }}</option>
-                      </select>
-                      </div>
-                    </div>
-                    <div class="field">
-                      <label>End Date</label>
-                      <div class="input-icon">
-                      <input style="height: 150%;" v-model="task.recurringEnd" type="date" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Bonus Settings -->
-                <div v-if="task.bonusAvailable" class="section">
-                  <label class="welcome-text">Bonus Settings</label>
-                  <div class="row">
-                    <div class="field">
-                      <label>Bonus Coins</label>
-                      <div class="input-icon">
-                      <input style="height: 150%;" v-model.number="task.bonusCoins" type="number" min="1" />
-                      </div>
-                    </div>
-                    <div class="field">
-                      <label>Bonus if completed within (hours)</label>
-                      <div class="input-icon">
-                      <input style="height: 150%;" v-model.number="task.bonusHours" type="number" min="1" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Buttons -->
-                <div class="buttons">
-                  <button type="button" @click="resetForm">Reset</button>
-                  <button type="button" @click="saveDraft">💾 Save as Draft</button>
-                  <button type="submit" :disabled="!taskFormValid">🚀 Assign Task</button>
-                </div>
-              </form>
-
-
-              <div v-if="showSuccessSnackbar" class="snackbar">
-                <span>{{ successMessage }}</span>
-                <button @click="showSuccessSnackbar = false">✖</button>
+    <!-- Task History Dialog -->
+    <v-dialog v-model="showTaskHistory" max-width="800" scrollable>
+      <v-card>
+        <v-card-title class="d-flex align-center">
+          <v-icon class="me-2" color="info">mdi-history</v-icon>
+          Task History
+          <v-spacer />
+          <v-btn
+            icon="mdi-close"
+            variant="text"
+            @click="showTaskHistory = false"
+          />
+        </v-card-title>
+        
+        <v-card-text>
+          <v-data-table
+            :headers="historyHeaders"
+            :items="taskHistory"
+            item-value="id"
+            class="elevation-0"
+          >
+            <template #item.child="{ item }">
+              <div class="d-flex align-center">
+                <v-avatar size="24" :color="item.childColor" class="me-2">
+                  <span class="text-caption text-white">{{ item.childInitials }}</span>
+                </v-avatar>
+                {{ item.child }}
               </div>
-            </div>
-          </div>
-        </div>
-            <div class="col">
-               <div class="quick-template">
-                    <div class="card mb-4">
-                    <div class="card-title">
-                        <span class="icon purple">⚡</span>
-                        Quick Templates
-                    </div>
-                    <div class="card-content">
-                        <ul class="template-list">
-                        <li
-                            v-for="template in taskTemplates"
-                            :key="template.id"
-                            class="template-item"
-                            @click="applyTemplate(template)"
-                        >
-                            <span class="template-icon" :style="{ color: template.color }">
-                            {{ template.icon }}
-                            </span>
-                            <div class="template-info">
-                            <div class="template-title">{{ template.title }}</div>
-                            <div class="template-subtitle">{{ template.reward }} coins</div>
-                            </div>
-                        </li>
-                        </ul>
-                    </div>
-                    </div>
+            </template>
 
-                </div>
-                        <!-- Active Tasks Summary -->
-                <div class="quick-template">
-                    <div class="card mb-4">
-                    <div class="card-title">
-                        <span class="icon">📊</span>
-                        <span>Active Tasks Summary</span>
-                    </div>
-                    <div class="card-content">
-                        <ul class="task-list">
-                        <li
-                            v-for="child in children"
-                            :key="child.id"
-                            class="task-item"
-                        >
-                            <span
-                            class="avatar"
-                            :style="{ backgroundColor: child.color }"
-                            >
-                            {{ child.initials }}
-                            </span>
-                            <span class="name">{{ child.name }}</span>
-                            <span
-                            class="chip"
-                            :style="{ backgroundColor: getTaskStatusColor(child.activeTasks) }"
-                            >
-                            {{ child.activeTasks }} tasks
-                            </span>
-                        </li>
-                        </ul>
-                    </div>
-                    </div>
+            <template #item.status="{ item }">
+              <v-chip :color="getHistoryStatusColor(item.status)" size="small">
+                {{ item.status }}
+              </v-chip>
+            </template>
 
-                </div>
-                <!-- Task Tips -->
-                <div class="quick-template">
-                    <div class="card">
-                        <div class="card-title">
-                            <span class="icon">💡</span>
-                            <span>Task Tips</span>
-                        </div>
-                        <div class="card-content">
-                            <div
-                            v-for="tip in taskTips"
-                            :key="tip.id"
-                            class="alert"
-                            :class="tip.type"
-                            >
-                            {{ tip.message }}
-                            </div>
-                        </div>
-                        </div>
-                </div>
-            </div>
-        </div>
-         <!-- Task History Dialog -->
-          <div v-if="showTaskHistory" class="modal-overlay">
-            <div class="modal">
-              <div class="modal-header">
-                <span class="icon">📜</span>
-                <span class="title">Task History</span>
-                <button class="close" @click="showTaskHistory = false">✖</button>
+            <template #item.coins="{ item }">
+              <div class="d-flex align-center">
+                <v-icon color="warning" size="small" class="me-1">mdi-star</v-icon>
+                {{ item.coins }}
               </div>
+            </template>
 
-              <div class="modal-body">
-                <table class="data-table">
-                  <thead>
-                    <tr>
-                      <th>Child</th>
-                      <th>Status</th>
-                      <th>Coins</th>
-                      <th>Assigned</th>
-                      <th>Completed</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="item in taskHistory" :key="item.id">
-                      <td>
-                        <span class="avatar" :style="{ backgroundColor: item.childColor }">
-                          {{ item.childInitials }}
-                        </span>
-                        {{ item.child }}
-                      </td>
-                      <td>
-                        <span class="chip" :class="getHistoryStatusColor(item.status)">
-                          {{ item.status }}
-                        </span>
-                      </td>
-                      <td>
-                        <span class="icon small">⭐</span>
-                        {{ item.coins }}
-                      </td>
-                      <td>{{ formatDate(item.assignedDate) }}</td>
-                      <td>{{ item.completedDate ? formatDate(item.completedDate) : '-' }}</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </div>
-    </div>
-    
+            <template #item.assignedDate="{ item }">
+              {{ formatDate(item.assignedDate) }}
+            </template>
 
+            <template #item.completedDate="{ item }">
+              {{ item.completedDate ? formatDate(item.completedDate) : '-' }}
+            </template>
+          </v-data-table>
+        </v-card-text>
+      </v-card>
+    </v-dialog>
+
+    <!-- Success Snackbar -->
+    <v-snackbar
+      v-model="showSuccessSnackbar"
+      color="success"
+      timeout="3000"
+    >
+      {{ successMessage }}
+      <template #actions>
+        <v-btn
+          variant="text"
+          @click="showSuccessSnackbar = false"
+        >
+          Close
+        </v-btn>
+      </template>
+    </v-snackbar>
+  </v-container>
 </template>
 
-
 <script setup lang="ts">
-
 import { ref, reactive, onMounted } from 'vue'
-import type { Task} from '@/types'
-import { useRouter } from 'vue-router'
+import type { Task, Child } from '@/types'
 
-
-const router = useRouter()
-
-function goToTaskHistory() {
-  router.push('/taskhistory')
-}
 // Reactive data
 const assigning = ref(false)
 const showTaskHistory = ref(false)
 const showSuccessSnackbar = ref(false)
 const successMessage = ref('')
-const taskFormValid = ref(true)
+const taskFormValid = ref(false)
 
 // Task form data
 const task = reactive<Partial<Task>>({
@@ -395,7 +428,6 @@ const children = ref([
   }
 ])
 
-
 const taskHistory = ref([
   {
     id: '1',
@@ -432,35 +464,34 @@ const taskHistory = ref([
   }
 ])
 
-
 // Static data
 const taskTypes = [
   {
     value: 'chore',
     title: 'Chore',
     description: 'Household tasks and responsibilities',
-    icon: '🏠',
+    icon: 'mdi-home-variant',
     color: 'blue'
   },
   {
     value: 'educational',
     title: 'Educational',
     description: 'Learning modules and assignments',
-    icon: '📖',
+    icon: 'mdi-book-open',
     color: 'green'
   },
   {
     value: 'personal',
     title: 'Personal',
     description: 'Self-care and personal development',
-    icon: '👥',
+    icon: 'mdi-account-heart',
     color: 'purple'
   },
   {
     value: 'creative',
     title: 'Creative',
     description: 'Art, music, and creative projects',
-    icon: '🎨',
+    icon: 'mdi-palette',
     color: 'orange'
   }
 ]
@@ -468,14 +499,11 @@ const taskTypes = [
 const priorities = ['Low', 'Medium', 'High', 'Urgent']
 const frequencies = ['Daily', 'Weekly', 'Bi-weekly', 'Monthly']
 
-
-
-
 const taskTemplates = [
   {
     id: '1',
     title: 'Clean bedroom',
-    icon: '🧹',
+    icon: 'mdi-bed',
     color: 'blue',
     reward: 15,
     type: 'chore',
@@ -484,7 +512,7 @@ const taskTemplates = [
   {
     id: '2',
     title: 'Complete homework',
-    icon: '📘',
+    icon: 'mdi-pencil',
     color: 'green',
     reward: 20,
     type: 'educational',
@@ -493,7 +521,7 @@ const taskTemplates = [
   {
     id: '3',
     title: 'Practice instrument',
-    icon: '🎵',
+    icon: 'mdi-music',
     color: 'purple',
     reward: 10,
     type: 'creative',
@@ -502,14 +530,13 @@ const taskTemplates = [
   {
     id: '4',
     title: 'Exercise/Sports',
-    icon: '🏃',
+    icon: 'mdi-run',
     color: 'orange',
     reward: 12,
     type: 'personal',
     description: 'Physical activity for 45 minutes'
   }
 ]
-
 
 const taskTips = [
   {
@@ -529,16 +556,22 @@ const taskTips = [
   }
 ]
 
+const historyHeaders = [
+  { title: 'Task', key: 'title', sortable: true },
+  { title: 'Child', key: 'child', sortable: true },
+  { title: 'Status', key: 'status', sortable: true },
+  { title: 'Coins', key: 'coins', sortable: true },
+  { title: 'Assigned', key: 'assignedDate', sortable: true },
+  { title: 'Completed', key: 'completedDate', sortable: true }
+]
 
-
-
-
-// Methods
-const getChildName = (id: string): string => {
-  const child = children.value.find(child => child.id === id) // ✅ Use .value
-  return child ? child.name : 'Unknown'
+// Validation rules
+const rules = {
+  required: (value: any) => !!value || 'This field is required',
+  positive: (value: number) => value > 0 || 'Must be greater than 0'
 }
 
+// Methods
 const applyTemplate = (template: any) => {
   task.title = template.title
   task.description = template.description
@@ -603,518 +636,34 @@ const resetForm = () => {
   })
 }
 
-const getTaskStatusColor = (count) => {
-  if (count >= 5) return '#e53935'; // Red
-  if (count >= 3) return '#fb8c00'; // Orange
-  return '#43a047'; // Green
+const getTaskStatusColor = (count: number) => {
+  if (count === 0) return 'success'
+  if (count <= 2) return 'info'
+  if (count <= 4) return 'warning'
+  return 'error'
 }
 
-
-const getHistoryStatusColor = (status) => {
-  switch (status.toLowerCase()) {
-    case 'completed': return 'completed'
-    case 'pending': return 'pending'
-    case 'failed': return 'failed'
-    default: return ''
+const getHistoryStatusColor = (status: string) => {
+  const colors = {
+    'Completed': 'success',
+    'In Progress': 'info',
+    'Overdue': 'error',
+    'Cancelled': 'grey'
   }
+  return colors[status as keyof typeof colors] || 'grey'
 }
 
-const formatDate = (dateStr) => {
-  const date = new Date(dateStr)
-  return date.toLocaleDateString('en-IN')
+const formatDate = (date: Date) => {
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  }).format(date)
 }
 
 // Lifecycle
 onMounted(() => {
   // Load children and task data
 })
-
-
 </script>
 
-<style scoped>
-.nav-card-body {
-    background-color: white;
-    border-radius: 20px;
-    max-width: 100%;
-    height: auto;
-    margin-top: 20px;
-    margin-bottom: 5px;
-    margin-left: 20px;
-    margin-right: 20px;
-    box-shadow: var(--shadow-lg);
-    transition: all 0.3s ease;
-    border: 2px solid transparent;
-    align-items: center;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-
-  }
-.column {
-        border: solid;
-  }
-
-  .welcome-text {
-  font-size: 25px;
-  font-weight: normal;
-  }
-
-.add-child-btn {
-  font-weight: bold;
-  padding: 20px 20px;
-  border: 2px solid;
-  border-radius: 20px;
-  cursor: pointer;
-  font-size: 15px;
-  background-color: rgb(235, 229, 229);
-}
-.quick-template {
-    background-color: white;
-    border-radius: 20px;
-    height: auto;
-    max-width: 335px;
-    margin-top: 10px;
-    margin-bottom: 20px;
-    margin-left: 5px;
-    margin-right: 20px;
-    box-shadow: var(--shadow-lg);
-    transition: all 0.3s ease;
-    border: 2px solid transparent;
-    align-items: center;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-
-}
-
-.create-task {
-    background-color: white;
-    border-radius: 20px;
-    height: auto;
-    max-width: 750px;
-    margin-top: 10px;
-    margin-bottom: 20px;
-    margin-left: 20px;
-    margin-right: 5px;
-    box-shadow: var(--shadow-lg);
-    transition: all 0.3s ease;
-    border: 2px solid transparent;
-    align-items: center;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-
-  }
-
-.icon-with-text {
-  display: flex;
-  gap: 2px;
-}
-.text-block {
-  margin-top: 10px;
-}
-.logo {
-  margin: 10px;
-  tab-size: 10px;
-}
-.title {
-  display: flex;
-  font-weight: 600;
-}
-.subtitle {
-  font-size: 14px;
-  color: gray;
-}
-
-.form-container {
-  width: 750px;
-  margin: auto;
-  height: auto;
-  padding: 2rem;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  background: #fff;
-}
-.section {
-  margin-bottom: 1rem;
-}
-.section-title {
-  font-weight: 600;
-  margin-bottom: 0.5rem;
-}
-.row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 0.5rem;
-  
-}
-.field {
-  flex: 1;
-  min-width: 240px;
-  margin-bottom: 0.5rem;
-  flex-direction: column;
-}
-.input-icon {
-  position: static;
-  height: 30px;
-  border-radius: 4px;
-}
-
-label {
-  margin-bottom: 0.25rem;
-  font-weight: lighter;
-}
-.input-icon .icon {
-  position: absolute;
-  left: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-}
-.input-icon input,
-.input-icon select {
-  padding-left: 0;
-  width: 100%;
-}
-textarea,
-select
-{
-  padding: 0.5rem;
-  width: 100%;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-}
-
-
-.radio-group {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-.radio-option {
-  display: flex;
-  align-items: start;
-  gap: 0.5rem;
-}
-.radio-label {
-  display: flex;
-  flex-direction: column;
-}
-.chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-top: 0.3rem;
-}
-.chip {
-  background: #e0f0ff;
-  color: #007acc;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 0.8rem;
-}
-.checkbox-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-  gap: 0.5rem;
-  font-weight: normal;
-}
-.buttons {
-  display: flex;
-  gap: 1rem;
-  margin-top: 2rem;
-
-}
-button {
-  padding: 1rem 1rem;
-  border: none;
-  background: #007acc;
-  color: white;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-left: 80px;
-}
-button:disabled {
-  background: #999;
-}
-button[type='button'] {
-  background: #ddd;
-  color: #333;
-}
-
-.snackbar {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: #198754; /* Bootstrap success color */
-  color: white;
-  padding: 0.75rem 1.25rem;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-  z-index: 1000;
-  animation: slide-up 0.3s ease;
-}
-
-.snackbar button {
-  background: transparent;
-  border: none;
-  color: white;
-  font-size: 1rem;
-  cursor: pointer;
-}
-
-.card {
-  width: 335px;
-  background: #fff;
-  border-radius: 8px;
-  box-shadow: 0 1px 5px rgba(0,0,0,0.1);
-  padding: 1rem;
-}
-
-.card-title {
-  font-weight: 600;
-  font-size: 1.1rem;
-  margin-bottom: 1rem;
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.icon.purple {
-  color: purple;
-  font-size: 1.2rem;
-}
-
-.template-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.template-item {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.5rem;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: background 0.2s ease;
-}
-
-.template-item:hover {
-  background: #f0f0f0;
-}
-
-.template-icon {
-  font-size: 1.2rem;
-}
-
-.template-info {
-  display: flex;
-  flex-direction: column;
-}
-
-.template-title {
-  font-weight: 500;
-}
-
-.template-subtitle {
-  font-size: 0.8rem;
-  color: #666;
-}
-
-.card {
-  background: #fff;
-  border-radius: 8px;
-  border: 1px solid #ddd;
-  padding: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-}
-
-.card-title {
-  font-weight: bold;
-  font-size: 1rem;
-  display: flex;
-  align-items: center;
-  margin-bottom: 1rem;
-  color: #333;
-}
-
-.card-title .icon {
-  margin-right: 0.5rem;
-  font-size: 1.2rem;
-}
-
-.task-list {
-  list-style: none;
-  padding: 0;
-  margin: 0;
-}
-
-.task-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 0.6rem;
-}
-
-.avatar {
-  display: inline-flex;
-  justify-content: center;
-  align-items: center;
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  color: #fff;
-  font-size: 0.7rem;
-  margin-right: 0.6rem;
-}
-
-.name {
-  flex: 1;
-  margin-left: 0.4rem;
-}
-
-.chip {
-  padding: 2px 8px;
-  border-radius: 12px;
-  color: #fff;
-  font-size: 0.75rem;
-  white-space: nowrap;
-}
-.card {
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
-}
-
-.card-title {
-  display: flex;
-  align-items: center;
-  font-weight: bold;
-  font-size: 1rem;
-  margin-bottom: 0.75rem;
-}
-
-.card-title .icon {
-  margin-right: 0.5rem;
-  font-size: 1.2rem;
-  color: green;
-}
-
-.alert {
-  border-radius: 4px;
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
-  margin-bottom: 0.5rem;
-  background-color: #f5f5f5;
-}
-
-.alert.success {
-  background-color: #e6f4ea;
-  color: #2e7d32;
-  border-left: 4px solid #2e7d32;
-}
-
-.alert.warning {
-  background-color: #fff8e1;
-  color: #ff8f00;
-  border-left: 4px solid #ff8f00;
-}
-
-.alert.error {
-  background-color: #fdecea;
-  color: #c62828;
-  border-left: 4px solid #c62828;
-}
-
-.alert.info {
-  background-color: #e3f2fd;
-  color: #1976d2;
-  border-left: 4px solid #1976d2;
-}
-
-.modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.4);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 1000;
-}
-
-.modal {
-  background: white;
-  width: 90%;
-  max-width: 800px;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.modal-header {
-  display: flex;
-  align-items: center;
-  padding: 1rem;
-  background: #f0f0f0;
-  font-weight: bold;
-}
-
-.modal-header .title {
-  flex: 1;
-  margin-left: 0.5rem;
-}
-
-.modal-header .close {
-  background: none;
-  border: none;
-  font-size: 1.2rem;
-  cursor: pointer;
-}
-
-.modal-body {
-  padding: 1rem;
-}
-
-.data-table {
-  width: 50%;
-  border-collapse: collapse;
-}
-
-.data-table th,
-.data-table td {
-  padding: 0.5rem;
-  border-bottom: 1px solid #ddd;
-}
-
-.avatar {
-  display: inline-block;
-  width: 24px;
-  height: 24px;
-  color: white;
-  font-size: 0.75rem;
-  text-align: center;
-  border-radius: 50%;
-  margin-right: 6px;
-}
-
-.chip.green {
-  background: #d4edda;
-  color: #155724;
-  padding: 2px 6px;
-  border-radius: 12px;
-  font-size: 0.75rem;
-}
-
-</style>

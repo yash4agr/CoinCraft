@@ -1,280 +1,398 @@
 <template>
-    <div class="container" style="align-items: center;">
-        <div class="row">
-            <div class="col" style="width: 100%;">
-                <div class="nav-card-body">
-                    <h2 class="welcome-text" style="font-size: 20px;"> 💵 Coin Redemption Settings</h2>
-                    <button class="add-child-btn" @click="saveSettings" :disabled="saving"> 
-                         {{ saving ? "Saving..." : "Save Settings" }}
-                    </button>
-                </div>
-            </div>
-        </div>
-      <div class="row" style="border-spacing: 0.1rem;">
-          <div class="col" style="width: 560px;">
-            <div class="create-task" style="width: 560px;">
-                    <!-- Exchange Rate Section -->
-                      <div class="card">
-                        <div class="card-header">
-                        <span class="icon">💵</span>
-                        <h2 class="welcome-text">Exchange Rate</h2>
-                        </div>
+  <v-container fluid class="pa-4">
+    <!-- Header -->
+    <v-row>
+      <v-col cols="12">
+        <v-card>
+          <v-card-title class="d-flex align-center">
+            <v-icon class="me-2" color="success">mdi-cash-multiple</v-icon>
+            Coin Redemption Settings
+            <v-spacer />
+            <v-btn
+              prepend-icon="mdi-content-save"
+              color="primary"
+              @click="saveSettings"
+              :loading="saving"
+            >
+              Save Settings
+            </v-btn>
+          </v-card-title>
+        </v-card>
+      </v-col>
+    </v-row>
 
-                        <div class="form-group">
-                        <label>1 Coin equals (in currency)</label>
-                        <div class="input-with-icon">
-                            
-                            <input
-                            v-model.number="exchangeRate"
-                            type="number"
-                            min="0.01"
-                            step="0.01"
-                            />
-                        </div>
-                        </div>
+    <v-row>
+      <!-- Exchange Rate Settings -->
+      <v-col cols="12" md="6">
+        <v-card>
+          <v-card-title class="d-flex align-center">
+            <v-icon class="me-2" color="orange">mdi-swap-horizontal</v-icon>
+            Exchange Rate
+          </v-card-title>
+          <v-card-text>
+            <v-text-field
+              v-model.number="settings.exchangeRate"
+              label="1 Coin equals (in currency)"
+              type="number"
+              step="0.01"
+              min="0.01"
+              prepend-inner-icon="mdi-currency-usd"
+              variant="outlined"
+              :rules="[rules.required, rules.positive]"
+              class="mb-3"
+            />
+            
+            <v-select
+              v-model="settings.currency"
+              label="Currency"
+              :items="currencies"
+              prepend-inner-icon="mdi-cash"
+              variant="outlined"
+              class="mb-3"
+            />
+            
+            <v-alert type="info" variant="tonal" density="compact">
+              Current rate: 1 coin = {{ formatCurrency(settings.exchangeRate) }}
+            </v-alert>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-                        <div class="form-group">
-                        <label>Currency</label>
-                        <div class="input-with-icon">
-                            
-                            <select v-model="currency">
-                            <option v-for="cur in currencies" :key="cur" :value="cur">{{ cur }}</option>
-                            </select>
-                        </div>
-                        </div>
+      <!-- Approval Settings -->
+      <v-col cols="12" md="6">
+        <v-card>
+          <v-card-title class="d-flex align-center">
+            <v-icon class="me-2" color="purple">mdi-check-circle</v-icon>
+            Approval Settings
+          </v-card-title>
+          <v-card-text>
+            <v-switch
+              v-model="settings.requireApproval"
+              label="Require approval for all redemptions"
+              color="primary"
+              class="mb-3"
+            />
+            
+            <v-expand-transition>
+              <div v-if="!settings.requireApproval">
+                <v-text-field
+                  v-model.number="settings.autoApprovalLimit"
+                  label="Auto-approve up to this amount (coins)"
+                  type="number"
+                  min="1"
+                  prepend-inner-icon="mdi-star"
+                  variant="outlined"
+                  hint="Redemptions above this amount will require approval"
+                  persistent-hint
+                  class="mb-3"
+                />
+              </div>
+            </v-expand-transition>
+            
+            <v-switch
+              v-model="settings.notifyOnRequest"
+              label="Notify me of redemption requests"
+              color="primary"
+              class="mb-3"
+            />
+            
+            <v-select
+              v-model="settings.processingTime"
+              label="Expected processing time"
+              :items="processingTimes"
+              prepend-inner-icon="mdi-clock"
+              variant="outlined"
+            />
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
 
-                        <div class="info-box">
-                        
-                        Current rate: 1 coin = {{ formattedRate }}
-                        </div>
-                    </div>
-                </div>
-          </div>
-            <div class="col" style="width: 560px;">
-               <div class="create-task" style="max-width: 560px;">
-                    <!-- Approval Settings -->
-                    <div class="card">
-                      <h2 class="welcome-text"> ✔️ Approval Settings</h2>
-                      <label class="switch">
-                        <input type="checkbox" v-model="settings.requireApproval" />
-                        <span class="slider"></span>
-                        Require approval for all redemptions
-                      </label>
+    <!-- Redemption Limits -->
+    <v-row>
+      <v-col cols="12">
+        <v-card>
+          <v-card-title class="d-flex align-center">
+            <v-icon class="me-2" color="warning">mdi-speedometer</v-icon>
+            Redemption Limits
+          </v-card-title>
+          <v-card-text>
+            <v-row>
+              <v-col cols="12" md="4">
+                <v-text-field
+                  v-model.number="settings.dailyLimit"
+                  label="Daily limit (coins)"
+                  type="number"
+                  min="0"
+                  prepend-inner-icon="mdi-calendar-today"
+                  variant="outlined"
+                  hint="0 = no limit"
+                  persistent-hint
+                />
+              </v-col>
+              <v-col cols="12" md="4">
+                <v-text-field
+                  v-model.number="settings.weeklyLimit"
+                  label="Weekly limit (coins)"
+                  type="number"
+                  min="0"
+                  prepend-inner-icon="mdi-calendar-week"
+                  variant="outlined"
+                  hint="0 = no limit"
+                  persistent-hint
+                />
+              </v-col>
+              <v-col cols="12" md="4">
+                <v-text-field
+                  v-model.number="settings.monthlyLimit"
+                  label="Monthly limit (coins)"
+                  type="number"
+                  min="0"
+                  prepend-inner-icon="mdi-calendar-month"
+                  variant="outlined"
+                  hint="0 = no limit"
+                  persistent-hint
+                />
+              </v-col>
+            </v-row>
+            
+            <v-divider class="my-4" />
+            
+            <v-switch
+              v-model="settings.allowSavingsOverride"
+              label="Allow exceeding limits for savings goals"
+              color="primary"
+              class="mb-2"
+            />
+            
+            <v-switch
+              v-model="settings.trackSpendingCategories"
+              label="Track spending by categories"
+              color="primary"
+            />
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
 
-                      <div v-if="!settings.requireApproval" class="sub-field">
-                        <label>
-                          Auto‑approve up to (coins)
-                          <input class="box" type="number" min="1" v-model.number="settings.autoApprovalLimit" />
-                        </label>
-                      </div>
-
-                      <label class="switch">
-                        <input type="checkbox" v-model="settings.notifyOnRequest" />
-                        <span class="slider"></span>
-                        Notify me of redemption requests
-                      </label>
-
-                      <label class="switch">
-                        Processing time
-                        <select class="box" v-model="settings.processingTime">
-                          <option v-for="t in processingTimes" :key="t" :value="t">{{ t }}</option>
-                        </select>
-                      </label>
-                    </div>
-                </div>
-            </div>
-              <div class="col" style="width: 100%;">
-                <div class="create-task" style="max-width: 100%;">
-                    
-                <div class="redemption-card">
-                    <h2 class="section-title">
-                      <span class="emoji">🚀</span> Redemption Limits
-                    </h2>
-
-                    <div class="limits-grid">
-                      <div class="limit-field">
-                        <label for="daily"><span class="icon">📅</span> Daily limit (coins)</label>
-                        <input type="number" id="daily" v-model.number="dailyLimit" min="0" />
-                        <div class="hint">0 = no limit</div>
-                      </div>
-
-                      <div class="limit-field">
-                        <label for="weekly"><span class="icon">📅</span> Weekly limit (coins)</label>
-                        <input type="number" id="weekly" v-model.number="weeklyLimit" min="0" />
-                        <div class="hint">0 = no limit</div>
-                      </div>
-
-                      <div class="limit-field">
-                        <label for="monthly"><span class="icon">📆</span> Monthly limit (coins)</label>
-                        <input type="number" id="monthly" v-model.number="monthlyLimit" min="0" />
-                        <div class="hint">0 = no limit</div>
-                      </div>
-                    </div>
-
-                    <hr />
-
-                      <div class="toggle-row">
-                        <label class="toggle-item">
-                          <input type="checkbox" v-model="allowSavings" />
-                          Allow exceeding limits for savings goals
-                        </label>
-                      </div>
-
-                      <div class="toggle-row">
-                        <label class="toggle-item">
-                          <input type="checkbox" v-model="trackCategories" />
-                          Track spending by categories
-                        </label>
-                      </div>
+    <!-- Redemption History -->
+    <v-row>
+      <v-col cols="12">
+        <v-card>
+          <v-card-title class="d-flex align-center">
+            <v-icon class="me-2" color="info">mdi-history</v-icon>
+            Recent Redemption Requests
+            <v-spacer />
+            <v-btn
+              variant="text"
+              size="small"
+              append-icon="mdi-arrow-right"
+              @click="viewFullHistory"
+            >
+              View All
+            </v-btn>
+          </v-card-title>
+          <v-card-text>
+            <v-data-table
+              :headers="redemptionHeaders"
+              :items="recentRedemptions"
+              item-value="id"
+              class="elevation-0"
+              :items-per-page="5"
+            >
+              <template #item.child="{ item }">
+                <div class="d-flex align-center">
+                  <v-avatar size="32" :color="item.childColor" class="me-3">
+                    <span class="text-caption text-white">{{ item.childInitials }}</span>
+                  </v-avatar>
+                  <div>
+                    <div class="font-weight-medium">{{ item.child }}</div>
+                    <div class="text-caption text-medium-emphasis">{{ item.childAge }} years old</div>
                   </div>
                 </div>
-            </div>
-            <div class="col" style="width: 100%;">
-              <div class="create-task" style="max-width: 100%;">
-                    <div class="card">
-                      <div class="card-header">
-                        <h2 class="section-title"><span class="emoji">🔄</span>
-                        Recent Redemption Requests</h2>
-                        <button class="view-all-btn">
-                          View All <span class="arrow">→</span>
-                        </button>
-                      </div>
+              </template>
 
-                      <table class="requests-table">
-                        <thead>
-                          <tr>
-                            <th>Child</th>
-                            <th>Amount</th>
-                            <th>Description</th>
-                            <th>Status</th>
-                            <th>Requested</th>
-                            <th>Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          <tr v-for="(req, i) in requests" :key="i">
-                            <td>
-                              <div class="child-info">
-                                <div class="avatar" :style="{ backgroundColor: req.color }">
-                                  {{ req.name.charAt(0) }}
-                                </div>
-                                <div>
-                                  <strong>{{ req.name }}</strong>
-                                  <div class="child-age">{{ req.age }} years old</div>
-                                </div>
-                              </div>
-                            </td>
-                            <td>
-                              ⭐ <strong>{{ req.amount }}</strong>
-                              <span class="usd">(${{ (req.amount / 100).toFixed(2) }})</span>
-                            </td>
-                            <td>{{ req.description }}</td>
-                            <td>
-                              <span class="status" :class="req.status.toLowerCase()">{{ req.status }}</span>
-                            </td>
-                            <td>{{ req.date }}</td>
-                            <td>
-                              <div v-if="req.status === 'Pending'" class="action-buttons">
-                                <button class="btn approve" @click="approveRedemption(req)">Approve</button>
-                                <button class="btn reject" @click="rejectRedemption(req)">Reject</button>
-                              </div>
-                              <div v-else class="btn status-pill">{{ req.status }}</div>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
+              <template #item.amount="{ item }">
+                <div class="d-flex align-center">
+                  <v-icon color="warning" size="small" class="me-1">mdi-star</v-icon>
+                  <span class="font-weight-medium">{{ item.coins }}</span>
+                  <span class="text-medium-emphasis ms-1">
+                    ({{ formatCurrency(item.coins * settings.exchangeRate) }})
+                  </span>
+                </div>
+              </template>
 
-                      <div class="pagination">
-                        <label>
-                          Items per page:
-                          <select v-model="itemsPerPage">
-                            <option>5</option>
-                            <option>10</option>
-                          </select>
-                        </label>
-                        <span class="page-info">1–{{ requests.length }} of {{ requests.length }}</span>
-                      </div>
-                    </div>
-              </div>
+              <template #item.status="{ item }">
+                <v-chip :color="getStatusColor(item.status)" size="small">
+                  {{ item.status }}
+                </v-chip>
+              </template>
 
-            </div>
-            <div class="dashboard">
+              <template #item.requestDate="{ item }">
+                {{ formatDate(item.requestDate) }}
+              </template>
+
+              <template #item.actions="{ item }">
+                <div v-if="item.status === 'Pending'" class="d-flex gap-1">
+                  <v-btn
+                    color="success"
+                    size="small"
+                    variant="tonal"
+                    @click="approveRedemption(item)"
+                  >
+                    Approve
+                  </v-btn>
+                  <v-btn
+                    color="error"
+                    size="small"
+                    variant="tonal"
+                    @click="rejectRedemption(item)"
+                  >
+                    Reject
+                  </v-btn>
+                </div>
+                <v-chip v-else size="small" variant="outlined">
+                  {{ item.status }}
+                </v-chip>
+              </template>
+            </v-data-table>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+
     <!-- Payment Methods -->
-    <div class="payment-card" >
-      <div class="card-header">
-        <span class="emoji">🧾</span>
-        <h2>Payment Methods</h2>
-      </div>
+    <v-row>
+      <v-col cols="12" md="6">
+        <v-card>
+          <v-card-title class="d-flex align-center">
+            <v-icon class="me-2" color="blue">mdi-credit-card</v-icon>
+            Payment Methods
+          </v-card-title>
+          <v-card-text>
+            <v-list>
+              <v-list-item
+                v-for="method in paymentMethods"
+                :key="method.id"
+              >
+                <template #prepend>
+                  <v-icon :color="method.color">{{ method.icon }}</v-icon>
+                </template>
+                <v-list-item-title>{{ method.name }}</v-list-item-title>
+                <v-list-item-subtitle>{{ method.description }}</v-list-item-subtitle>
+                <template #append>
+                  <v-switch
+                    v-model="method.enabled"
+                    density="compact"
+                    hide-details
+                  />
+                </template>
+              </v-list-item>
+            </v-list>
+            
+            <v-divider class="my-3" />
+            
+            <v-btn
+              block
+              color="primary"
+              variant="tonal"
+              prepend-icon="mdi-plus"
+              @click="addPaymentMethod"
+            >
+              Add Payment Method
+            </v-btn>
+          </v-card-text>
+        </v-card>
+      </v-col>
 
-      <div v-for="(method, i) in paymentMethods" :key="i" class="method-row">
-        <div class="method-info">
-          <span class="emoji">{{ method.icon }}</span>
-          <div>
-            <div class="method-title">{{ method.name }}</div>
-            <div class="method-subtitle">{{ method.desc }}</div>
-          </div>
-        </div>
-        <label class="switch">
-          <input type="checkbox" v-model="method.enabled" />
-          <span class="slider"></span>
-        </label>
-      </div>
+      <!-- Spending Analytics -->
+      <v-col cols="12" md="6">
+        <v-card>
+          <v-card-title class="d-flex align-center">
+            <v-icon class="me-2" color="teal">mdi-chart-line</v-icon>
+            Spending Analytics
+          </v-card-title>
+          <v-card-text>
+            <div class="text-subtitle-2 mb-3">This Month</div>
+            
+            <v-row class="mb-3">
+              <v-col cols="6">
+                <div class="text-h6 font-weight-bold text-success">
+                  {{ formatCurrency(analytics.totalRedeemed) }}
+                </div>
+                <div class="text-caption text-medium-emphasis">Total Redeemed</div>
+              </v-col>
+              <v-col cols="6">
+                <div class="text-h6 font-weight-bold text-info">
+                  {{ analytics.redemptionCount }}
+                </div>
+                <div class="text-caption text-medium-emphasis">Transactions</div>
+              </v-col>
+            </v-row>
+            
+            <div class="text-body-2 mb-2">Top Categories</div>
+            <v-list density="compact">
+              <v-list-item
+                v-for="category in analytics.topCategories"
+                :key="category.name"
+                density="compact"
+              >
+                <v-list-item-title class="text-body-2">{{ category.name }}</v-list-item-title>
+                <template #append>
+                  <span class="text-body-2 font-weight-medium">
+                    {{ formatCurrency(category.amount) }}
+                  </span>
+                </template>
+              </v-list-item>
+            </v-list>
+            
+            <v-btn
+              block
+              variant="tonal"
+              prepend-icon="mdi-chart-bar"
+              class="mt-3"
+              @click="viewAnalytics"
+            >
+              View Detailed Analytics
+            </v-btn>
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
 
-      <div class="add-button green">
-        ➕ Add Payment Method
-      </div>
-    </div>
-
-    <!-- Spending Analytics -->
-    <div class="payment-card" >
-      <div class="card-header">
-        <span class="emoji">📈</span>
-        <h2>Spending Analytics</h2>
-      </div>
-
-      <div class="analytics-section">
-        <div class="total">
-          <div class="amount green-text">${{ totalRedeemed.toFixed(2) }}</div>
-          <div class="label">Total Redeemed</div>
-        </div>
-        <div class="transactions">
-          <div class="amount blue-text">{{ transactionCount }}</div>
-          <div class="label">Transactions</div>
-        </div>
-      </div>
-
-      <div class="categories">
-        <div class="category-row" v-for="(item, i) in categories" :key="i">
-          <span>{{ item.name }}</span>
-          <span class="amount">${{ item.amount.toFixed(2) }}</span>
-        </div>
-      </div>
-
-      <div class="add-button gray">
-        📊 View Detailed Analytics
-      </div>
-    </div>
-  </div>
-          </div>
-    </div>
-    
-
+    <!-- Success Snackbar -->
+    <v-snackbar
+      v-model="showSuccessSnackbar"
+      color="success"
+      timeout="3000"
+    >
+      {{ successMessage }}
+      <template #actions>
+        <v-btn
+          variant="text"
+          @click="showSuccessSnackbar = false"
+        >
+          Close
+        </v-btn>
+      </template>
+    </v-snackbar>
+  </v-container>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import type { RedemptionSettings, RedemptionRequest } from '@/types'
 
+const router = useRouter()
+
+// Reactive data
 const saving = ref(false)
-const showSuccess = ref(false)
+const showSuccessSnackbar = ref(false)
 const successMessage = ref('')
-const dailyLimit = ref(100)
-const weeklyLimit = ref(300)
-const monthlyLimit = ref(1000)
-const allowSavings = ref(true)
-const trackCategories = ref(true)
 
-// reactive settings
-const settings = reactive({
+// Settings data
+const settings = reactive<RedemptionSettings>({
   exchangeRate: 0.10,
   currency: 'USD',
   requireApproval: false,
@@ -289,21 +407,55 @@ const settings = reactive({
 })
 
 // Mock data
-const paymentMethods = ref([
-  { name: 'Cash', desc: 'Direct cash payment', icon: '💵', enabled: true },
-  { name: 'Digital Transfer', desc: 'Bank transfer or digital wallet', icon: '🏦', enabled: false },
-  { name: 'Gift Cards', desc: 'Store gift cards or vouchers', icon: '🎁', enabled: true },
-  { name: 'Experience Rewards', desc: 'Trips, activities, or experiences', icon: '✈️', enabled: false }
-])
-
-const totalRedeemed = ref(125.5)
-const transactionCount = ref(12)
-
-const categories = ref([
-  { name: 'Toys & Games', amount: 45.0 },
-  { name: 'Books', amount: 32.5 },
-  { name: 'Art Supplies', amount: 28.0 },
-  { name: 'Sports', amount: 20.0 }
+const recentRedemptions = ref([
+  {
+    id: '1',
+    child: 'Luna',
+    childInitials: 'L',
+    childColor: 'purple',
+    childAge: 9,
+    coins: 25,
+    description: 'Art supplies',
+    status: 'Pending',
+    requestDate: new Date(Date.now() - 2 * 60 * 60 * 1000),
+    category: 'Toys & Games'
+  },
+  {
+    id: '2',
+    child: 'Harry',
+    childInitials: 'H',
+    childColor: 'blue',
+    childAge: 12,
+    coins: 50,
+    description: 'Video game',
+    status: 'Approved',
+    requestDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+    category: 'Entertainment'
+  },
+  {
+    id: '3',
+    child: 'Luna',
+    childInitials: 'L',
+    childColor: 'purple',
+    childAge: 9,
+    coins: 15,
+    description: 'Book series',
+    status: 'Completed',
+    requestDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+    category: 'Books'
+  },
+  {
+    id: '4',
+    child: 'Harry',
+    childInitials: 'H',
+    childColor: 'blue',
+    childAge: 12,
+    coins: 30,
+    description: 'Sports equipment',
+    status: 'Rejected',
+    requestDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+    category: 'Sports'
+  }
 ])
 
 const analytics = ref({
@@ -317,562 +469,150 @@ const analytics = ref({
   ]
 })
 
-const exchangeRate = ref(2)
-const currency = ref('INR')
-const currencies = ['INR','USD','EUR','CAD','AUD']
-const processingTimes = ['Immediately','Within 1 hour','Within 24 hours','Within 2-3 days','Within a week']
-
-const formattedRate = computed(() =>
-  new Intl.NumberFormat('en-US', {
-    style: 'currency',
-    currency: currency.value,
-  }).format(exchangeRate.value)
-)
-
-const requests = ref([
-  { name: 'Luna', age: 9, amount: 25, description: 'Art supplies', status: 'Pending', date: 'Jul 4, 6:38 PM', color: '#9C27B0' },
-  { name: 'Harry', age: 12, amount: 50, description: 'Video game', status: 'Approved', date: 'Jul 3, 8:38 PM', color: '#2196F3' },
-  { name: 'Luna', age: 9, amount: 15, description: 'Book series', status: 'Completed', date: 'Jul 1, 8:38 PM', color: '#9C27B0' },
-  { name: 'Harry', age: 12, amount: 30, description: 'Sports equipment', status: 'Rejected', date: 'Jun 29, 8:38 PM', color: '#2196F3' },
+const paymentMethods = ref([
+  {
+    id: '1',
+    name: 'Cash',
+    description: 'Direct cash payment',
+    icon: 'mdi-cash',
+    color: 'green',
+    enabled: true
+  },
+  {
+    id: '2',
+    name: 'Digital Transfer',
+    description: 'Bank transfer or digital wallet',
+    icon: 'mdi-bank-transfer',
+    color: 'blue',
+    enabled: true
+  },
+  {
+    id: '3',
+    name: 'Gift Cards',
+    description: 'Store gift cards or vouchers',
+    icon: 'mdi-gift',
+    color: 'purple',
+    enabled: false
+  },
+  {
+    id: '4',
+    name: 'Experience Rewards',
+    description: 'Trips, activities, or experiences',
+    icon: 'mdi-airplane',
+    color: 'orange',
+    enabled: true
+  }
 ])
 
-const itemsPerPage = ref(5)
+// Static data
+const currencies = ['USD', 'EUR', 'GBP', 'CAD', 'AUD']
+const processingTimes = [
+  'Immediately',
+  'Within 1 hour',
+  'Within 24 hours',
+  'Within 2-3 days',
+  'Within a week'
+]
 
-const formatCurrency = (amt:number) =>
-  new Intl.NumberFormat('en-US',{style:'currency',currency:settings.currency}).format(amt)
+const redemptionHeaders = [
+  { title: 'Child', key: 'child', sortable: true },
+  { title: 'Amount', key: 'amount', sortable: true },
+  { title: 'Description', key: 'description', sortable: false },
+  { title: 'Status', key: 'status', sortable: true },
+  { title: 'Requested', key: 'requestDate', sortable: true },
+  { title: 'Actions', key: 'actions', sortable: false, align: 'center' }
+]
 
-const formatDate = (d:Date) =>
-  new Intl.DateTimeFormat('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'}).format(d)
+// Validation rules
+const rules = {
+  required: (value: any) => !!value || 'This field is required',
+  positive: (value: number) => value > 0 || 'Must be greater than 0'
+}
 
-const statusClass = (s:string) =>
-  ({'Pending':'pending','Approved':'approved','Rejected':'rejected','Completed':'completed'})[s]||''
+// Methods
+const formatCurrency = (amount: number) => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: settings.currency
+  }).format(amount)
+}
 
-async function saveSettings(){
+const formatDate = (date: Date) => {
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  }).format(date)
+}
+
+const getStatusColor = (status: string) => {
+  const colors = {
+    'Pending': 'warning',
+    'Approved': 'info',
+    'Completed': 'success',
+    'Rejected': 'error'
+  }
+  return colors[status as keyof typeof colors] || 'grey'
+}
+
+const approveRedemption = async (item: any) => {
+  try {
+    // Simulate approval
+    await new Promise(resolve => setTimeout(resolve, 500))
+    
+    item.status = 'Approved'
+    showSuccessSnackbar.value = true
+    successMessage.value = `Redemption for ${item.child} approved!`
+  } catch (error) {
+    console.error('Failed to approve redemption:', error)
+  }
+}
+
+const rejectRedemption = async (item: any) => {
+  try {
+    // Simulate rejection
+    await new Promise(resolve => setTimeout(resolve, 500))
+    
+    item.status = 'Rejected'
+    showSuccessSnackbar.value = true
+    successMessage.value = `Redemption for ${item.child} rejected.`
+  } catch (error) {
+    console.error('Failed to reject redemption:', error)
+  }
+}
+
+const saveSettings = async () => {
   saving.value = true
-  await new Promise(r=>setTimeout(r,1000))
-  saving.value = false
-  showSuccess.value = true
-  successMessage.value = 'Settings saved'
+  try {
+    // Simulate saving settings
+    await new Promise(resolve => setTimeout(resolve, 1000))
+    
+    showSuccessSnackbar.value = true
+    successMessage.value = 'Settings saved successfully!'
+  } catch (error) {
+    console.error('Failed to save settings:', error)
+  } finally {
+    saving.value = false
+  }
 }
 
-async function approveRedemption(item:any){
-  item.status='Approved'
-  showSuccess.value=true
-  successMessage.value='Approved'
+const addPaymentMethod = () => {
+  showSuccessSnackbar.value = true
+  successMessage.value = 'Payment method configuration coming soon!'
 }
-async function rejectRedemption(item:any){
-  item.status='Rejected'
-  showSuccess.value=true
-  successMessage.value='Rejected'
+
+const viewFullHistory = () => {
+  router.push('/parent/redemption-history')
 }
+
+const viewAnalytics = () => {
+  router.push('/parent/analytics')
+}
+
+// Lifecycle
+onMounted(() => {
+  // Load redemption settings and data
+})
 </script>
 
-<style scoped>
-.nav-card-body {
-    background-color: white;
-    border-radius: 15px;
-    max-width: 100%;
-    height: 50px;
-    margin-top: 20px;
-    margin-bottom: 5px;
-    margin-left: 20px;
-    margin-right: 20px;
-    box-shadow: var(--shadow-lg);
-    transition: all 0.3s ease;
-    border: 2px solid transparent;
-    align-items: center;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-
-}
-
-.welcome-text {
-  font-size: 20px;
-  font-weight: bold;
-  
-  }
-
-.add-child-btn {
-  font-weight: bold;
-  padding: 5px 5px;
-  border: 2px solid;
-  border-radius: 15px;
-  cursor: pointer;
-  font-size: 10px;
-  background-color: rgb(235, 229, 229);
-  margin: 20px;
-}
-
-
-
-.add-child-btn {
-  font-weight: bold;
-  padding: 10px 10px;
-  border: 2px solid;
-  border-radius: 15px;
-  cursor: pointer;
-  font-size: 15px;
-  background-color: rgb(235, 229, 229);
-}
-
-
-.create-task {
-    background-color: white;
-    border-radius: 20px;
-    height: auto;
-    max-width: 750px;
-    margin-top: 10px;
-    margin-bottom: 20px;
-    margin-left: 20px;
-    margin-right: 5px;
-    box-shadow: var(--shadow-lg);
-    transition: all 0.3s ease;
-    border: 2px solid transparent;
-    align-items: center;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-
-  }
-
-.create-task {
-    background-color: white;
-    border-radius: 20px;
-    height: auto;
-    max-width: 750px;
-    margin-top: 10px;
-    margin-bottom: 20px;
-    margin-left: 20px;
-    margin-right: 5px;
-    box-shadow: var(--shadow-lg);
-    transition: all 0.3s ease;
-    border: 2px solid transparent;
-    align-items: center;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-
-  }
-
-.row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 0.5rem;
-  
-}
-
-.card {
-  background: white;
-  border: none;
-  padding: 20px;
-  width: 600px;
-  margin-left: 2px;
-  margin-right: 2px;
-  font-family: sans-serif;
-}
-
-
-.card-header {
-  font-size: 1.5rem;
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.card-header .icon {
-  margin-right: 10px;
-  font-size: 1.5rem;
-  color: orange;
-}
-
-.form-group {
-  margin-bottom: 16px;
-}
-
-label {
-  display: block;
-  margin-bottom: 6px;
-  color: #555;
-  font-weight: 500;
-}
-
-.input-with-icon {
-  display: flex;
-  align-items: center;
-  border-radius: 15px;
-  background: #fff;
-  border-width: 200px;
-}
-
-.input-icon {
-  font-size: 1.1rem;
-  color: #666;
-}
-
-input,
-select {
-  border: none;
-  outline: none;
-  flex: 1;
-  font-size: 1rem;
-  background: transparent;
-}
-
-.info-box {
-  background-color: #e6f1fb;
-  border-radius: 8px;
-  padding: 12px;
-  font-size: 0.95rem;
-  color: #1a73e8;
-  display: flex;
-  align-items: center;
-}
-
-.info-icon {
-  margin-right: 8px;
-  font-size: 1.2rem;
-}
-
-
-.switch {
-  margin: 20px;
-}
-
-.slider {
-  margin-left: 20px;
-}
-
-.sub-field {
-  margin: 20px;
-}
-
-.box {
-  width: 400px;
-  height: 40px;
-  margin-top: 10px;
-  border-style: groove;
-  border-radius: 10px;
-}
-
-.redemption-card {
-  background: white;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  width: 100%;
-}
-
-.section-title {
-  font-size: 1.5rem;
-  margin-bottom: 16px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.limits-grid {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-
-.limit-field {
-  flex: 1;
-  min-width: 200px;
-}
-
-.limit-field label {
-  display: block;
-  font-weight: bold;
-  margin-bottom: 6px;
-}
-
-.limit-field input {
-  width: 100%;
-  padding: 10px;
-  font-size: 1rem;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-}
-
-.hint {
-  font-size: 0.85rem;
-  color: gray;
-  margin-top: 4px;
-}
-
-.toggle-row {
-  margin-top: 12px;
-  display: flex;
-  align-items: center;
-}
-
-.toggle-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-weight: 600;
-  font-size: 1rem;
-}
-
-
-.select-group label {
-  display: block;
-  font-size: 0.9rem;
-  margin-bottom: 0.25rem;
-  color: #666;
-}
-
-.card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  width: 100%;
-  margin: 1rem auto;
-  overflow-x: auto;
-}
-
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.card-header h2 {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 1.4rem;
-}
-
-.view-all-btn {
-  background: #fff;
-  border: 1px solid #ddd;
-  border-radius: 12px;
-  padding: 0.5rem 1rem;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.requests-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.95rem;
-}
-
-.requests-table th,
-.requests-table td {
-  padding: 0.75rem;
-  text-align: left;
-  vertical-align: middle;
-  border-bottom: 1px solid #eee;
-}
-
-.child-info {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  color: #fff;
-  display: grid;
-  place-content: center;
-  font-weight: bold;
-}
-
-.child-age {
-  font-size: 0.8rem;
-  color: #777;
-}
-
-.usd {
-  color: #777;
-  font-size: 0.85rem;
-  margin-left: 0.3rem;
-}
-
-.status {
-  padding: 0.3rem 0.7rem;
-  border-radius: 999px;
-  font-weight: 500;
-  font-size: 0.85rem;
-}
-
-.status.pending {
-  background: #fff3cd;
-  color: #856404;
-}
-
-.status.approved {
-  background: #e3f2fd;
-  color: #1976d2;
-}
-
-.status.completed {
-  background: #d4edda;
-  color: #2e7d32;
-}
-
-.status.rejected {
-  background: #f8d7da;
-  color: #c62828;
-}
-
-.action-buttons {
-  display: flex;
-  gap: 0.5rem;
-}
-
-.btn {
-  padding: 0.4rem 0.8rem;
-  border-radius: 999px;
-  font-weight: bold;
-  font-size: 0.85rem;
-  border: none;
-  cursor: pointer;
-}
-
-.approve {
-  background-color: #d4edda;
-  color: #2e7d32;
-}
-
-.reject {
-  background-color: #f8d7da;
-  color: #c62828;
-}
-
-.status-pill {
-  border: 1px solid #aaa;
-  padding: 0.35rem 0.8rem;
-  border-radius: 999px;
-  background: white;
-}
-
-.pagination {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 1rem;
-  font-size: 0.9rem;
-}
-
-.pagination select {
-  margin-left: 0.5rem;
-  padding: 0.3rem 0.6rem;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-}
-.dashboard {
-  display: flex;
-  gap: 1.5rem;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  width: 100%;
-  margin-left: 20px;
-  margin-right: 20px;
-}
-
-.payment-card {
-  background: #fff;
-  border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  flex: 1;
-  min-width: 360px;
-  max-width: 49%;
-}
-
-.method-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.6rem 0;
-  border-bottom: 1px solid #eee;
-}
-
-.method-info {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
-.method-title {
-  font-weight: bold;
-}
-
-.method-subtitle {
-  font-size: 0.85rem;
-  color: #777;
-}
-.switch input:checked + .slider {
-  background-color: #4caf50;
-}
-.switch input:checked + .slider::before {
-  transform: translateX(18px);
-}
-.add-button {
-  margin-top: 1rem;
-  background: #e8f5e9;
-  padding: 0.8rem;
-  border-radius: 12px;
-  text-align: center;
-  font-weight: bold;
-  cursor: pointer;
-  border: 1px solid #c8e6c9;
-}
-
-.add-button.gray {
-  background: #f5f5f5;
-  border: 1px solid #ddd;
-}
-.analytics-section {
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-}
-
-.total, .transactions {
-  text-align: center;
-}
-
-.amount {
-  font-size: 1.3rem;
-  font-weight: bold;
-}
-
-.green-text {
-  color: #4caf50;
-}
-.blue-text {
-  color: #42a5f5;
-}
-
-.label {
-  font-size: 0.85rem;
-  color: #777;
-}
-
-.categories {
-  margin-top: 1rem;
-}
-
-.category-row {
-  display: flex;
-  justify-content: space-between;
-  padding: 0.4rem 0;
-  font-size: 0.95rem;
-}
-</style>

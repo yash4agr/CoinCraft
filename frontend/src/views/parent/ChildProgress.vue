@@ -1,210 +1,389 @@
 <template>
-  <div class="p-6 space-y-6">
+  <v-container fluid class="pa-6">
     <!-- Header -->
-    <div class="flex justify-between items-center">
+    <div class="d-flex justify-space-between align-center mb-6">
       <div>
-        <h1 class="text-2xl font-bold text-blue-600">Child Progress</h1>
-        <p class="text-gray-600">Track your child's learning journey and achievements</p>
+        <h1 class="text-h4 font-weight-bold text-primary mb-2">
+          Child Progress
+        </h1>
+        <p class="text-subtitle-1 text-medium-emphasis">
+          Track your child's learning journey and achievements
+        </p>
       </div>
-      <button
-        class="btn-primary flex items-center gap-2"
-        :class="{ 'opacity-50 cursor-not-allowed': exporting }"
-        :disabled="exporting"
-        @click="openExport"
+      <v-btn
+        color="primary"
+        prepend-icon="mdi-download"
+        variant="tonal"
+        @click="exportProgress"
+        :loading="exporting"
       >
-        <i class="mdi mdi-download"></i> Export Report
-      </button>
+        Export Report
+      </v-btn>
     </div>
 
-    <!-- Child & Time Selector -->
-    <div class="bg-white rounded-lg shadow p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-      <div>
-        <label class="font-medium text-gray-700">Child</label>
-        <select v-model="selectedChildId" @change="loadChildProgress" class="input-base">
-          <option value="" disabled>Select a child</option>
-          <option v-for="c in children" :key="c.id" :value="c.id">{{ c.name }}</option>
-        </select>
-      </div>
-      <div>
-        <label class="font-medium text-gray-700">Time Period</label>
-        <select v-model="timeframe" @change="loadChildProgress" class="input-base">
-          <option v-for="tf in timeframes" :key="tf.value" :value="tf.value">{{ tf.title }}</option>
-        </select>
-      </div>
-    </div>
+    <!-- Child Selector -->
+    <v-card class="mb-6" elevation="2">
+      <v-card-title class="text-h6">
+        <v-icon class="mr-2">mdi-account-child</v-icon>
+        Select Child
+      </v-card-title>
+      <v-card-text>
+        <v-row>
+          <v-col cols="12" md="6">
+            <v-select
+              v-model="selectedChildId"
+              :items="children"
+              item-title="name"
+              item-value="id"
+              label="Child"
+              prepend-inner-icon="mdi-account-child"
+              variant="outlined"
+              @update:model-value="loadChildProgress"
+            />
+          </v-col>
+          <v-col cols="12" md="6">
+            <v-select
+              v-model="timeframe"
+              :items="timeframes"
+              label="Time Period"
+              prepend-inner-icon="mdi-calendar"
+              variant="outlined"
+              @update:model-value="loadChildProgress"
+            />
+          </v-col>
+        </v-row>
+      </v-card-text>
+    </v-card>
 
-    <!-- Loading Skeleton -->
-    <div v-if="loading" class="space-y-4">
-      <div class="h-20 bg-gray-200 rounded animate-pulse"></div>
-      <div class="h-60 bg-gray-200 rounded animate-pulse"></div>
-    </div>
+    <!-- Loading State -->
+    <v-skeleton-loader
+      v-if="loading"
+      type="card, card, table"
+      class="mb-6"
+    />
 
-    <!-- Main Content -->
+    <!-- Content -->
     <div v-else-if="selectedChild">
-      <!-- Stats -->
-      <div class="w-full max-w-4xl mx-auto px-4">
-        <StatCard title="Total Rewards" :value="stats.totalRewards" icon="mdi-trophy" bg="bg-green-100"/>
-        <StatCard title="Lessons Completed" :value="stats.lessonsCompleted" icon="mdi-book-open" bg="bg-blue-100"/>
-        <StatCard title="Coins Earned" :value="stats.coinsEarned" icon="mdi-coin" bg="bg-yellow-100"/>
-        <StatCard title="Goals Achieved" :value="stats.goalsAchieved" icon="mdi-target" bg="bg-teal-100"/>
-      </div>
+      <!-- Progress Overview -->
+      <v-row class="mb-6">
+        <v-col cols="12" md="3">
+          <v-card class="text-center pa-4" color="success" variant="tonal">
+            <v-icon size="40" class="mb-2">mdi-trophy</v-icon>
+            <div class="text-h4 font-weight-bold">{{ stats.totalRewards }}</div>
+            <div class="text-subtitle-2">Total Rewards</div>
+          </v-card>
+        </v-col>
+        <v-col cols="12" md="3">
+          <v-card class="text-center pa-4" color="primary" variant="tonal">
+            <v-icon size="40" class="mb-2">mdi-book-open</v-icon>
+            <div class="text-h4 font-weight-bold">{{ stats.lessonsCompleted }}</div>
+            <div class="text-subtitle-2">Lessons Completed</div>
+          </v-card>
+        </v-col>
+        <v-col cols="12" md="3">
+          <v-card class="text-center pa-4" color="warning" variant="tonal">
+            <v-icon size="40" class="mb-2">mdi-coin</v-icon>
+            <div class="text-h4 font-weight-bold">{{ stats.coinsEarned }}</div>
+            <div class="text-subtitle-2">Coins Earned</div>
+          </v-card>
+        </v-col>
+        <v-col cols="12" md="3">
+          <v-card class="text-center pa-4" color="info" variant="tonal">
+            <v-icon size="40" class="mb-2">mdi-target</v-icon>
+            <div class="text-h4 font-weight-bold">{{ stats.goalsAchieved }}</div>
+            <div class="text-subtitle-2">Goals Achieved</div>
+          </v-card>
+        </v-col>
+      </v-row>
 
-      
-       <div class="flex flex-col lg:flex-row gap-4">
-           <div class="bg-white rounded-lg shadow p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
-                   <!-- Charts & Progress -->
-               <div  class="create-task" style="width: 560px;">
-                    <div style="width: 100%; padding: 10px;">
-                        <div>
-                            <p class="text-2xl font-bold text-blue-600">Progress Chart</p>
-                            <p class="text-sm">Learning progress visualization</p>
-                            <div class="mb-4">
-                                <Card title="Subject Performance">
-                                    <div v-for="s in subjectProgress" :key="s.name">
-                                    <div class="flex justify-between text-sm">
-                                        <span>{{ s.name }}</span><span>{{ s.progress }}%</span>
-                                    </div>
-                                    <progress class="w-full h-2" :value="s.progress" max="100"></progress>
-                                    </div>
-                                </Card>
-                                <Card title="Current Streak" icon="mdi-fire">
-                                    <div class="text-center">
-                                    <p class="text-3xl font-bold text-yellow-600">{{ stats.currentStreak }} Days</p>
-                                    </div>
-                                </Card>
-                            </div>
-                        </div>
+      <!-- Progress Charts -->
+      <v-row class="mb-6">
+        <v-col cols="12" lg="8">
+          <v-card elevation="2">
+            <v-card-title class="d-flex align-center">
+              <v-icon class="mr-2">mdi-chart-line</v-icon>
+              Learning Progress Over Time
+            </v-card-title>
+            <v-card-text>
+              <div class="progress-chart-container">
+                <!-- Placeholder for chart - would integrate with chart library -->
+                <learning-progress-chart/>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+        <v-col cols="12" lg="4">
+          <v-card elevation="2" class="mb-4">
+            <v-card-title class="d-flex align-center">
+              <v-icon class="mr-2">mdi-chart-donut</v-icon>
+              Subject Performance
+            </v-card-title>
+            <v-card-text>
+              <div v-for="subject in subjectProgress" :key="subject.name" class="mb-3">
+                <div class="d-flex justify-space-between mb-1">
+                  <span class="text-subtitle-2">{{ subject.name }}</span>
+                  <span class="text-caption">{{ subject.progress }}%</span>
+                </div>
+                <v-progress-linear
+                  :model-value="subject.progress"
+                  :color="getSubjectColor(subject.name)"
+                  height="8"
+                  rounded
+                />
+              </div>
+            </v-card-text>
+          </v-card>
+
+          <v-card elevation="2">
+            <v-card-title class="d-flex align-center">
+              <v-icon class="mr-2">mdi-streak</v-icon>
+              Current Streak
+            </v-card-title>
+            <v-card-text class="text-center">
+              <div class="text-h2 font-weight-bold text-warning">{{ stats.currentStreak }}</div>
+              <div class="text-subtitle-1 mb-2">Days</div>
+              <v-chip color="success" variant="tonal" size="small">
+                <v-icon start>mdi-fire</v-icon>
+                Active Streak
+              </v-chip>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
+
+      <!-- Recent Activities -->
+      <v-card class="mb-6" elevation="2">
+        <v-card-title class="d-flex align-center">
+          <v-icon class="mr-2">mdi-history</v-icon>
+          Recent Activities
+        </v-card-title>
+        <v-card-text>
+          <v-timeline side="end" density="compact">
+            <v-timeline-item
+              v-for="activity in recentActivities"
+              :key="activity.id"
+              :icon="getActivityIcon(activity.type)"
+              :dot-color="getActivityColor(activity.type)"
+              size="small"
+            >
+              <template #opposite>
+                <span class="text-caption text-disabled">
+                  {{ formatTime(activity.timestamp) }}
+                </span>
+              </template>
+              <v-card density="compact">
+                <v-card-text class="py-2">
+                  <div class="text-subtitle-2">{{ activity.title }}</div>
+                  <div class="text-caption text-medium-emphasis">
+                    {{ activity.description }}
+                  </div>
+                  <v-chip
+                    v-if="activity.reward"
+                    size="x-small"
+                    color="warning"
+                    variant="tonal"
+                    class="mt-1"
+                  >
+                    +{{ activity.reward }} coins
+                  </v-chip>
+                </v-card-text>
+              </v-card>
+            </v-timeline-item>
+          </v-timeline>
+        </v-card-text>
+      </v-card>
+
+      <!-- Goals and Achievements -->
+      <v-row class="mb-6">
+        <v-col cols="12" md="6">
+          <v-card elevation="2">
+            <v-card-title class="d-flex align-center">
+              <v-icon class="mr-2">mdi-target</v-icon>
+              Active Goals
+            </v-card-title>
+            <v-card-text>
+              <div v-if="activeGoals.length === 0" class="text-center py-6">
+                <v-icon size="48" class="mb-2 text-disabled">mdi-target-variant</v-icon>
+                <div class="text-subtitle-1 text-disabled">No active goals</div>
+              </div>
+              <div v-else>
+                <v-card
+                  v-for="goal in activeGoals"
+                  :key="goal.id"
+                  variant="outlined"
+                  class="mb-3"
+                >
+                  <v-card-text class="py-3">
+                    <div class="d-flex justify-space-between align-center mb-2">
+                      <span class="text-subtitle-2 font-weight-medium">{{ goal.title }}</span>
+                      <v-chip size="small" :color="getGoalStatusColor(goal.status)">
+                        {{ goal.status }}
+                      </v-chip>
                     </div>
-                </div>
-            <div>
-                <div class="create-task" style="width: 560px;">
-                 <!-- Recent Activities -->
-                <div>
-                    <h2 class="text-2xl font-bold text-blue-600">Recent Activities</h2>
-                    <div v-for="a in recentActivities" :key="a.id" class="border-l-4 pl-4" :class="getActivityColor(a.type)">
-                        <div class="text-sm text-gray-500">{{ formatTime(a.timestamp) }}</div>
-                        <span>
-                        <p class="font-medium">{{ a.title }}</p>
-                        <p class="text-sm text-gray-600">{{ a.description }}</p>
-                        </span>
-
-                        <span v-if="a.reward" class="text-sm text-yellow-600">+{{ a.reward }} coins</span>
+                    <v-progress-linear
+                      :model-value="(goal.currentAmount / goal.targetAmount) * 100"
+                      color="primary"
+                      height="6"
+                      rounded
+                      class="mb-2"
+                    />
+                    <div class="text-caption text-medium-emphasis">
+                      {{ goal.currentAmount }} / {{ goal.targetAmount }} {{ goal.unit }}
                     </div>
-                </div>
-                </div>
-            </div>
-          </div>
-      </div>
+                  </v-card-text>
+                </v-card>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+        <v-col cols="12" md="6">
+          <v-card elevation="2">
+            <v-card-title class="d-flex align-center">
+              <v-icon class="mr-2">mdi-medal</v-icon>
+              Recent Achievements
+            </v-card-title>
+            <v-card-text>
+              <div v-if="achievements.length === 0" class="text-center py-6">
+                <v-icon size="48" class="mb-2 text-disabled">mdi-medal-outline</v-icon>
+                <div class="text-subtitle-1 text-disabled">No achievements yet</div>
+              </div>
+              <div v-else>
+                <v-card
+                  v-for="achievement in achievements"
+                  :key="achievement.id"
+                  variant="outlined"
+                  class="mb-3"
+                >
+                  <v-card-text class="py-3">
+                    <div class="d-flex align-center">
+                      <v-avatar :color="achievement.rarity" size="40" class="mr-3">
+                        <v-icon>{{ achievement.icon }}</v-icon>
+                      </v-avatar>
+                      <div class="flex-grow-1">
+                        <div class="text-subtitle-2 font-weight-medium">{{ achievement.title }}</div>
+                        <div class="text-caption text-medium-emphasis">{{ achievement.description }}</div>
+                      </div>
+                      <div class="text-caption text-disabled">
+                        {{ formatDate(achievement.earnedAt) }}
+                      </div>
+                    </div>
+                  </v-card-text>
+                </v-card>
+              </div>
+            </v-card-text>
+          </v-card>
+        </v-col>
+      </v-row>
 
-
-
+      <!-- Recommendations -->
+      <v-card elevation="2">
+        <v-card-title class="d-flex align-center">
+          <v-icon class="mr-2">mdi-lightbulb</v-icon>
+          Recommendations
+        </v-card-title>
+        <v-card-text>
+          <v-row>
+            <v-col
+              v-for="recommendation in recommendations"
+              :key="recommendation.id"
+              cols="12"
+              md="4"
+            >
+              <v-card variant="outlined" height="100%">
+                <v-card-text>
+                  <div class="d-flex align-center mb-2">
+                    <v-icon :color="recommendation.priority" class="mr-2">
+                      {{ recommendation.icon }}
+                    </v-icon>
+                    <span class="text-subtitle-2 font-weight-medium">
+                      {{ recommendation.title }}
+                    </span>
+                  </div>
+                  <p class="text-body-2 text-medium-emphasis mb-3">
+                    {{ recommendation.description }}
+                  </p>
+                  <v-btn
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                    @click="applyRecommendation(recommendation)"
+                  >
+                    {{ recommendation.action }}
+                  </v-btn>
+                </v-card-text>
+              </v-card>
+            </v-col>
+          </v-row>
+        </v-card-text>
+      </v-card>
     </div>
-  </div>
-       <!-- Goals & Achievements -->
-      <div class="bg-white rounded-lg shadow p-5 grid grid-cols-1 md:grid-cols-2 gap-4" style="margin: 20px;">
-        <Card title="Active Goals" icon="mdi-target">
-          <template v-if="activeGoals.length === 0">
-            <p class="text-center text-gray-500 py-6">No active goals</p>
-          </template>
-          <template v-else>
-            <div v-for="g in activeGoals" :key="g.id" class="border rounded p-4 mb-3">
-              <div class="flex justify-between">
-                <p class="font-medium">{{ g.title }}</p>
-                <span class="text-sm" :class="getGoalStatusColor(g.status)">{{ g.status }}</span>
-              </div>
-              <progress class="w-full h-2 mt-2" :value="(g.currentValue / g.targetValue) * 100" max="100"></progress>
-            </div>
-          </template>
-        </Card>
-        <Card title="Recent Achievements" icon="mdi-medal">
-          <template v-if="achievements.length === 0">
-            <p class="text-center text-gray-500 py-6">No achievements yet</p>
-          </template>
-          <template v-else>
-            <div v-for="a in achievements" :key="a.id" class="flex items-center border rounded p-3 mb-3">
-              <i :class="`mdi ${a.icon} text-2xl mr-3 text-${a.rarity}-500`"></i>
-              <div class="flex-1">
-                <p class="font-medium">{{ a.title }}</p>
-                <span class="text-sm text-gray-600">{{ a.description }}</span>
-                <span class="text-sm text-gray-500 p-5">{{ formatDate(a.earnedAt) }}</span>
-              </div>
-            
-            </div>
-          </template>
-        </Card>
-        <!-- Export Modal -->
-    <Modal v-model="exportDialog">
-      <h3 class="text-lg font-semibold mb-4">Export Progress Report</h3>
-      <select v-model="exportFormat" class="input-base mb-4">
-        <option v-for="f in exportFormats" :key="f">{{ f }}</option>
-      </select>
-      <label class="flex items-center gap-2 mb-4">
-        <input type="checkbox" v-model="includeCharts" />
-        Include charts
-      </label>
-      <div class="flex justify-end gap-2">
-        <button @click="exportDialog=false" class="btn-secondary">Cancel</button>
-        <button @click="confirmExport" class="btn-primary" :class="{ 'opacity-50': exporting }" :disabled="exporting">
-          {{ exporting ? 'Exporting...' : 'Export' }}
-        </button>
-      </div>
-    </Modal>
-    
 
-  
+    <!-- No Child Selected -->
+    <v-card v-else-if="!loading" class="text-center pa-8" elevation="1">
+      <v-icon size="64" class="mb-4 text-disabled">mdi-account-child-outline</v-icon>
+      <h3 class="text-h6 mb-2 text-disabled">Select a Child</h3>
+      <p class="text-body-2 text-medium-emphasis">
+        Choose a child from the dropdown above to view their progress
+      </p>
+    </v-card>
 
-    
-  </div>
-  <!-- Snackbar -->
-   <div class="snackbar">
-       <Snackbar v-if="snackbar.show" :type="snackbar.color">
-  {{ snackbar.message }}
-   </Snackbar>
-   </div>
-    
+    <!-- Export Dialog -->
+    <v-dialog v-model="exportDialog" max-width="400">
+      <v-card>
+        <v-card-title>Export Progress Report</v-card-title>
+        <v-card-text>
+          <v-select
+            v-model="exportFormat"
+            :items="exportFormats"
+            label="Format"
+            variant="outlined"
+            class="mb-3"
+          />
+          <v-checkbox
+            v-model="includeCharts"
+            label="Include charts and visualizations"
+          />
+        </v-card-text>
+        <v-card-actions>
+          <v-spacer />
+          <v-btn @click="exportDialog = false">Cancel</v-btn>
+          <v-btn
+            color="primary"
+            @click="confirmExport"
+            :loading="exporting"
+          >
+            Export
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Snackbar -->
+    <v-snackbar
+      v-model="snackbar.show"
+      :color="snackbar.color"
+      :timeout="4000"
+      location="bottom right"
+    >
+      {{ snackbar.message }}
+      <template #actions>
+        <v-btn icon="mdi-close" @click="snackbar.show = false" />
+      </template>
+    </v-snackbar>
+  </v-container>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import type { User, Goal, Achievement } from '@/types'
+import LearningProgressChart from './LearningProgressChart.vue'
 
 // Data
 const loading = ref(false)
 const exporting = ref(false)
+const exportDialog = ref(false)
 const selectedChildId = ref<string>('')
 const timeframe = ref('month')
-const exportDialog = ref(false)
-
-const exportFormats = ['PDF', 'Excel', 'CSV']
-const exportFormat = ref('PDF')
-const includeCharts = ref(true)
-
-
-const exportProgress = () => {
-  if (!selectedChild.value) {
-    showSnackbar('Please select a child first', 'warning')
-    return
-  }
-  exportDialog.value = true
-}
-
-const confirmExport = async () => {
-  exporting.value = true
-  try {
-    // Simulate export process
-    await new Promise(resolve => setTimeout(resolve, 2000))
-    showSnackbar(`Progress report exported as ${exportFormat.value}`, 'success')
-    exportDialog.value = false
-  } catch (error) {
-    showSnackbar('Failed to export report', 'error')
-  } finally {
-    exporting.value = false
-  }
-}
-
-function openExport() {
-  exporting.value = true
-}
 
 const children = ref<User[]>([
   { id: '1', name: 'Luna', email: 'emma@example.com', role: 'child', avatar: '' },
@@ -217,6 +396,10 @@ const timeframes = [
   { title: 'Last 3 Months', value: 'quarter' },
   { title: 'Last Year', value: 'year' }
 ]
+
+const exportFormats = ['PDF', 'Excel', 'CSV']
+const exportFormat = ref('PDF')
+const includeCharts = ref(true)
 
 const selectedChild = computed(() => 
   children.value.find(child => child.id === selectedChildId.value)
@@ -308,7 +491,32 @@ const achievements = ref<Achievement[]>([
   }
 ])
 
-
+const recommendations = ref([
+  {
+    id: '1',
+    title: 'Focus on Science',
+    description: 'Science progress is below average. Consider adding more science activities.',
+    icon: 'mdi-flask',
+    priority: 'warning',
+    action: 'Add Activities'
+  },
+  {
+    id: '2',
+    title: 'Increase Challenge',
+    description: 'Child is excelling in reading. Consider more advanced materials.',
+    icon: 'mdi-trending-up',
+    priority: 'success',
+    action: 'Level Up'
+  },
+  {
+    id: '3',
+    title: 'Maintain Streak',
+    description: 'Great job maintaining the daily streak! Keep it up.',
+    icon: 'mdi-fire',
+    priority: 'info',
+    action: 'Encourage'
+  }
+])
 
 const snackbar = reactive({
   show: false,
@@ -332,6 +540,42 @@ const loadChildProgress = async () => {
   }
 }
 
+const exportProgress = () => {
+  if (!selectedChild.value) {
+    showSnackbar('Please select a child first', 'warning')
+    return
+  }
+  exportDialog.value = true
+}
+
+const confirmExport = async () => {
+  exporting.value = true
+  try {
+    // Simulate export process
+    await new Promise(resolve => setTimeout(resolve, 2000))
+    showSnackbar(`Progress report exported as ${exportFormat.value}`, 'success')
+    exportDialog.value = false
+  } catch (error) {
+    showSnackbar('Failed to export report', 'error')
+  } finally {
+    exporting.value = false
+  }
+}
+
+const applyRecommendation = (recommendation: any) => {
+  showSnackbar(`Applied recommendation: ${recommendation.title}`, 'success')
+}
+
+const getActivityIcon = (type: string) => {
+  const icons = {
+    lesson: 'mdi-book-open',
+    achievement: 'mdi-trophy',
+    goal: 'mdi-target',
+    task: 'mdi-check-circle'
+  }
+  return icons[type as keyof typeof icons] || 'mdi-circle'
+}
+
 const getActivityColor = (type: string) => {
   const colors = {
     lesson: 'primary',
@@ -342,7 +586,15 @@ const getActivityColor = (type: string) => {
   return colors[type as keyof typeof colors] || 'grey'
 }
 
-
+const getSubjectColor = (subject: string) => {
+  const colors = {
+    Math: 'blue',
+    Reading: 'green',
+    Science: 'purple',
+    Art: 'orange'
+  }
+  return colors[subject as keyof typeof colors] || 'grey'
+}
 
 const getGoalStatusColor = (status: string) => {
   const colors = {
@@ -385,236 +637,19 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* Container and spacing */
-.p-6 {
-  padding: 1.5rem;
-}
-.space-y-6 > * + * {
-  margin-top: 1.5rem;
+.chart-placeholder {
+  border: 2px dashed #e0e0e0;
 }
 
-/* Header */
-.flex {
-  display: flex;
-}
-.justify-between {
-  justify-content: space-between;
-}
-.items-center {
-  align-items: center;
+.v-timeline-item {
+  padding-bottom: 16px;
 }
 
-/* Typography */
-.text-2xl {
-  font-size: 1.5rem;
-  font-weight: bold;
-}
-.text-blue-600 {
-  color: #2563eb;
-}
-.text-gray-600 {
-  color: #4b5563;
-}
-.text-gray-500 {
-  color: #6b7280;
-}
-.text-yellow-600 {
-  color: #ca8a04;
+.v-card {
+  transition: all 0.3s ease;
 }
 
-.card {
-  background: white;
-  border: none;
-  padding: 20px;
-  width: 600px;
-  margin-left: 2px;
-  margin-right: 2px;
-  font-family: sans-serif;
-}
-/* Buttons */
-.btn-primary {
-  background: linear-gradient(to right, #f43f5e, #ec4899);
-  color: white;
-  padding: 0.5rem 1rem;
-  border: none;
-  border-radius: 0.375rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-.btn-primary:disabled,
-.btn-primary.opacity-50 {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background-color: #e5e7eb;
-  color: #374151;
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  border: none;
-  cursor: pointer;
-}
-
-/* Cards and layout */
-.bg-white {
-  background-color: white;
-}
-.rounded-lg {
-  border-radius: 0.5rem;
-}
-.shadow {
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-}
-.p-5 {
-  padding: 1.25rem;
-}
-.grid {
-  display: grid;
-}
-.grid-cols-1 {
-  grid-template-columns: repeat(1, minmax(0, 1fr));
-}
-.md\:grid-cols-2 {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-.lg\:grid-cols-3 {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-.gap-4 {
-  gap: 1rem;
-}
-.mt-6 {
-  margin-top: 1.5rem;
-}
-
-.snackbar {
-  position: fixed;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  background-color: #198754; /* Bootstrap success color */
-  color: white;
-  padding: 0.75rem 1.25rem;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
-  z-index: 1000;
-  animation: slide-up 0.3s ease;
-}
-/* Form elements */
-.input-base {
-  width: 100%;
-  padding: 0.5rem;
-  border-radius: 0.375rem;
-  border: 1px solid #ccc;
-  font-size: 1rem;
-}
-
-/* Progress bar */
-progress {
-  width: 100%;
-  height: 8px;
-  appearance: none;
-}
-progress::-webkit-progress-bar {
-  background-color: #eee;
-  border-radius: 0.25rem;
-}
-progress::-webkit-progress-value {
-  background-color: #3b82f6;
-  border-radius: 0.25rem;
-}
-progress::-moz-progress-bar {
-  background-color: #3b82f6;
-}
-
-/* Text sizes */
-.text-sm {
-  font-size: 0.875rem;
-}
-.text-3xl {
-  font-size: 1.875rem;
-  font-weight: bold;
-}
-
-/* Utility classes */
-.text-center {
-  text-align: center;
-}
-.border {
-  border: 1px solid #e5e7eb;
-}
-.border-l-4 {
-  border-left: 4px solid #e5e7eb;
-}
-.pl-4 {
-  padding-left: 1rem;
-}
-.mb-3 {
-  margin-bottom: 0.75rem;
-}
-.mb-4 {
-  margin-bottom: 1rem;
-}
-.py-6 {
-  padding-top: 1.5rem;
-  padding-bottom: 1.5rem;
-}
-
-/* Icon sizes */
-.text-6xl {
-  font-size: 3.75rem;
-}
-.text-2xl {
-  font-size: 1.5rem;
-}
-.mr-3 {
-  margin-right: 0.75rem;
-}
-
-/* Gap utility */
-.gap-2 {
-  gap: 0.5rem;
-}
-
-/* Responsive */
-@media (min-width: 768px) {
-  .md\:grid-cols-2 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-@media (min-width: 1024px) {
-  .lg\:grid-cols-3 {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-.create-task {
-    background-color: white;
-    border-radius: 20px;
-    height: auto;
-    margin-top: 10px;
-    margin-bottom: 20px;
-    margin-left: 20px;
-    margin-right: 5px;
-    box-shadow: var(--shadow-lg);
-    transition: all 0.3s ease;
-    border: 2px solid transparent;
-    align-items: center;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-
-  }
-
-.row {
-  display:flex;
-  flex-wrap: wrap;
-  gap: 1rem;
-  margin-bottom: 0.5rem;
-  
+.v-card:hover {
+  transform: translateY(-2px);
 }
 </style>

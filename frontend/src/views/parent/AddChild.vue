@@ -1,10 +1,8 @@
 <template>
   <div class="dashboard">
-  
-
     <!-- Add Child Form -->
     <div class="add-child-form">
-      <h2>Add New Child</h2>
+      <h1 class="text-2xl font-bold p-2 text-blue-600">Add New Child</h1>
       <form @submit.prevent="addChild" novalidate>
         <div class="form-group">
           <label>
@@ -40,65 +38,72 @@
 
         <div class="form-actions">
           <button type="button" @click="resetForm">Cancel</button>
-          <button type="submit" :disabled="!childFormValid">Add Child</button>
+          <button type="submit" :disabled="!childFormValid || loading">Add Child</button>
         </div>
       </form>
     </div>
-          <!-- Child List Display -->
-      
+
+    <!-- Child List Display -->
     <div class="table-container">
-    <h2> Children List</h2>
+      <h2>Children List</h2>
 
-    <table v-if="children.length">
-      <thead>
-        <tr>
-          <th>#</th>
-          <th>Name</th>
-          <th>Age</th>
-          <th>Email</th>
-          <th>Avatar Color</th>
-          <th>Username</th>
-          <th>Password</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="(child, index) in children" :key="index">
-          <td>{{ index + 1 }}</td>
-          <td>{{ child.name }}</td>
-          <td>{{ child.age }}</td>
-          <td>{{ child.email || '—' }}</td>
-          <td>{{ child.avatarColor }}</td>
-          <td>{{ child.name }}{{ child.age }}</td>
-          <td>{{ child.password }}</td>
-        </tr>
-      </tbody>
-    </table>
+      <table v-if="children.length">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Age</th>
+            <th>Email</th>
+            <th>Avatar Color</th>
+            <th>Username</th>
+            <th>Password</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="(child, index) in children" :key="child.id">
+            <td>{{ index + 1 }}</td>
+            <td>{{ child.name }}</td>
+            <td>{{ child.age }}</td>
+            <td>{{ child.email || '—' }}</td>
+            <td>{{ child.avatarColor }}</td>
+            <td>{{ child.name.toLowerCase() }}{{ child.age }}</td>
+            <td>{{ child.password }}</td>
+          </tr>
+        </tbody>
+      </table>
 
-    <p v-else>No children added yet.</p>
-  </div>
+      <p v-else>No children added yet.</p>
+    </div>
 
+    <!-- Success Snackbar -->
+    <div v-if="showSuccessSnackbar" class="snackbar">
+      <span>{{ successMessage }}</span>
+      <button @click="showSuccessSnackbar = false">✖</button>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-
 import { reactive, ref, computed } from 'vue'
-import type {  Parent, Child } from  '@/types'
+import type { Parent, Child} from '@/types'
+
+
+
 
 const children = ref<Child[]>([])
 const showSuccessSnackbar = ref(false)
 const successMessage = ref('')
 const loading = ref(false)
 
+const avatarColors = ['Red', 'Blue', 'Green', 'Yellow', 'Purple']
+
 const newChild = reactive({
   name: '',
-  age: null,
+  age: null as number | null,
   email: '',
-  avatarColor: '',
+  avatarColor: 'Blue',
   password: ''
 })
-
-const avatarColors = ['Red', 'Blue', 'Green', 'Yellow', 'Purple']
 
 const childFormValid = computed(() => {
   return (
@@ -109,48 +114,47 @@ const childFormValid = computed(() => {
   )
 })
 
-function resetForm() {
-  newChild.name = ''
-  newChild.age = null
-  newChild.email = ''
-  newChild.avatarColor = ''
-}
-
 const parent = ref<Parent>({
   id: '1',
   name: 'Priya',
   email: 'priya@example.com',
-  children: ['1', '2'],
+  children: [],
   createdAt: new Date(),
-  updatedAt: new Date()
+  updatedAt: new Date(),
+  role: 'parent',
 })
 
-function generateRandomPassword(length = 10) {
-  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+[]{}<>?'
+function resetForm() {
+  newChild.name = ''
+  newChild.age = null
+  newChild.email = ''
+  newChild.avatarColor = 'Blue'
+  newChild.password = ''
+}
+
+function generateRandomPassword(length = 10): string {
+  const chars =
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+[]{}<>?'
   let password = ''
   for (let i = 0; i < length; i++) {
-    const randomIndex = Math.floor(Math.random() * chars.length)
-    password += chars[randomIndex]
+    password += chars[Math.floor(Math.random() * chars.length)]
   }
   return password
 }
 
-const addChild = async () => {
+async function addChild() {
   if (!childFormValid.value) return
-  
   loading.value = true
 
   try {
-    // Simulate adding child
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
+    await new Promise(resolve => setTimeout(resolve, 500)) // simulate delay
+
     const password = generateRandomPassword(12)
-    newChild.password = password
 
     const child: Child = {
       id: Date.now().toString(),
       name: newChild.name,
-      age: newChild.age,
+      age: newChild.age!,
       email: newChild.email || undefined,
       initials: newChild.name.charAt(0).toUpperCase(),
       avatarColor: newChild.avatarColor,
@@ -163,42 +167,33 @@ const addChild = async () => {
       createdAt: new Date(),
       updatedAt: new Date()
     }
-    
+
     children.value.push(child)
-   
     showSuccessSnackbar.value = true
-    successMessage.value = `${newChild.name} added successfully!`
-    
-    // Reset form
-    Object.assign(newChild, {
-      name: '',
-      age: 8,
-      email: '',
-      avatarColor: 'blue',
-      password:''
-    })
-  } catch (error) {
-    console.error('Failed to add child:', error)
+    successMessage.value = `${child.name} added successfully!`
+    resetForm()
+  } catch (err) {
+    console.error('Failed to add child:', err)
   } finally {
     loading.value = false
   }
 }
-
 </script>
 
 <style scoped>
 .dashboard {
-  max-width: 600px;
+  max-width: 700px;
   margin: 2rem auto;
   font-family: sans-serif;
 }
 
 .add-child-form {
   padding: 1rem;
-  border: 1px solid #ddd;
+  border: 1px solid #ccc;
   border-radius: 10px;
   background-color: #f9f9f9;
   margin-bottom: 2rem;
+  width: 500px;
 }
 
 .form-group {
@@ -226,42 +221,41 @@ button {
   cursor: pointer;
 }
 
-.child-list {
-  padding: 1rem;
-  border: 1px solid #eee;
-  border-radius: 10px;
-  background-color: #fff;
-}
-
-.child-card {
-  padding: 0.5rem;
-  border-bottom: 1px solid #ddd;
-}
-
 .table-container {
-  max-width: 800px;
-  margin: 2rem auto;
-  font-family: sans-serif;
+  margin-top: 2rem;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 1rem;
 }
 
 thead {
-  background-color: #f0f0f0;
+  background-color: #eee;
 }
 
 th,
 td {
   border: 1px solid #ccc;
   padding: 0.5rem;
-  text-align: left;
 }
 
 th {
   font-weight: bold;
+  text-align: left;
+}
+
+.snackbar {
+  position: fixed;
+  bottom: 1rem;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #4caf50;
+  color: white;
+  padding: 0.75rem 1.25rem;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
 }
 </style>

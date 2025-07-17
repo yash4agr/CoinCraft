@@ -4,8 +4,8 @@ export interface User {
   email: string
   role: 'child' | 'parent' | 'teacher'
   avatar?: string
-  createdAt: Date
-  updatedAt: Date
+  createdAt?: Date
+  updatedAt?: Date
 }
 
 export interface Child extends User {
@@ -14,6 +14,8 @@ export interface Child extends User {
   level: number
   parentId: string
   classId?: string
+  avatarColor?: string
+  password?:string
 }
 
 export interface Parent extends User {
@@ -48,6 +50,9 @@ export interface Goal {
   completed: boolean
   createdAt: Date
   updatedAt: Date
+  status?: 'active' | 'completed' | 'pending'
+  unit?: string
+  reward?: number
 }
 
 export interface Task {

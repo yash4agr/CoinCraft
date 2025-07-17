@@ -184,7 +184,7 @@ const routes = [
       },
       {
         path: 'childprogress/:id',
-        name: 'ChildProgressDetail',
+        name: 'ChildProgress',
         component: ChildProgress,
       },
     ]
