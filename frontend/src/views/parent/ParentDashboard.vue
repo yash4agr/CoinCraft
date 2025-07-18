@@ -7,66 +7,74 @@
       </div>
       <nav class="sidebar-nav">
         <ul>
-          <li :class="{active: activeNav === 'dashboard'}" @click="setActiveNav('dashboard')">
-            <v-icon>mdi-view-dashboard</v-icon> Dashboard
+          <li :class="{ active: activeNav === 'dashboard' }" @click="setActiveNav('dashboard')">
+            <v-icon>mdi-view-dashboard</v-icon>
+            <span>Dashboard</span>
           </li>
-          <li :class="{active: activeNav === 'childprogress'}" @click="setActiveNav('childprogress')">
-            <v-icon>mdi-account-child</v-icon> Child Progress
+          <li :class="{ active: activeNav === 'childprogress' }" @click="setActiveNav('childprogress')">
+            <v-icon>mdi-account-child</v-icon>
+            <span>Child</span>
           </li>
-          <li :class="{active: activeNav === 'tasks'}" @click="setActiveNav('tasks')">
-            <v-icon>mdi-format-list-checkbox</v-icon> Tasks
+          <li :class="{ active: activeNav === 'tasks' }" @click="setActiveNav('tasks')">
+            <v-icon>mdi-format-list-checkbox</v-icon>
+            <span>Tasks</span>
           </li>
-          <li :class="{active: activeNav === 'reports'}" @click="setActiveNav('reports')">
-            <v-icon>mdi-chart-bar</v-icon> Reports
+          <li :class="{ active: activeNav === 'reports' }" @click="setActiveNav('reports')">
+            <v-icon>mdi-chart-bar</v-icon>
+            <span>Reports</span>
           </li>
-          <li :class="{active: activeNav === 'settings'}" @click="setActiveNav('settings')">
-            <v-icon>mdi-cog</v-icon> Settings
+          <li :class="{ active: activeNav === 'settings' }" @click="setActiveNav('settings')">
+            <v-icon>mdi-cog</v-icon>
+            <span>Settings</span>
+          </li>
+          <li @click="handleAddChild">
+            <v-icon>mdi-account-plus</v-icon>
+            <span>Add</span>
           </li>
         </ul>
       </nav>
-      <div class="sidebar-actions">
-        <v-btn color="primary" block class="mb-2" @click="handleAddChild">
-          <v-icon start>mdi-account-plus</v-icon> Add Child
-        </v-btn>
-        <v-btn color="secondary" block class="mb-2" @click="handleAssignTask">
-          <v-icon start>mdi-plus-box</v-icon> Assign Task
-        </v-btn>
-        <v-btn color="success" block class="mb-2" @click="handleRedemption">
-          <v-icon start>mdi-gift</v-icon> Redemption
-        </v-btn>
-        <v-btn color="info" block @click="handleReports">
-          <v-icon start>mdi-chart-bar</v-icon> Reports
-        </v-btn>
-      </div>
+
     </aside>
   <v-container fluid class="pa-4">
     <template v-if="currentView === VIEW_DASHBOARD">
     <!-- Header -->
-    <v-row>
-      <v-col cols="12">
-        <v-card>
-          <v-card-title class="d-flex align-center">
-            <v-avatar color="primary" class="me-3">
-              <v-icon color="white">mdi-account-heart</v-icon>
-            </v-avatar>
-            <div>
-              <h2 class="text-h5">Welcome back, {{ parent.name }}!</h2>
-              <div class="text-subtitle-1 text-medium-emphasis">
-                Family Dashboard
-              </div>
-            </div>
-            <v-spacer />
-            <v-btn
-              prepend-icon="mdi-plus"
-              color="primary"
-              @click="showAddChildDialog = true"
-            >
-              Add Child
-            </v-btn>
-          </v-card-title>
-        </v-card>
-      </v-col>
-    </v-row>
+      <v-row>
+        <v-col cols="12">
+          <v-card>
+            <!-- Responsive Card Title -->
+            <v-card-title class="pa-4">
+              <v-row align="center" class="w-100" no-gutters>
+                
+                <!-- Avatar and Welcome Text -->
+                <v-col cols="12" md="8" class="d-flex align-center mb-3 mb-md-0">
+                  <v-avatar color="primary" class="me-3">
+                    <v-icon color="white">mdi-account-heart</v-icon>
+                  </v-avatar>
+                  <div>
+                    <h2 class="text-h6 text-md-h5 mb-1">Welcome back, {{ parent.name }}!</h2>
+                    <div class="text-subtitle-2 text-md-subtitle-1 text-medium-emphasis">
+                      Parent Dashboard
+                    </div>
+                  </div>
+                </v-col>
+
+                <!-- Add Child Button -->
+                <v-col cols="12" md="4" class="d-flex justify-end">
+                  <v-btn
+                    prepend-icon="mdi-plus"
+                    color="primary"
+                    @click="showAddChildDialog = true"
+                    class="w-100 w-md-auto"
+                  >
+                    Add Child
+                  </v-btn>
+                </v-col>
+              </v-row>
+            </v-card-title>
+          </v-card>
+        </v-col>
+      </v-row>
+
 
     <!-- Family Overview Stats -->
     <v-row>
@@ -815,5 +823,61 @@ onMounted(() => {
   flex-direction: column;
   gap: 8px;
 }
+/* 🔻 MOBILE STYLES */
+@media (max-width: 768px) {
+  .parent-dashboard-layout {
+    flex-direction: column-reverse;
+  }
 
+  .sidebar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 60px;
+    background-color: white;
+    z-index: 100;
+    border-top: 1px solid #ccc;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .sidebar-header,
+  .sidebar-title {
+    display: none;
+  }
+
+  .sidebar-nav ul {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    gap: 35px;
+  }
+
+  .sidebar-nav li {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 20px;
+  }
+
+  .sidebar-nav li span {
+    display: none !important; /* ✅ Hide text */
+  }
+
+  .sidebar-nav li v-icon {
+    font-size: 24px;
+  }
+
+  .v-container {
+    margin-bottom: 60px; /* Prevent overlap */
+  }
+}
 </style>

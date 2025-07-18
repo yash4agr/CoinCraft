@@ -1,25 +1,40 @@
 <template>
   <v-container fluid class="pa-4">
     <!-- Header -->
-    <v-row>
-      <v-col cols="12">
-        <v-card>
-          <v-card-title class="d-flex align-center">
-            <v-icon class="me-2" color="success">mdi-cash-multiple</v-icon>
-            Coin Redemption Settings
-            <v-spacer />
-            <v-btn
-              prepend-icon="mdi-content-save"
-              color="primary"
-              @click="saveSettings"
-              :loading="saving"
-            >
-              Save Settings
-            </v-btn>
-          </v-card-title>
-        </v-card>
-      </v-col>
-    </v-row>
+      <v-row>
+        <v-col cols="12">
+          <v-card>
+            <v-card-title>
+              <v-row
+                class="align-center"
+                align="center"
+                justify="space-between"
+                no-gutters
+              >
+                <!-- Icon + Title -->
+                <v-col cols="12" md="auto" class="d-flex align-center mb-3 mb-md-0">
+                  <v-icon class="me-2" color="success">mdi-cash-multiple</v-icon>
+                  <span class="text-h6">Coin Redemption Settings</span>
+                </v-col>
+
+                <!-- Button -->
+                <v-col cols="12" md="auto" class="text-md-right">
+                  <v-btn
+                    block
+                    color="primary"
+                    prepend-icon="mdi-content-save"
+                    @click="saveSettings"
+                    :loading="saving"
+                  >
+                    Save Settings
+                  </v-btn>
+                </v-col>
+              </v-row>
+            </v-card-title>
+          </v-card>
+        </v-col>
+      </v-row>
+
 
     <v-row>
       <!-- Exchange Rate Settings -->

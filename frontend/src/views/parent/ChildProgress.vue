@@ -1,25 +1,38 @@
 <template>
   <v-container fluid class="pa-6">
     <!-- Header -->
-    <div class="d-flex justify-space-between align-center mb-6">
-      <div>
-        <h1 class="text-h4 font-weight-bold text-primary mb-2">
-          Child Progress
-        </h1>
-        <p class="text-subtitle-1 text-medium-emphasis">
-          Track your child's learning journey and achievements
-        </p>
-      </div>
-      <v-btn
-        color="primary"
-        prepend-icon="mdi-download"
-        variant="tonal"
-        @click="exportProgress"
-        :loading="exporting"
-      >
-        Export Report
-      </v-btn>
-    </div>
+      <v-row class="mb-6">
+        <v-col cols="12">
+          <v-row align="center" class="flex-column flex-md-row justify-space-between">
+            
+            <!-- Title & Subtitle -->
+            <v-col cols="12" md="auto" class="pa-0 mb-4 mb-md-0">
+              <h1 class="text-h5 text-md-h4 font-weight-bold text-primary mb-2">
+                Child Progress
+              </h1>
+              <p class="text-subtitle-2 text-md-subtitle-1 text-medium-emphasis">
+                Track your child's learning journey and achievements
+              </p>
+            </v-col>
+
+            <!-- Button -->
+            <v-col cols="12" md="auto" class="pa-0 text-md-right">
+              <v-btn
+                block
+                color="primary"
+                prepend-icon="mdi-download"
+                variant="tonal"
+                @click="exportProgress"
+                :loading="exporting"
+              >
+                Export Report
+              </v-btn>
+            </v-col>
+
+          </v-row>
+        </v-col>
+      </v-row>
+
 
     <!-- Child Selector -->
     <v-card class="mb-6" elevation="2">
