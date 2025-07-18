@@ -111,20 +111,19 @@
 
       <!-- Progress Charts -->
       <v-row class="mb-6">
-        <v-col cols="12" lg="8">
-          <v-card elevation="2">
-            <v-card-title class="d-flex align-center">
-              <v-icon class="mr-2">mdi-chart-line</v-icon>
-              Learning Progress Over Time
-            </v-card-title>
-            <v-card-text>
-              <div class="progress-chart-container">
-                <!-- Placeholder for chart - would integrate with chart library -->
-                <learning-progress-chart/>
-              </div>
-            </v-card-text>
-          </v-card>
-        </v-col>
+          <v-col cols="12" lg="8">
+            <v-card elevation="2" class="pa-4">
+              <v-card-title class="d-flex align-center">
+                <v-icon class="mr-2">mdi-chart-line</v-icon>
+                Learning Progress Over Time
+              </v-card-title>
+              <v-card-text>
+                <div class="progress-chart-container" style="position: relative; height: 300px; width: 100%;">
+                  <learning-progress-chart />
+                </div>
+              </v-card-text>
+            </v-card>
+          </v-col>
         <v-col cols="12" lg="4">
           <v-card elevation="2" class="mb-4">
             <v-card-title class="d-flex align-center">

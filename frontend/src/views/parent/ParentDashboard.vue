@@ -13,7 +13,7 @@
           </li>
           <li :class="{ active: activeNav === 'childprogress' }" @click="setActiveNav('childprogress')">
             <v-icon>mdi-account-child</v-icon>
-            <span>Child</span>
+            <span>Child Progress </span>
           </li>
           <li :class="{ active: activeNav === 'tasks' }" @click="setActiveNav('tasks')">
             <v-icon>mdi-format-list-checkbox</v-icon>
@@ -26,10 +26,6 @@
           <li :class="{ active: activeNav === 'settings' }" @click="setActiveNav('settings')">
             <v-icon>mdi-cog</v-icon>
             <span>Settings</span>
-          </li>
-          <li @click="handleAddChild">
-            <v-icon>mdi-account-plus</v-icon>
-            <span>Add</span>
           </li>
         </ul>
       </nav>
@@ -162,7 +158,7 @@
               <v-col cols="6">
                 <div class="text-center">
                   <div class="text-h6 font-weight-bold text-warning">
-                    {{ child.coinBalance }}
+                    {{ child.coins }}
                   </div>
                   <div class="text-caption text-medium-emphasis">Coins</div>
                 </div>
@@ -255,8 +251,40 @@
     <!-- Quick Actions & Alerts -->
     <v-row>
       <!-- Quick Actions -->
-      
+      <v-col cols="12" md="6">
+<v-card class="pa-4">
+  <v-card-title class="text-h6 font-weight-bold mb-4">
+    <v-icon left color="orange">mdi-flash</v-icon>
+    Child List
+  </v-card-title>
 
+  <div style="overflow-x: auto;">
+    <table class="child-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Name</th>
+          <th>Age</th>
+          <th>Email</th>
+          <th>Username</th>
+          <th>Password</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="(child, index) in children" :key="child.id">
+          <td>{{ index + 1 }}</td>
+          <td>{{ child.name }}</td>
+          <td>{{ child.age }}</td>
+          <td>{{ child.email || '—' }}</td>
+          <td>{{ child.name.toLowerCase() }}{{ child.age }}</td>
+          <td>{{ child.password }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</v-card>
+
+      </v-col>
       <!-- Alerts & Notifications -->
       <v-col cols="12" md="6">
         <v-card>
@@ -409,8 +437,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, defineAsyncComponent } from 'vue'
-import { useRouter } from 'vue-router'
-import type { Parent, Child, FamilyStats } from '@/types'
+import type { Parent, Child } from '@/types'
 
 
 
@@ -422,13 +449,12 @@ const showSuccessSnackbar = ref(false)
 const successMessage = ref('')
 const childFormValid = ref(false)
 
-const router = useRouter();
+
 const activeNav = ref('dashboard');
 
-type ParentViewKey = 'dashboard' | 'addchild' | 'assigntask' | 'redemptionsetting' | 'taskhistory'|'childprogress';
+type ParentViewKey = 'dashboard' | 'assigntask' | 'redemptionsetting' | 'taskhistory'|'childprogress';
 
 const VIEW_DASHBOARD: ParentViewKey = 'dashboard';
-const VIEW_ADD_CHILD: ParentViewKey = 'addchild';
 const VIEW_ASSIGN_TASK: ParentViewKey = 'assigntask';
 const VIEW_REDEMPTION: ParentViewKey = 'redemptionsetting';
 const VIEW_REPORTS: ParentViewKey = 'taskhistory';
@@ -441,9 +467,6 @@ function setActiveNav(nav: string) {
   switch (nav) {
     case 'dashboard':
       currentView.value = VIEW_DASHBOARD;
-      break;
-    case 'addchild':
-      currentView.value = VIEW_ADD_CHILD;
       break;
     case 'tasks':
       currentView.value = VIEW_ASSIGN_TASK;
@@ -464,33 +487,14 @@ function setActiveNav(nav: string) {
   }
 }
 
-function handleAddChild() {
-  setActiveNav('addchild');
-}
-function handleAssignTask() {
-  setActiveNav('tasks');
-}
-function handleRedemption() {
-  setActiveNav('settings');
-}
-function handleReports() {
-  setActiveNav('reports');
-}
-function handleChildProgress() {
-  setActiveNav('childprogress');
-}
 
 const asyncViews: Record<Exclude<ParentViewKey, 'dashboard'>, any> = {
-  [VIEW_ADD_CHILD]: defineAsyncComponent(() => import('./AddChild.vue')),
   [VIEW_ASSIGN_TASK]: defineAsyncComponent(() => import('./AssignTask.vue')),
   [VIEW_REDEMPTION]: defineAsyncComponent(() => import('./RedemptionSetting.vue')),
   [VIEW_REPORTS]: defineAsyncComponent(() => import('./TaskHistory.vue')),
   [VIEW_CHILD_PROGRESS]: defineAsyncComponent(() => import('./ChildProgress.vue'))
 };
 
-const viewChildProgress = (child: Child) => {
-  router.push(`/childprogress/${child.id}`)
-}
 
 // Parent data
 const parent = ref<Parent>({
@@ -518,9 +522,10 @@ const children = ref<Child[]>([
     name: 'Luna',
     age: 9,
     email: 'luna@example.com',
+    password: generateRandomPassword(6),
     initials: 'L',
     avatarColor: 'purple',
-    coinBalance: 125,
+    coins: 125,
     completedTasks: 23,
     currentGoals: [
       {
@@ -567,6 +572,7 @@ const children = ref<Child[]>([
     name: 'Harry',
     age: 12,
     email: 'harry@example.com',
+    password: generateRandomPassword(6),
     initials: 'H',
     avatarColor: 'blue',
     coinBalance: 280,
@@ -722,6 +728,7 @@ const addChild = async () => {
     // Simulate adding child
     await new Promise(resolve => setTimeout(resolve, 1000))
     
+    const password = generateRandomPassword(12)
     const child: Child = {
       id: Date.now().toString(),
       name: newChild.name,
@@ -729,6 +736,7 @@ const addChild = async () => {
       email: newChild.email || undefined,
       initials: newChild.name.charAt(0).toUpperCase(),
       avatarColor: newChild.avatarColor,
+      password,
       coinBalance: 0,
       completedTasks: 0,
       currentGoals: [],
@@ -759,7 +767,15 @@ const addChild = async () => {
   }
 }
 
-
+function generateRandomPassword(length = 10): string {
+  const chars =
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  let password = ''
+  for (let i = 0; i < length; i++) {
+    password += chars[Math.floor(Math.random() * chars.length)]
+  }
+  return password
+}
 
 // Lifecycle
 onMounted(() => {
@@ -823,6 +839,24 @@ onMounted(() => {
   flex-direction: column;
   gap: 8px;
 }
+
+.table-responsive {
+  overflow-x: auto;
+  width: 100%;
+}
+
+.table-responsive table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 600px;
+}
+
+table th, table td {
+  padding: 8px 12px;
+  border: 1px solid #ddd;
+  text-align: left;
+}
+
 /* 🔻 MOBILE STYLES */
 @media (max-width: 768px) {
   .parent-dashboard-layout {

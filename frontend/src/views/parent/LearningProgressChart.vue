@@ -1,5 +1,7 @@
 <template>
-  <Line :data="chartData" :options="chartOptions" />
+  <div style="position: relative; width: 100%; height: 300px;">
+    <Line :data="chartData" :options="chartOptions" />
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -41,9 +43,10 @@ const chartData = {
 
 const chartOptions = {
   responsive: true,
+  maintainAspectRatio: false,
   plugins: {
     legend: {
-      position: 'top'
+      position: 'top' as const // 👈 fix type error
     },
     title: {
       display: false
@@ -54,5 +57,6 @@ const chartOptions = {
       beginAtZero: true
     }
   }
-}
+} as const
+
 </script>

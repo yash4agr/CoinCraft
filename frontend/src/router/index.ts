@@ -37,7 +37,6 @@ import ParentDashboard from '@/views/parent/ParentDashboard.vue'
 import AssignTask from '../views/parent/AssignTask.vue'
 import RedemptionSetting from '../views/parent/RedemptionSetting.vue'
 import TaskHistory from '../views/parent/TaskHistory.vue'
-import AddChild from '../views/parent/AddChild.vue'
 import ChildProgress from '../views/parent/ChildProgress.vue'
 
 // Teacher views
@@ -171,11 +170,6 @@ const routes = [
         path: 'taskhistory',
         name: 'TaskHistory',
         component: TaskHistory
-      },
-      {
-        path: 'addchild',
-        name: 'AddChild',
-        component: AddChild
       },
       {
         path: 'childprogress',
