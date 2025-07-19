@@ -125,15 +125,9 @@ export const useParentStore = defineStore('parent', () => {
     try {
       console.log('🏠 [PARENT] Loading parent dashboard...')
       
-      // Check if we're in demo mode
-      const isDemoMode = localStorage.getItem('coincraft_demo_mode') === 'true'
-      console.log('🏠 [PARENT] Demo mode:', isDemoMode ? 'ON' : 'OFF')
-      
-      if (isDemoMode) {
-        console.log('🏠 [PARENT] Using demo data in demo mode')
-        // Use demo data in demo mode
-        return
-      }
+      // Always disable demo mode for parent dashboard to ensure real API calls
+      localStorage.removeItem('coincraft_demo_mode')
+      console.log('🏠 [PARENT] Demo mode disabled - using real API')
       
       const response = await apiService.request('/api/parent/dashboard', {
         method: 'GET'
@@ -171,7 +165,14 @@ export const useParentStore = defineStore('parent', () => {
           username: child.username || `${child.name.toLowerCase().replace(/\s+/g, '')}${child.age}`,
           password: '******',  // Placeholder for security
           completedTasks: child.completed_tasks || 0,
-          recentActivity: child.recent_activity || [],
+          recentActivity: (child.recent_activity || []).map((activity: any) => ({
+            ...activity,
+            title: activity.description || 'Activity',
+            timestamp: activity.created_at || new Date().toISOString(),
+            color: activity.type === 'earn' ? 'green' : activity.type === 'spend' ? 'red' : 'blue',
+            icon: activity.type === 'earn' ? 'ri-coin-line' : activity.type === 'spend' ? 'ri-shopping-cart-line' : 'ri-save-line',
+            coins: activity.amount
+          })),
           currentGoals: [],  // Default empty goals
           initials: child.name.charAt(0).toUpperCase(),
           avatarColor: 'blue'  // Default color

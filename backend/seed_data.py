@@ -42,14 +42,23 @@ async def seed_data():
                 print("ℹ️  Parent user already exists, skipping...")
                 parent_user = await user_manager.get_by_email("parent@demo.com")
             
-            # Create parent profile
-            parent_profile = ParentProfile(
-                user_id=parent_user.id,
-                exchange_rate=0.10,
-                auto_approval_limit=50,
-                require_approval=True
-            )
-            session.add(parent_profile)
+            # Create parent profile if it doesn't exist
+            from sqlalchemy import select
+            existing_profile_stmt = select(ParentProfile).where(ParentProfile.user_id == parent_user.id)
+            existing_profile_result = await session.execute(existing_profile_stmt)
+            existing_parent_profile = existing_profile_result.scalar_one_or_none()
+            
+            if not existing_parent_profile:
+                parent_profile = ParentProfile(
+                    user_id=parent_user.id,
+                    exchange_rate=0.10,
+                    auto_approval_limit=50,
+                    require_approval=True
+                )
+                session.add(parent_profile)
+                print("✅ Created parent profile")
+            else:
+                print("ℹ️  Parent profile already exists, skipping...")
             
             # 2. Teacher user
             try:
@@ -65,14 +74,22 @@ async def seed_data():
                 print("ℹ️  Teacher user already exists, skipping...")
                 teacher_user = await user_manager.get_by_email("teacher@demo.com")
             
-            # Create teacher profile
-            teacher_profile = TeacherProfile(
-                user_id=teacher_user.id,
-                school_name="Financial Literacy Academy",
-                grade_level="4-6",
-                subject="Financial Education"
-            )
-            session.add(teacher_profile)
+            # Create teacher profile if it doesn't exist
+            existing_teacher_stmt = select(TeacherProfile).where(TeacherProfile.user_id == teacher_user.id)
+            existing_teacher_result = await session.execute(existing_teacher_stmt)
+            existing_teacher_profile = existing_teacher_result.scalar_one_or_none()
+            
+            if not existing_teacher_profile:
+                teacher_profile = TeacherProfile(
+                    user_id=teacher_user.id,
+                    school_name="Financial Literacy Academy",
+                    grade_level="4-6",
+                    subject="Financial Education"
+                )
+                session.add(teacher_profile)
+                print("✅ Created teacher profile")
+            else:
+                print("ℹ️  Teacher profile already exists, skipping...")
             
             # 3. Younger child user
             try:
@@ -88,17 +105,25 @@ async def seed_data():
                 print("ℹ️  Younger child user already exists, skipping...")
                 child1_user = await user_manager.get_by_email("luna@demo.com")
             
-            # Create child profile
-            child1_profile = ChildProfile(
-                user_id=child1_user.id,
-                age=9,
-                coins=135,
-                level=3,
-                streak_days=7,
-                parent_id=parent_user.id,
-                last_activity_date=datetime.utcnow()
-            )
-            session.add(child1_profile)
+            # Create child profile if it doesn't exist
+            existing_child1_stmt = select(ChildProfile).where(ChildProfile.user_id == child1_user.id)
+            existing_child1_result = await session.execute(existing_child1_stmt)
+            existing_child1_profile = existing_child1_result.scalar_one_or_none()
+            
+            if not existing_child1_profile:
+                child1_profile = ChildProfile(
+                    user_id=child1_user.id,
+                    age=9,
+                    coins=135,
+                    level=3,
+                    streak_days=7,
+                    parent_id=parent_user.id,
+                    last_activity_date=datetime.utcnow()
+                )
+                session.add(child1_profile)
+                print("✅ Created child1 profile (Luna)")
+            else:
+                print("ℹ️  Child1 profile (Luna) already exists, skipping...")
             
             # 4. Older child user
             try:
@@ -114,17 +139,25 @@ async def seed_data():
                 print("ℹ️  Older child user already exists, skipping...")
                 child2_user = await user_manager.get_by_email("harry@demo.com")
             
-            # Create child profile
-            child2_profile = ChildProfile(
-                user_id=child2_user.id,
-                age=14,
-                coins=245,
-                level=5,
-                streak_days=12,
-                parent_id=parent_user.id,
-                last_activity_date=datetime.utcnow()
-            )
-            session.add(child2_profile)
+            # Create child profile if it doesn't exist
+            existing_child2_stmt = select(ChildProfile).where(ChildProfile.user_id == child2_user.id)
+            existing_child2_result = await session.execute(existing_child2_stmt)
+            existing_child2_profile = existing_child2_result.scalar_one_or_none()
+            
+            if not existing_child2_profile:
+                child2_profile = ChildProfile(
+                    user_id=child2_user.id,
+                    age=14,
+                    coins=245,
+                    level=5,
+                    streak_days=12,
+                    parent_id=parent_user.id,
+                    last_activity_date=datetime.utcnow()
+                )
+                session.add(child2_profile)
+                print("✅ Created child2 profile (Harry)")
+            else:
+                print("ℹ️  Child2 profile (Harry) already exists, skipping...")
             
             # Create some goals
             goals_data = [

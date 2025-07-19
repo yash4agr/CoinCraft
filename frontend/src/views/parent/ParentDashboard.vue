@@ -30,8 +30,38 @@
         </ul>
       </nav>
 
+      <!-- Logout Section -->
+      <div class="sidebar-actions">
+        <button class="logout-btn" @click="handleLogout">
+          <v-icon color="red">mdi-logout</v-icon>
+          <span>Logout</span>
+        </button>
+      </div>
+
     </aside>
-  <v-container fluid class="pa-4">
+
+    <!-- Main Content Area -->
+    <div class="main-content">
+      <!-- Top Header with User Info and Logout -->
+      <div class="top-header">
+        <div class="user-info-header">
+          <v-avatar color="primary" size="32" class="me-2">
+            <v-icon color="white">mdi-account-heart</v-icon>
+          </v-avatar>
+          <span class="font-weight-medium">{{ parent.name }}</span>
+        </div>
+        <v-btn
+          variant="text"
+          color="red"
+          prepend-icon="mdi-logout"
+          @click="handleLogout"
+          class="logout-header-btn"
+        >
+          Logout
+        </v-btn>
+      </div>
+
+      <v-container fluid class="pa-4">
     <template v-if="currentView === VIEW_DASHBOARD">
     <!-- Header -->
       <v-row>
@@ -186,7 +216,7 @@
                 </template>
                 <v-list-item-title class="text-body-2">{{ activity.title }}</v-list-item-title>
                 <v-list-item-subtitle class="text-caption">
-                  {{ formatRelativeTime(activity.timestamp) }}
+                  {{ formatRelativeTime(activity.created_at || activity.timestamp) }}
                 </v-list-item-subtitle>
                 <template #append>
                   <v-chip v-if="activity.coins" size="x-small" color="warning">
@@ -239,7 +269,7 @@
               color="primary"
               variant="tonal"
               prepend-icon="mdi-eye"
-              class="{active: activeNav === 'childprogress'}" @click="setActiveNav('childprogress')"
+              @click="setActiveNav('childprogress')"
             >
               Details
             </v-btn>
@@ -462,19 +492,24 @@
       <template v-else>
         <component :is="asyncViews[currentView as Exclude<ParentViewKey, 'dashboard'>]" />
       </template>
-  </v-container>
+    </v-container>
+  </div>
 </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, defineAsyncComponent, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/stores/auth'
 import { useParentStore } from '@/stores/parent'
 import type { Parent, Child } from '@/types'
 
 
 
 
-// Store
+// Stores and router
+const router = useRouter()
+const authStore = useAuthStore()
 const parentStore = useParentStore()
 
 // Reactive data
@@ -599,15 +634,25 @@ const rules = {
 }
 
 // Methods
-const formatRelativeTime = (date: Date) => {
-  const now = new Date()
-  const diff = now.getTime() - date.getTime()
-  const hours = Math.floor(diff / (1000 * 60 * 60))
-  const days = Math.floor(hours / 24)
+const formatRelativeTime = (date: Date | string | undefined) => {
+  if (!date) return 'Unknown'
   
-  if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`
-  if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`
-  return 'Just now'
+  try {
+    const dateObj = typeof date === 'string' ? new Date(date) : date
+    if (isNaN(dateObj.getTime())) return 'Invalid date'
+    
+    const now = new Date()
+    const diff = now.getTime() - dateObj.getTime()
+    const hours = Math.floor(diff / (1000 * 60 * 60))
+    const days = Math.floor(hours / 24)
+    
+    if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`
+    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`
+    return 'Just now'
+  } catch (error) {
+    console.warn('Error formatting date:', date, error)
+    return 'Unknown'
+  }
 }
 
 const sendMessage = (child: Child) => {
@@ -705,6 +750,18 @@ function generateRandomPassword(length = 10): string {
   return password
 }
 
+// Logout handler
+const handleLogout = async () => {
+  try {
+    await authStore.logout()
+    router.push('/')
+  } catch (error) {
+    console.error('Logout failed:', error)
+    // Even if logout fails, redirect to home page
+    router.push('/')
+  }
+}
+
 const reloadDashboard = async () => {
   try {
     loading.value = true
@@ -744,7 +801,7 @@ const showDebugInfo = () => {
   
   // Show debug info in UI
   showSuccessSnackbar.value = true
-  successMessage.value = `Debug info in console. Children: ${parentStore.children.length}, Auth: ${token ? 'Yes' : 'No'}, Demo: ${demoMode === 'true' ? 'Yes' : 'No'}`
+  successMessage.value = `Debug info in console. Children: ${parentStore.children.length}, Auth: ${token ? 'Yes' : 'No'}, Demo: OFF (disabled for parents)`
   
   // Force update children array if needed
   if (parentStore.children.length > 0 && children.value.length === 0) {
@@ -860,6 +917,52 @@ onMounted(async () => {
   gap: 8px;
 }
 
+.logout-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  font-size: 1.08rem;
+  color: #d32f2f;
+  cursor: pointer;
+  border: none;
+  background: none;
+  border-radius: 8px;
+  transition: background 0.2s;
+  width: 100%;
+  text-align: left;
+}
+
+.logout-btn:hover {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.top-header {
+  background: white;
+  border-bottom: 1px solid #e0e0e0;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 64px;
+}
+
+.user-info-header {
+  display: flex;
+  align-items: center;
+}
+
+.logout-header-btn {
+  text-transform: none;
+}
+
 .table-responsive {
   overflow-x: auto;
 }
@@ -924,7 +1027,8 @@ table th, table td {
   }
 
   .sidebar-header,
-  .sidebar-title {
+  .sidebar-title,
+  .sidebar-actions {
     display: none;
   }
 
@@ -958,6 +1062,21 @@ table th, table td {
 
   .v-container {
     margin-bottom: 60px; /* Prevent overlap */
+  }
+
+  .top-header {
+    padding: 8px 16px;
+    min-height: 56px;
+  }
+
+  .user-info-header span {
+    font-size: 0.9rem;
+  }
+
+  .logout-header-btn {
+    font-size: 0.8rem;
+    min-width: auto;
+    padding: 4px 8px;
   }
 }
 </style>
