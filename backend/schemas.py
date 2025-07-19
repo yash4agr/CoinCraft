@@ -26,7 +26,9 @@ class UserRead(schemas.BaseUser[str]):
     is_active: bool
     is_superuser: bool
     is_verified: bool
-    
+
+# Extended user schema with profile data (for endpoints that explicitly load profiles)
+class UserWithProfilesRead(UserRead):
     # Role-specific profile data
     child_profile: Optional['ChildProfileRead'] = None
     parent_profile: Optional['ParentProfileRead'] = None

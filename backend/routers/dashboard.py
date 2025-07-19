@@ -128,8 +128,22 @@ async def get_child_dashboard_data(current_user: User, session: AsyncSession):
         progress_result = await session.execute(progress_stmt)
         progress = progress_result.scalar_one_or_none()
         
-        from schemas import ModuleRead
-        module_dict = ModuleRead.model_validate(module).model_dump()
+        # Create module dict manually to avoid async relationship issues
+        module_dict = {
+            "id": module.id,
+            "title": module.title,
+            "description": module.description,
+            "category": module.category,
+            "difficulty": module.difficulty,
+            "estimated_duration": module.estimated_duration,
+            "points_reward": module.points_reward,
+            "created_by": module.created_by,
+            "is_published": module.is_published,
+            "created_at": module.created_at,
+            "updated_at": module.updated_at,
+            "user_progress": None
+        }
+        
         if progress:
             module_dict["user_progress"] = {
                 "progress_percentage": progress.progress_percentage,
@@ -279,8 +293,24 @@ async def get_teacher_dashboard_data(current_user: User, session: AsyncSession):
     modules_result = await session.execute(modules_stmt)
     modules = modules_result.scalars().all()
     
-    from schemas import ModuleRead
-    learning_modules = [ModuleRead.model_validate(m).model_dump() for m in modules]
+    # Create module dicts manually to avoid async relationship issues
+    learning_modules = []
+    for module in modules:
+        module_dict = {
+            "id": module.id,
+            "title": module.title,
+            "description": module.description,
+            "category": module.category,
+            "difficulty": module.difficulty,
+            "estimated_duration": module.estimated_duration,
+            "points_reward": module.points_reward,
+            "created_by": module.created_by,
+            "is_published": module.is_published,
+            "created_at": module.created_at,
+            "updated_at": module.updated_at,
+            "user_progress": None
+        }
+        learning_modules.append(module_dict)
     
     return DashboardData(
         user_stats=user_stats,

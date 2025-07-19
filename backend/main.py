@@ -9,16 +9,17 @@ from pydantic import BaseModel
 
 from database import create_db_and_tables
 from auth import auth_backend, fastapi_users
-from schemas import UserCreate, UserRead
-import routers.auth as auth_router
-import routers.users as users_router
-import routers.goals as goals_router
-import routers.transactions as transactions_router
-import routers.tasks as tasks_router
-import routers.modules as modules_router
-import routers.classes as classes_router
-import routers.redemptions as redemptions_router
-import routers.dashboard as dashboard_router
+from schemas import UserCreate, UserRead, UserUpdate
+from routers.auth import router as auth_router
+from routers.users import router as users_router
+from routers.goals import router as goals_router
+from routers.transactions import router as transactions_router
+from routers.tasks import router as tasks_router
+from routers.modules import router as modules_router
+from routers.classes import router as classes_router
+from routers.redemptions import router as redemptions_router
+from routers.dashboard import router as dashboard_router
+from routers.parent import router as parent_router
 
 
 class HealthCheck(BaseModel):
@@ -50,10 +51,14 @@ app = FastAPI(
 origins = [
     "http://localhost:3000",  # Vue dev server
     "http://localhost:5173",  # Vite dev server
+    "http://localhost:4173",  # Vite preview server
     "http://127.0.0.1:3000",
     "http://127.0.0.1:5173",
+    "http://127.0.0.1:4173",
     "http://localhost:8080",  # Alternative Vue dev server
     "http://127.0.0.1:8080",
+    "http://localhost:8000",  # Backend itself (for testing)
+    "http://127.0.0.1:8000",
 ]
 
 # Add environment-specific origins
@@ -64,10 +69,11 @@ if os.getenv("ENVIRONMENT") == "production":
         "https://api.coincraft.com",
     ])
 
+# For development, allow all origins to fix CORS issues
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
+    allow_origins=["*"],  # Allow all origins for development
+    allow_credentials=False,  # Must be False when allow_origins=["*"]
     allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allow_headers=["*"],
 )
@@ -92,15 +98,20 @@ def get_health() -> HealthCheck:
     return HealthCheck(status="OK")
 
 
+@app.get("/api/test", tags=["test"])
+def test_api():
+    """Simple test endpoint to verify API is working."""
+    return {"message": "API is working", "timestamp": "2025-01-01T00:00:00Z"}
+
+
 # Authentication routes
 app.include_router(
     fastapi_users.get_auth_router(auth_backend), prefix="/api/auth/jwt", tags=["auth"]
 )
-app.include_router(
-    fastapi_users.get_register_router(UserRead, UserCreate),
-    prefix="/api/auth",
-    tags=["auth"],
-)
+
+# Custom auth routes (includes registration with auto-login)
+app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
+
 app.include_router(
     fastapi_users.get_reset_password_router(),
     prefix="/api/auth",
@@ -111,17 +122,22 @@ app.include_router(
     prefix="/api/auth",
     tags=["auth"],
 )
+app.include_router(
+    fastapi_users.get_users_router(UserRead, UserUpdate),
+    prefix="/api/users",
+    tags=["users"],
+)
 
 # API routes
-app.include_router(auth_router.router, prefix="/api/auth", tags=["Authentication"])
-app.include_router(users_router.router, prefix="/api/users", tags=["User Management"])
-app.include_router(goals_router.router, prefix="/api", tags=["Goals"])
-app.include_router(transactions_router.router, prefix="/api", tags=["Transactions"])
-app.include_router(tasks_router.router, prefix="/api", tags=["Tasks"])
-app.include_router(modules_router.router, prefix="/api", tags=["Activities & Learning"])
-app.include_router(classes_router.router, prefix="/api", tags=["Teachers"])
-app.include_router(redemptions_router.router, prefix="/api", tags=["Redemptions"])
-app.include_router(dashboard_router.router, prefix="/api", tags=["Dashboard"])
+app.include_router(users_router, prefix="/api/users", tags=["User Management"])
+app.include_router(goals_router, prefix="/api", tags=["Goals"])
+app.include_router(transactions_router, prefix="/api", tags=["Transactions"])
+app.include_router(tasks_router, prefix="/api", tags=["Tasks"])
+app.include_router(modules_router, prefix="/api", tags=["Activities & Learning"])
+app.include_router(classes_router, prefix="/api", tags=["Teachers"])
+app.include_router(redemptions_router, prefix="/api", tags=["Redemptions"])
+app.include_router(dashboard_router, prefix="/api", tags=["Dashboard"])
+app.include_router(parent_router, prefix="/api/parent", tags=["Parent"])
 
 
 if __name__ == "__main__":

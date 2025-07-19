@@ -27,6 +27,10 @@ class UserManager(BaseUserManager[User, str]):
     reset_password_token_secret = SECRET
     verification_token_secret = SECRET
 
+    def parse_id(self, value: str) -> str:
+        """Parse user ID from string - required for string-based IDs."""
+        return value
+
     async def on_after_register(self, user: User, request: Optional[Request] = None):
         """Called after user registration."""
         print(f"User {user.id} has registered.")

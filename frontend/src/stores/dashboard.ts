@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { apiService, type DashboardData as ApiDashboardData } from '../services/api'
 
 export interface Activity {
   id: string
@@ -82,21 +83,117 @@ export const useDashboardStore = defineStore('dashboard', () => {
   const loadDashboardData = async (userRole: string) => {
     try {
       isLoading.value = true
+      error.value = null
       
+      // Check if user is authenticated (has valid token)
+      if (!apiService.isAuthenticated()) {
+        // Use mock data for demo/unauthenticated users
+        if (userRole === 'younger_child') {
+          await loadYoungerChildData()
+        } else if (userRole === 'older_child') {
+          await loadOlderChildData()
+        }
+        return
+      }
+      
+      // Use real API data for authenticated users
+      const response = await apiService.getDashboardData(userRole)
+      
+      if (response.error) {
+        throw new Error(response.error)
+      }
+
+      if (!response.data) {
+        throw new Error('No dashboard data received')
+      }
+
+      // Convert API data to local format
+      const apiData = response.data
+      
+      // Load activities from API
+      await loadActivitiesFromAPI(userRole)
+
+      // Update achievements from API
+      achievements.value = apiData.achievements.map(achievement => ({
+        id: achievement.id,
+        title: achievement.title,
+        description: achievement.description,
+        icon: achievement.icon || 'ri-trophy-line',
+        badge: achievement.rarity || 'Common',
+        coins: achievement.points_reward || 0,
+        date: new Date(achievement.created_at || Date.now()).toLocaleDateString(),
+        colorScheme: 'green' as const
+      }))
+
+      // Update goals from API
+      todaysGoals.value = apiData.active_goals.map(goal => ({
+        id: goal.id,
+        title: goal.title,
+        current: goal.current_amount,
+        total: goal.target_amount,
+        icon: goal.icon || 'ri-target-line',
+        colorScheme: 'blue' as const
+      }))
+
+      // Update learning modules from API
+      learningModules.value = apiData.recent_transactions
+        .filter(t => t.reference_type === 'module')
+        .map(transaction => ({
+          id: transaction.reference_id || transaction.id,
+          title: transaction.description,
+          description: `Completed module: ${transaction.description}`,
+          emoji: '📚',
+          difficulty: 'easy' as const,
+          coins: transaction.amount,
+          completed: true,
+          colorScheme: 'green' as const,
+          buttonText: 'Completed',
+          estimatedTime: 15,
+          skills: ['Learning', 'Progress']
+        }))
+
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to load dashboard data'
+      console.error('Dashboard data loading error:', err)
+      
+      // Fallback to mock data if API fails
       if (userRole === 'younger_child') {
         await loadYoungerChildData()
       } else if (userRole === 'older_child') {
         await loadOlderChildData()
       }
-
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to load dashboard data'
     } finally {
       isLoading.value = false
     }
   }
 
-  const loadYoungerChildData = async () => {
+  const loadActivitiesFromAPI = async (userRole: string) => {
+    try {
+      // Load modules as activities
+      const modulesResponse = await apiService.getModules()
+      if (modulesResponse.data) {
+        activities.value = modulesResponse.data.map(module => ({
+          id: module.id,
+          title: module.title,
+          description: module.description,
+          type: 'module' as const,
+          difficulty: module.difficulty,
+          coins: module.points_reward,
+          duration: module.estimated_duration,
+          completed: false, // TODO: Check user progress
+          icon: '📚',
+          category: module.category,
+          ageGroup: userRole === 'younger_child' ? 'younger_child' : 'older_child'
+        }))
+      }
+    } catch (error) {
+      console.error('Failed to load activities:', error)
+      // Fallback to empty array
+      activities.value = []
+    }
+  }
+
+  const loadYoungerChildActivities = async () => {
     todaysGoals.value = [
       {
         id: '1',
@@ -250,7 +347,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     ]
   }
 
-  const loadOlderChildData = async () => {
+  const loadOlderChildActivities = async () => {
     todaysGoals.value = [
       {
         id: '1',

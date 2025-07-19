@@ -10,6 +10,7 @@ import LandingPage from '@/views/LandingPage.vue'
 import TeacherLayout from '@/layouts/TeacherLayout.vue'
 import ChildLayout from '@/layouts/ChildLayout.vue'
 import TeenLayout from '@/layouts/TeenLayout.vue'
+import ParentLayout from '@/layouts/ParentLayout.vue'
 
 // Child views
 import ChildDashboard from '@/views/child/ChildDashboard.vue'
@@ -31,6 +32,12 @@ import TeenShop from '@/views/teen/TeenShop.vue'
 import LoginView from '@/views/auth/LoginView.vue'
 import RegisterView from '@/views/auth/RegisterView.vue'
 
+// Parent views
+import ParentDashboard from '@/views/parent/ParentDashboard.vue'
+import AssignTask from '../views/parent/AssignTask.vue'
+import RedemptionSetting from '../views/parent/RedemptionSetting.vue'
+import TaskHistory from '../views/parent/TaskHistory.vue'
+import ChildProgress from '../views/parent/ChildProgress.vue'
 
 // Teacher views
 import TeacherDashboard from '@/views/teacher/TeacherDashboard.vue'
@@ -137,14 +144,46 @@ const routes = [
       }
     ]
   },
-  // Additional dashboard routes for other user types
-  // {
-  //   path: '/dashboard/parent',
-  //   name: 'ParentDashboard',
-  //   component: () => import('@/views/dashboard/ParentDashboard.vue'),
-  //   meta: { requiresAuth: true, roles: ['parent'] }
-  // },
-// Teacher routes
+  // Parent dashboard and related routes
+    {
+    path: '/parent',
+    component: ParentLayout,
+    meta: { requiresAuth: true, role: 'parent' },
+    redirect: '/parent/dashboard',
+    children: [
+      {
+        path: 'dashboard',
+        name: 'ParentDashboard',
+        component: ParentDashboard
+      },
+      {
+        path: 'assigntask',
+        name: 'AssignTask',
+        component: AssignTask
+      },
+      {
+        path: 'redemptionsetting',
+        name: 'RedemptionSetting',
+        component: RedemptionSetting
+      },
+      {
+        path: 'taskhistory',
+        name: 'TaskHistory',
+        component: TaskHistory
+      },
+      {
+        path: 'childprogress',
+        name: 'ChildProgress',
+        component: ChildProgress
+      },
+      {
+        path: 'childprogress/:id',
+        name: 'ChildProgress',
+        component: ChildProgress,
+      },
+    ]
+  },
+  // Teacher routes
   {
     path: '/teacher',
     component: TeacherLayout,
@@ -181,6 +220,7 @@ const routes = [
     redirect: '/'
   }
 ]
+
 
 const router = createRouter({
   history: createWebHistory(),

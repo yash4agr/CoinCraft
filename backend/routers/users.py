@@ -17,6 +17,33 @@ from schemas import (
 router = APIRouter()
 
 
+@router.get("/me", response_model=UserRead)
+async def get_current_user_profile(
+    current_user: User = Depends(current_active_user)
+):
+    """Get current user's profile (basic info only)."""
+    try:
+        # Return the current user directly without loading relationships
+        # This avoids the async greenlet issues
+        return UserRead(
+            id=current_user.id,
+            email=current_user.email,
+            name=current_user.name,
+            role=current_user.role,
+            avatar_url=current_user.avatar_url,
+            created_at=current_user.created_at,
+            updated_at=current_user.updated_at,
+            is_active=current_user.is_active,
+            is_superuser=current_user.is_superuser,
+            is_verified=current_user.is_verified
+        )
+    except Exception as e:
+        # Log the error for debugging
+        print(f"Error in get_current_user_profile: {e}")
+        # Return the current_user object directly as fallback
+        return current_user
+
+
 @router.get("/{user_id}", response_model=UserRead)
 async def get_user_profile(
     user_id: str,
