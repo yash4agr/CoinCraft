@@ -1,155 +1,215 @@
 # CoinCraft Backend API
 
-A FastAPI-based backend for the CoinCraft financial literacy learning platform.
+FastAPI backend for the CoinCraft financial literacy education platform with AI-powered module generation.
 
-## Features
-
-- **Authentication**: JWT-based auth with FastAPI Users
-- **Role-based Access**: Parent, Teacher, Younger Child, Older Child roles
-- **Goals & Transactions**: Financial goal tracking and coin transactions
-- **Learning Modules**: Educational content and progress tracking
-- **Task Management**: Parent-child task assignments
-- **Redemption System**: Coin-to-money conversion requests
-- **Class Management**: Teacher classroom and student management
-
-## Quick Start
+## 🚀 Quick Start
 
 ### Prerequisites
-
-- Python 3.12+
-- pip or uv (recommended)
+- Python 3.8+
+- pip or uv package manager
 
 ### Installation
 
-1. **Install dependencies:**
-   ```bash
-   cd backend
-   pip install -e .
-   ```
+1. **Clone and navigate to backend directory**
+```bash
+cd backend
+```
 
-2. **Set environment variables:**
-   ```bash
-   # Create .env file
-   DATABASE_URL=sqlite+aiosqlite:///./coincraft.db
-   JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
-   PORT=8000
-   ENVIRONMENT=development
-   ```
+2. **Install in development mode**
+```bash
+pip install -e .
+```
 
-3. **Seed initial data:**
-   ```bash
-   python seed_data.py
-   ```
+Or with uv (recommended):
+```bash
+uv pip install -e .
+```
 
-4. **Run the server:**
-   ```bash
-   python main.py
-   ```
+3. **Install dependencies**
+```bash
+# If using pip
+pip install fastapi uvicorn sqlalchemy asyncpg fastapi-users
 
-The API will be available at `http://localhost:8000`
+# If using uv (automatically handles dependencies)
+uv sync
+```
 
-## API Documentation
+### 🔧 Configuration
 
-- **Swagger UI**: `http://localhost:8000/docs`
-- **ReDoc**: `http://localhost:8000/redoc`
 
-## Demo Login Credentials
+### 🗄️ Database Setup
 
-| Role | Email | Password | Description |
-|------|-------|----------|-------------|
-| Parent | parent@demo.com | demo123 | Sarah Johnson |
-| Teacher | teacher@demo.com | demo123 | Mrs. Wilson |
-| Child (9y) | luna@demo.com | demo123 | Luna Smith |
-| Teen (14y) | harry@demo.com | demo123 | Harry Johnson |
+```bash
+# Run database migrations and seed data
+python seed_data.py
+```
 
-## Project Structure
+### 🏃 Running the Server
 
+```bash
+# Development server with auto-reload
+python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
+
+# Or using uvicorn directly
+uvicorn main:app --reload
+```
+
+Server will start at: `http://localhost:8000`
+
+## 📚 API Documentation
+
+### Swagger UI (Interactive)
+```
+http://localhost:8000/docs
+```
+
+### ReDoc (Alternative Documentation)
+```
+http://localhost:8000/redoc
+```
+
+### OpenAPI Schema
+```
+http://localhost:8000/openapi.json
+```
+
+## 🔐 Authentication
+
+The API uses JWT tokens for authentication. Available user roles:
+- `teacher` - Create modules, manage classes
+- `parent` - Monitor children, manage tasks
+- `younger_child` - Ages 8-11, simplified interface
+- `older_child` - Ages 12+, advanced features
+
+### Demo Accounts
+```
+Teacher: teacher@demo.com / demo123
+Parent: parent@demo.com / demo123
+Child: child@demo.com / demo123
+```
+
+## 🛠️ API Endpoints
+
+### Core Endpoints
+- **Authentication**: `/api/auth/`
+- **Users**: `/api/users/`
+- **Dashboard**: `/api/dashboard/`
+
+### Teacher Endpoints
+- **Modules**: `/api/teacher/modules`
+- **Classes**: `/api/teacher/classes`
+- **Analytics**: `/api/teacher/analytics`
+
+### Learning Endpoints
+- **Activities**: `/api/modules/activities`
+- **Progress**: `/api/modules/progress`
+
+### Financial Endpoints
+- **Goals**: `/api/goals/`
+- **Transactions**: `/api/transactions/`
+- **Achievements**: `/api/achievements/`
+
+## 🤖 AI Module Generation
+
+Enhanced modules with sections, activities, and quizzes powered by Cerebras AI.
+
+### Features
+- Automatic content generation based on topic and age group
+- Interactive sections (lessons, readings, videos, discussions)
+- Learning activities (exercises, simulations, projects)
+- Auto-generated quiz questions with explanations
+
+### API Usage
+```bash
+POST /api/teacher/modules
+{
+  "title": "Budgeting Basics",
+  "description": "Learn fundamental budgeting skills",
+  "sections": [...],
+  "activities": [...],
+  "quiz": [...]
+}
+```
+
+## 🗃️ Database Schema
+
+### Core Models
+- **Users** - Authentication and profiles
+- **Modules** - Learning content
+- **ModuleSections** - Content sections
+- **QuizQuestions** - Assessment questions
+- **UserModuleProgress** - Learning progress tracking
+
+### Relationships
+```
+Users -> TeacherProfile/ParentProfile/ChildProfile
+Modules -> ModuleSections -> QuizQuestions -> QuizOptions
+Users -> UserModuleProgress -> Modules
+```
+
+## 🔧 Development
+
+### Project Structure
 ```
 backend/
-├── main.py              # FastAPI application entry point
-├── models.py            # SQLAlchemy database models  
-├── schemas.py           # Pydantic schemas for validation
-├── database.py          # Database configuration
-├── auth.py              # Authentication setup
-├── seed_data.py         # Initial data seeding
-├── routers/             # API route handlers
-│   ├── auth.py          # Authentication endpoints
-│   ├── users.py         # User management
-│   ├── goals.py         # Financial goals
-│   ├── transactions.py  # Coin transactions
-│   ├── tasks.py         # Parent-child tasks
-│   ├── modules.py       # Learning content
-│   ├── classes.py       # Teacher classrooms
-│   ├── redemptions.py   # Money conversion
-│   └── dashboard.py     # Dashboard data
-└── pyproject.toml       # Project dependencies
+├── main.py              # FastAPI application
+├── models.py            # Database models
+├── schemas.py           # Pydantic schemas
+├── auth.py             # Authentication logic
+├── database.py         # Database configuration
+├── routers/            # API route handlers
+│   ├── auth.py
+│   ├── teacher.py
+│   ├── modules.py
+│   └── ...
+├── seed_data.py        # Database seeding
+└── pyproject.toml      # Dependencies
 ```
 
-## Key API Endpoints
+### Adding New Endpoints
+1. Define schemas in `schemas.py`
+2. Add database models in `models.py`
+3. Create router in `routers/`
+4. Include router in `main.py`
 
-### Authentication
-- `POST /api/auth/jwt/login` - Login
-- `POST /api/auth/register` - Register
-- `GET /api/auth/verify` - Verify token
+## 🐛 Troubleshooting
 
-### Users
-- `GET /api/users/{user_id}` - Get user profile
-- `PUT /api/users/{user_id}` - Update profile
-- `GET /api/users/{parent_id}/children` - Get parent's children
+### Common Issues
 
-### Goals
-- `GET /api/users/{user_id}/goals` - Get user goals
-- `POST /api/users/{user_id}/goals` - Create goal
-- `POST /api/users/{user_id}/goals/{goal_id}/contribute` - Add coins to goal
-
-### Transactions
-- `GET /api/users/{user_id}/transactions` - Get transaction history
-- `POST /api/users/{user_id}/transactions` - Create transaction
-
-### Dashboard
-- `GET /api/dashboard/{user_role}` - Get role-specific dashboard data
-
-## Technologies Used
-
-- **FastAPI**: Modern Python web framework
-- **SQLAlchemy**: ORM with async support
-- **Pydantic**: Data validation
-- **FastAPI Users**: Authentication system
-- **SQLite**: Database (development)
-- **JWT**: Token-based authentication
-- **CORS**: Cross-origin resource sharing
-
-## Development
-
-### Database Migrations
-
-The app automatically creates tables on startup. For production, consider using Alembic:
-
+**Database locked error:**
 ```bash
-pip install alembic
-alembic init migrations
-alembic revision --autogenerate -m "Initial migration"
+rm coincraft.db
+python seed_data.py
+```
+
+**Import errors:**
+```bash
+pip install -e .
+```
+
+**CORS errors:**
+Check `FRONTEND_URL` in `.env` matches your frontend URL
+
+### Logs
+Server logs include SQL queries and API requests for debugging.
+
+## 🚀 Production Deployment
+
+### Environment Variables
+Set production values for:
+- `DATABASE_URL` (PostgreSQL recommended)
+- `SECRET_KEY` (generate secure key)
+- `FRONTEND_URL` (production domain)
+
+### Database Migration
+```bash
+# Run migrations
 alembic upgrade head
+
+# Seed production data
+python seed_data.py --production
 ```
 
-### Testing
+---
 
-```bash
-# Run with test database
-TEST_DATABASE_URL=sqlite+aiosqlite:///./test.db python -m pytest
-```
-
-### Production Deployment
-
-1. Set production environment variables
-2. Use PostgreSQL instead of SQLite
-3. Set strong JWT_SECRET
-4. Configure HTTPS
-5. Use a production ASGI server like Gunicorn with Uvicorn workers
-
-## Contributing
-
-1. Follow FastAPI and SQLAlchemy best practices
-2. Add type hints for all functions
-3. Include docstrings for API endpoints
-4. Update this README for new features
+**Need help?** Check the [API documentation](http://localhost:8000/docs) or review the codebase structure.

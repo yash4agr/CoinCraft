@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CoinCraft AI Module Generator Test</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <style>
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            max-width: 900px; 
+            margin: 0 auto; 
+            padding: 20px; 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.2em;
+        }
+        .form-group { 
+            margin-bottom: 20px; 
+        }
+        label { 
+            display: block; 
+            margin-bottom: 8px; 
+            font-weight: 600;
+            color: #555;
+            font-size: 14px;
+        }
+        input, select, textarea { 
+            width: 100%; 
+            padding: 12px; 
+            border: 2px solid #e1e5e9; 
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        button { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; 
+            padding: 15px 30px; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            transition: transform 0.2s;
+        }
+        button:hover:not(:disabled) { 
+            transform: translateY(-2px);
+        }
+        button:disabled { 
+            background: #ccc; 
+            cursor: not-allowed;
+            transform: none;
+        }
+        .result { 
+            margin-top: 25px; 
+            padding: 20px; 
+            border-radius: 8px; 
+            border-left: 4px solid;
+        }
+        .loading { 
+            color: #667eea; 
+            border-left-color: #667eea;
+            background: #f0f4ff;
+            animation: pulse 2s infinite;
+        }
+        .error { 
+            color: #dc3545; 
+            border-left-color: #dc3545;
+            background: #fdf2f2;
+        }
+        .success {
+            color: #28a745;
+            border-left-color: #28a745;
+            background: #f0fff4;
+        }
+        .module-content {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 10px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            background: #667eea;
+            color: white;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-right: 8px;
+        }
+        .api-info {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #2196f3;
+        }
+        .api-info a {
+            color: #1976d2;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        .api-info a:hover {
+            text-decoration: underline;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .stat-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid #f0f0f0;
+        }
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div id="app">
+            <h1>🤖 CoinCraft AI Module Generator Test</h1>
+            
+            <div class="api-info">
+                <strong>📋 Setup Instructions:</strong><br>
+                1. Get your free API key from <a href="https://cloud.cerebras.ai/" target="_blank">Cerebras Cloud</a><br>
+                2. Enter your API key below (format: csk-xxxxxxxxxxxxx)<br>
+                3. Test AI module generation with different topics and age groups
+            </div>
+            
+            <div class="form-group">
+                <label>🔑 Cerebras API Key:</label>
+                <input 
+                    v-model="apiKey" 
+                    type="password" 
+                    placeholder="csk-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                    @input="validateApiKey"
+                >
+                <small v-if="apiKey && !isValidApiKey" style="color: #dc3545;">
+                    ⚠️ API key should start with 'csk-' and be around 40+ characters
+                </small>
+                <small v-if="isValidApiKey" style="color: #28a745;">
+                    ✅ API key format looks good
+                </small>
+            </div>
+            
+            <div class="form-group">
+                <label>📚 Module Topic:</label>
+                <input 
+                    v-model="topic" 
+                    placeholder="e.g., Budgeting for Teenagers, Investment Basics, Saving Money"
+                    maxlength="100"
+                >
+            </div>
+            
+            <div class="form-group">
+                <label>👥 Target Age Group:</label>
+                <select v-model="ageGroup">
+                    <option value="8-10">8-10 years (Younger Children)</option>
+                    <option value="11-14">11-14 years (Middle School)</option>
+                    <option value="15-18">15-18 years (Teenagers)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label>⏱️ Estimated Duration:</label>
+                <select v-model="duration">
+                    <option value="30 minutes">30 minutes (Quick Lesson)</option>
+                    <option value="45 minutes">45 minutes (Standard Module)</option>
+                    <option value="60 minutes">60 minutes (Comprehensive)</option>
+                    <option value="90 minutes">90 minutes (Extended Learning)</option>
+                </select>
+            </div>
+            
+            <button @click="generateModule" :disabled="loading || !isValidApiKey || !topic.trim()">
+                <span v-if="loading">🔄 Generating AI Module...</span>
+                <span v-else>🚀 Generate AI Module</span>
+            </button>
+            
+            <div v-if="loading" class="result loading">
+                <strong>🤖 AI Processing...</strong><br>
+                Generating educational content with Cerebras AI. This may take 10-30 seconds.
+                <div style="margin-top: 10px; font-size: 12px; opacity: 0.7;">
+                    Using Qwen-3-235B model for high-quality content generation
+                </div>
+            </div>
+            
+            <div v-if="error" class="result error">
+                <strong>❌ Generation Failed</strong><br>
+                {{ error }}
+                <div style="margin-top: 10px; font-size: 12px;">
+                    <strong>Common issues:</strong><br>
+                    • Invalid or expired API key<br>
+                    • Network connectivity problems<br>
+                    • API rate limits exceeded<br>
+                    • Check the browser console for detailed errors
+                </div>
+            </div>
+            
+            <div v-if="result" class="result success">
+                <h3>✅ Generated Module: {{ result.title }}</h3>
+                
+                <div class="stats">
+                    <div class="stat-card">
+                        <div class="stat-number">{{ result.difficulty }}</div>
+                        <div class="stat-label">Difficulty</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">{{ result.targetAge }}</div>
+                        <div class="stat-label">Age Group</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">{{ result.duration }}</div>
+                        <div class="stat-label">Duration</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">{{ result.learningObjectives?.length || 0 }}</div>
+                        <div class="stat-label">Objectives</div>
+                    </div>
+                </div>
+                
+                <div class="module-content">
+                    <h4>📖 Description:</h4>
+                    <p>{{ result.description }}</p>
+                    
+                    <h4>🎯 Learning Objectives:</h4>
+                    <ul v-if="result.learningObjectives && result.learningObjectives.length">
+                        <li v-for="(obj, index) in result.learningObjectives" :key="index">{{ obj }}</li>
+                    </ul>
+                    <p v-else><em>No specific objectives generated</em></p>
+                    
+                    <h4 v-if="result.keyTopics && result.keyTopics.length">🔑 Key Topics:</h4>
+                    <div v-if="result.keyTopics && result.keyTopics.length">
+                        <span v-for="topic in result.keyTopics" :key="topic" class="badge">{{ topic }}</span>
+                    </div>
+                    
+                    <h4 v-if="result.prerequisites && result.prerequisites.length">📋 Prerequisites:</h4>
+                    <ul v-if="result.prerequisites && result.prerequisites.length">
+                        <li v-for="prereq in result.prerequisites" :key="prereq">{{ prereq }}</li>
+                    </ul>
+                </div>
+                
+                <div style="margin-top: 15px; padding: 10px; background: #e8f5e8; border-radius: 6px; font-size: 14px;">
+                    <strong>🎉 Success!</strong> This module can now be enhanced with detailed sections, activities, and quiz questions in the full CoinCraft application.
+                </div>
+            </div>
+            
+            <div v-if="generationCount > 0" style="margin-top: 20px; text-align: center; color: #666; font-size: 14px;">
+                <strong>📊 Test Statistics:</strong> {{ generationCount }} module{{ generationCount !== 1 ? 's' : '' }} generated this session
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    apiKey: '',
+                    topic: 'Financial Planning for Young Adults',
+                    ageGroup: '15-18',
+                    duration: '45 minutes',
+                    loading: false,
+                    error: null,
+                    result: null,
+                    generationCount: 0
+                }
+            },
+            computed: {
+                isValidApiKey() {
+                    return this.apiKey.startsWith('csk-') && this.apiKey.length > 35;
+                }
+            },
+            methods: {
+                validateApiKey() {
+                    // Basic validation feedback
+                },
+                async generateModule() {
+                    this.loading = true;
+                    this.error = null;
+                    this.result = null;
+
+                    try {
+                        console.log('🤖 Starting AI module generation...');
+                        
+                        // Dynamic import of Cerebras SDK
+                        const { default: Cerebras } = await import('https://unpkg.com/@cerebras/cerebras_cloud_sdk@1.35.0/dist/index.esm.js');
+                        
+                        const cerebras = new Cerebras({
+                            apiKey: this.apiKey
+                        });
+
+                        // Enhanced module schema for structured output
+                        const moduleSchema = {
+                            type: "object",
+                            properties: {
+                                title: { type: "string" },
+                                difficulty: { 
+                                    type: "string",
+                                    enum: ["beginner", "intermediate", "advanced"]
+                                },
+                                description: { type: "string" },
+                                duration: { type: "string" },
+                                targetAge: { type: "string" },
+                                learningObjectives: {
+                                    type: "array",
+                                    items: { type: "string" }
+                                },
+                                prerequisites: {
+                                    type: "array", 
+                                    items: { type: "string" }
+                                },
+                                keyTopics: {
+                                    type: "array",
+                                    items: { type: "string" }
+                                }
+                            },
+                            required: ["title", "difficulty", "description", "duration", "targetAge", "learningObjectives"],
+                            additionalProperties: false
+                        };
+
+                        const systemPrompt = `You are an expert educational curriculum designer specializing in creating engaging, age-appropriate learning modules for financial literacy education.
+
+Guidelines for module creation:
+- Make content age-appropriate and engaging for the specified age group
+- Ensure learning objectives are specific, measurable, and achievable
+- Create clear, concise descriptions that teachers can easily understand and implement
+- Consider different learning styles and abilities
+- Align with common educational standards and best practices
+- Make modules practical and actionable for classroom use
+
+Focus on creating modules that are:
+- Clear and well-structured
+- Engaging and interactive
+- Educationally valuable
+- Practical for teachers to implement
+- Appropriate for the specified duration and age group`;
+
+                        const userPrompt = `Create an educational module with the following specifications:
+
+Topic: ${this.topic}
+Target Age Group: ${this.ageGroup} years old
+Estimated Duration: ${this.duration}
+
+Please design a complete educational module that includes:
+1. An engaging title that captures student interest
+2. Appropriate difficulty level for the age group
+3. A clear, compelling description of what students will learn
+4. Specific learning objectives that are measurable and achievable
+5. Key topics that will be covered
+6. Any prerequisites or prior knowledge needed
+
+Ensure the module is practical, engaging, and educationally sound for teachers to implement in their classrooms.`;
+
+                        console.log('📡 Sending request to Cerebras AI...');
+
+                        const response = await cerebras.chat.completions.create({
+                            messages: [
+                                { role: "system", content: systemPrompt },
+                                { role: "user", content: userPrompt }
+                            ],
+                            model: 'qwen-3-235b-a22b',
+                            stream: false,
+                            max_completion_tokens: 40000,
+                            temperature: 0.6,
+                            top_p: 0.95,
+                            response_format: {
+                                type: "json_schema",
+                                json_schema: {
+                                    name: "educational_module",
+                                    strict: true,
+                                    schema: moduleSchema
+                                }
+                            }
+                        });
+
+                        console.log('✅ Received response from Cerebras AI');
+
+                        // Parse the structured response
+                        const moduleData = JSON.parse(response.choices[0].message.content);
+                        this.result = moduleData;
+                        this.generationCount++;
+
+                        console.log('🎉 Module generated successfully:', moduleData);
+
+                    } catch (err) {
+                        console.error('❌ AI Generation Error:', err);
+                        
+                        let errorMessage = 'Unknown error occurred';
+                        
+                        if (err.message.includes('API key')) {
+                            errorMessage = 'Invalid API key. Please check your Cerebras API key.';
+                        } else if (err.message.includes('rate limit')) {
+                            errorMessage = 'API rate limit exceeded. Please wait a moment and try again.';
+                        } else if (err.message.includes('network') || err.message.includes('fetch')) {
+                            errorMessage = 'Network error. Please check your internet connection.';
+                        } else if (err.status === 401) {
+                            errorMessage = 'Unauthorized: Invalid or expired API key.';
+                        } else if (err.status === 429) {
+                            errorMessage = 'Too many requests. Please wait and try again.';
+                        } else {
+                            errorMessage = `Error: ${err.message}`;
+                        }
+                        
+                        this.error = errorMessage;
+                    } finally {
+                        this.loading = false;
+                    }
+                }
+            },
+            mounted() {
+                console.log('🚀 CoinCraft AI Test Interface Ready');
+                console.log('📋 Get your API key from: https://cloud.cerebras.ai/');
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html> 
