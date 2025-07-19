@@ -632,6 +632,32 @@ class ApiService {
     return this.request<any[]>(`/api/classes/${classId}/students`);
   }
 
+  // Modules (for teachers)
+  async createModule(moduleData: any): Promise<any> {
+    console.log('🌐 [API] Creating module:', moduleData);
+    const response = await this.request<any>('/api/teacher/modules', {
+      method: 'POST',
+      body: JSON.stringify(moduleData),
+    });
+    
+    if (response.error) {
+      throw new Error(response.error);
+    }
+    
+    return response.data || response;
+  }
+
+  async getTeacherModules(): Promise<any[]> {
+    console.log('🌐 [API] Fetching teacher modules');
+    const response = await this.request<any[]>('/api/teacher/modules');
+    
+    if (response.error) {
+      throw new Error(response.error);
+    }
+    
+    return response.data || response || [];
+  }
+
   // Utility methods
   isAuthenticated(): boolean {
     return !!this.token;

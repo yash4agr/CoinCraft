@@ -61,13 +61,22 @@
     <div class="mb-8">
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-2xl font-bold text-gray-800">Your Classes</h2>
-        <button 
-          @click="showCreateClassModal = true"
-          class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center gap-2"
-        >
-          <i class="ri-add-line"></i>
-          <span>Add New Class</span>
-        </button>
+        <div class="flex gap-3">
+          <button 
+            @click="showAIAssist = true"
+            class="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors flex items-center gap-2"
+          >
+            <i class="ri-robot-line"></i>
+            <span>AI Assist</span>
+          </button>
+          <button 
+            @click="showCreateClassModal = true"
+            class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center gap-2"
+          >
+            <i class="ri-add-line"></i>
+            <span>Add New Class</span>
+          </button>
+        </div>
       </div>
 
       <!-- Loading State -->
@@ -264,6 +273,12 @@
         </div>
       </div>
     </div>
+
+    <!-- AI Assist Component -->
+    <AIAssistComponent 
+      v-model="showAIAssist"
+      @module-saved="handleModuleSaved"
+    />
   </div>
 </template>
 
@@ -271,6 +286,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTeacherStore } from '@/stores/teacher'
+import AIAssistComponent from '@/components/teacher/AIAssistComponent.vue'
 import type { Class } from '@/stores/teacher'
 
 const router = useRouter()
@@ -278,6 +294,7 @@ const teacherStore = useTeacherStore()
 
 // State
 const showCreateClassModal = ref(false)
+const showAIAssist = ref(false)
 
 // Computed properties
 const totalStudents = computed(() => {
@@ -343,6 +360,11 @@ const navigateToClassProgress = (classId: string) => {
 
 const navigateToClassManagement = (classId: string) => {
   router.push(`/teacher/class-management/${classId}`)
+}
+
+const handleModuleSaved = (module: any) => {
+  console.log('🎉 [TEACHER] AI-generated module saved:', module)
+  // Optionally refresh modules list or show success message
 }
 
 // Lifecycle hooks

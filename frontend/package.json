@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@cerebras/cerebras_cloud_sdk": "^1.35.0",
     "@vueuse/core": "^13.4.0",
     "bootstrap": "^5.3.7",
     "chart.js": "^4.5.0",

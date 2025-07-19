@@ -29,6 +29,32 @@ export interface Class {
   createdAt: Date
 }
 
+export interface ModuleSection {
+  title: string
+  type: 'lesson' | 'reading' | 'video' | 'discussion'
+  content: string
+  duration: string
+  orderIndex?: number
+}
+
+export interface ModuleActivity {
+  title: string
+  type: 'exercise' | 'simulation' | 'case_study' | 'group_work' | 'project'
+  description: string
+  duration: string
+  materials?: string
+}
+
+export interface QuizQuestion {
+  question: string
+  type: 'multiple_choice' | 'true_false'
+  options: {
+    text: string
+    isCorrect: boolean
+  }[]
+  explanation?: string
+}
+
 export interface Module {
   id: string
   title: string
@@ -43,6 +69,14 @@ export interface Module {
   createdBy: string
   createdAt: Date
   updatedAt: Date
+  // Enhanced content for try mode
+  sections?: ModuleSection[]
+  activities?: ModuleActivity[]
+  quiz?: QuizQuestion[]
+  // AI-generated content properties
+  learningObjectives?: string[]
+  prerequisites?: string[]
+  keyTopics?: string[]
 }
 
 export interface TeacherProfile {
@@ -217,7 +251,79 @@ export const useTeacherStore = defineStore('teacher', () => {
       published: true,
       createdBy: 'teacher1',
       createdAt: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
-      updatedAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000)
+      updatedAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000),
+      sections: [
+        {
+          title: 'What is Money?',
+          type: 'lesson',
+          content: 'Money is a medium of exchange that people use to buy goods and services. It has three main functions: as a medium of exchange, a unit of account, and a store of value.',
+          duration: '10 minutes',
+          orderIndex: 1
+        },
+        {
+          title: 'History of Money',
+          type: 'reading',
+          content: 'Money has evolved from barter systems to coins, paper money, and now digital currency. Understanding this history helps us appreciate the importance of money in society.',
+          duration: '8 minutes',
+          orderIndex: 2
+        },
+        {
+          title: 'Types of Money',
+          type: 'discussion',
+          content: 'Explore different types of money including cash, checks, credit cards, and digital payments. Discuss the advantages and disadvantages of each.',
+          duration: '12 minutes',
+          orderIndex: 3
+        }
+      ],
+      activities: [
+        {
+          title: 'Money Timeline Activity',
+          type: 'exercise',
+          description: 'Create a timeline showing the evolution of money from barter to digital currency. Students research and present different forms of money throughout history.',
+          duration: '15 minutes',
+          materials: 'Paper, markers, internet access for research'
+        },
+        {
+          title: 'Money Role Play',
+          type: 'simulation',
+          description: 'Students act out different scenarios using various forms of money to understand how transactions work in real life.',
+          duration: '20 minutes',
+          materials: 'Play money, props for different scenarios'
+        }
+      ],
+      quiz: [
+        {
+          question: 'What are the three main functions of money?',
+          type: 'multiple_choice',
+          options: [
+            { text: 'Medium of exchange, unit of account, store of value', isCorrect: true },
+            { text: 'Buying, selling, saving', isCorrect: false },
+            { text: 'Coins, paper, digital', isCorrect: false },
+            { text: 'Earning, spending, investing', isCorrect: false }
+          ],
+          explanation: 'Money serves as a medium of exchange (for buying/selling), a unit of account (measuring value), and a store of value (saving for later).'
+        },
+        {
+          question: 'Which form of money came first in human history?',
+          type: 'multiple_choice',
+          options: [
+            { text: 'Paper money', isCorrect: false },
+            { text: 'Digital currency', isCorrect: false },
+            { text: 'Barter system', isCorrect: true },
+            { text: 'Coins', isCorrect: false }
+          ],
+          explanation: 'Before money existed, people used barter - exchanging goods and services directly with each other.'
+        },
+        {
+          question: 'Digital payments are more secure than cash transactions.',
+          type: 'true_false',
+          options: [
+            { text: 'True', isCorrect: true },
+            { text: 'False', isCorrect: false }
+          ],
+          explanation: 'Digital payments often have built-in security features like encryption and fraud protection that cash doesn\'t have.'
+        }
+      ]
     },
     {
       id: 'mod2',
@@ -232,7 +338,79 @@ export const useTeacherStore = defineStore('teacher', () => {
       published: true,
       createdBy: 'teacher1',
       createdAt: new Date(Date.now() - 55 * 24 * 60 * 60 * 1000),
-      updatedAt: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000)
+      updatedAt: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000),
+      sections: [
+        {
+          title: 'Why Save Money?',
+          type: 'lesson',
+          content: 'Saving money helps us prepare for emergencies, achieve goals, and build financial security. It\'s like building a safety net for the future.',
+          duration: '12 minutes',
+          orderIndex: 1
+        },
+        {
+          title: 'Saving Strategies',
+          type: 'reading',
+          content: 'Learn about different saving strategies like the 50/30/20 rule, automatic transfers, and setting up emergency funds.',
+          duration: '15 minutes',
+          orderIndex: 2
+        },
+        {
+          title: 'Goal Setting',
+          type: 'discussion',
+          content: 'Discuss how to set realistic saving goals and create a plan to achieve them. Short-term vs long-term goals.',
+          duration: '18 minutes',
+          orderIndex: 3
+        }
+      ],
+      activities: [
+        {
+          title: 'Savings Goal Calculator',
+          type: 'exercise',
+          description: 'Students calculate how long it will take to save for different goals based on their income and expenses.',
+          duration: '20 minutes',
+          materials: 'Calculator, paper, savings goal worksheet'
+        },
+        {
+          title: 'Piggy Bank Challenge',
+          type: 'simulation',
+          description: 'Students track their savings for a week using a virtual piggy bank and see how small amounts add up over time.',
+          duration: '25 minutes',
+          materials: 'Virtual piggy bank app or spreadsheet'
+        }
+      ],
+      quiz: [
+        {
+          question: 'What percentage of your income should you save according to the 50/30/20 rule?',
+          type: 'multiple_choice',
+          options: [
+            { text: '10%', isCorrect: false },
+            { text: '20%', isCorrect: true },
+            { text: '30%', isCorrect: false },
+            { text: '50%', isCorrect: false }
+          ],
+          explanation: 'The 50/30/20 rule suggests 50% for needs, 30% for wants, and 20% for savings and debt repayment.'
+        },
+        {
+          question: 'What is an emergency fund?',
+          type: 'multiple_choice',
+          options: [
+            { text: 'Money saved for vacations', isCorrect: false },
+            { text: 'Money saved for unexpected expenses', isCorrect: true },
+            { text: 'Money invested in stocks', isCorrect: false },
+            { text: 'Money spent on entertainment', isCorrect: false }
+          ],
+          explanation: 'An emergency fund is money set aside for unexpected expenses like medical bills or car repairs.'
+        },
+        {
+          question: 'It\'s better to save a small amount regularly than to save a large amount occasionally.',
+          type: 'true_false',
+          options: [
+            { text: 'True', isCorrect: true },
+            { text: 'False', isCorrect: false }
+          ],
+          explanation: 'Regular saving builds good habits and compound interest works better with consistent contributions.'
+        }
+      ]
     },
     {
       id: 'mod3',
@@ -247,7 +425,79 @@ export const useTeacherStore = defineStore('teacher', () => {
       published: true,
       createdBy: 'teacher1',
       createdAt: new Date(Date.now() - 50 * 24 * 60 * 60 * 1000),
-      updatedAt: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000)
+      updatedAt: new Date(Date.now() - 35 * 24 * 60 * 60 * 1000),
+      sections: [
+        {
+          title: 'Understanding Needs vs Wants',
+          type: 'lesson',
+          content: 'Needs are essential items required for survival and basic well-being (food, shelter, clothing). Wants are things we desire but can live without (entertainment, luxury items).',
+          duration: '12 minutes',
+          orderIndex: 1
+        },
+        {
+          title: 'Examples and Categories',
+          type: 'reading',
+          content: 'Explore real-world examples of needs vs wants. Learn how to categorize different expenses and understand that wants can vary between individuals and cultures.',
+          duration: '10 minutes',
+          orderIndex: 2
+        },
+        {
+          title: 'Decision Making Process',
+          type: 'discussion',
+          content: 'Discuss strategies for making smart financial decisions when choosing between needs and wants. Learn about opportunity cost and delayed gratification.',
+          duration: '13 minutes',
+          orderIndex: 3
+        }
+      ],
+      activities: [
+        {
+          title: 'Needs vs Wants Sorting Game',
+          type: 'exercise',
+          description: 'Students sort various items into needs and wants categories, then discuss their reasoning with classmates.',
+          duration: '15 minutes',
+          materials: 'Picture cards of various items, sorting mats'
+        },
+        {
+          title: 'Budget Decision Simulation',
+          type: 'simulation',
+          description: 'Students are given a limited budget and must prioritize needs over wants in various scenarios.',
+          duration: '20 minutes',
+          materials: 'Budget worksheets, scenario cards'
+        }
+      ],
+      quiz: [
+        {
+          question: 'Which of the following is a need?',
+          type: 'multiple_choice',
+          options: [
+            { text: 'New video game', isCorrect: false },
+            { text: 'School supplies', isCorrect: true },
+            { text: 'Movie tickets', isCorrect: false },
+            { text: 'Designer clothes', isCorrect: false }
+          ],
+          explanation: 'School supplies are essential for education and learning, making them a need rather than a want.'
+        },
+        {
+          question: 'What is opportunity cost?',
+          type: 'multiple_choice',
+          options: [
+            { text: 'The price of an item', isCorrect: false },
+            { text: 'What you give up when you choose one option over another', isCorrect: true },
+            { text: 'The cost of borrowing money', isCorrect: false },
+            { text: 'The amount you save', isCorrect: false }
+          ],
+          explanation: 'Opportunity cost is the value of what you give up when you choose one option over another.'
+        },
+        {
+          question: 'All wants are bad and should be avoided.',
+          type: 'true_false',
+          options: [
+            { text: 'True', isCorrect: false },
+            { text: 'False', isCorrect: true }
+          ],
+          explanation: 'Wants aren\'t inherently bad - they can improve quality of life. The key is balancing needs and wants within your budget.'
+        }
+      ]
     },
     {
       id: 'mod4',
@@ -262,7 +512,79 @@ export const useTeacherStore = defineStore('teacher', () => {
       published: true,
       createdBy: 'teacher1',
       createdAt: new Date(Date.now() - 45 * 24 * 60 * 60 * 1000),
-      updatedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000)
+      updatedAt: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+      sections: [
+        {
+          title: 'What is a Budget?',
+          type: 'lesson',
+          content: 'A budget is a financial plan that helps you track income and expenses. It\'s like a roadmap for your money that helps you achieve financial goals.',
+          duration: '15 minutes',
+          orderIndex: 1
+        },
+        {
+          title: 'Creating Your First Budget',
+          type: 'reading',
+          content: 'Learn the step-by-step process of creating a budget: track income, list expenses, categorize spending, and set financial goals.',
+          duration: '20 minutes',
+          orderIndex: 2
+        },
+        {
+          title: 'Budgeting Methods',
+          type: 'discussion',
+          content: 'Explore different budgeting methods like the 50/30/20 rule, envelope method, and zero-based budgeting. Discuss which method works best for different situations.',
+          duration: '25 minutes',
+          orderIndex: 3
+        }
+      ],
+      activities: [
+        {
+          title: 'Personal Budget Creation',
+          type: 'exercise',
+          description: 'Students create their own personal budget using provided templates and real-world scenarios.',
+          duration: '25 minutes',
+          materials: 'Budget templates, calculators, sample income/expense data'
+        },
+        {
+          title: 'Budget Tracking Challenge',
+          type: 'simulation',
+          description: 'Students track their spending for a week and compare it to their planned budget, learning about budget variance.',
+          duration: '30 minutes',
+          materials: 'Spending tracker worksheets, budget apps'
+        }
+      ],
+      quiz: [
+        {
+          question: 'What is the first step in creating a budget?',
+          type: 'multiple_choice',
+          options: [
+            { text: 'Set financial goals', isCorrect: false },
+            { text: 'Track your income', isCorrect: true },
+            { text: 'List all expenses', isCorrect: false },
+            { text: 'Choose a budgeting method', isCorrect: false }
+          ],
+          explanation: 'The first step is to track your income - you need to know how much money you have coming in before you can plan how to spend it.'
+        },
+        {
+          question: 'What percentage of your income should go to needs in the 50/30/20 rule?',
+          type: 'multiple_choice',
+          options: [
+            { text: '20%', isCorrect: false },
+            { text: '30%', isCorrect: false },
+            { text: '50%', isCorrect: true },
+            { text: '80%', isCorrect: false }
+          ],
+          explanation: 'In the 50/30/20 rule, 50% goes to needs, 30% to wants, and 20% to savings and debt repayment.'
+        },
+        {
+          question: 'A budget should be flexible and adjusted as needed.',
+          type: 'true_false',
+          options: [
+            { text: 'True', isCorrect: true },
+            { text: 'False', isCorrect: false }
+          ],
+          explanation: 'Budgets should be flexible and adjusted as your financial situation changes. Regular review and updates are important.'
+        }
+      ]
     },
     {
       id: 'mod5',
@@ -499,27 +821,49 @@ export const useTeacherStore = defineStore('teacher', () => {
     }
   }
 
-  const addModule = async (moduleData: Omit<Module, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const addModule = async (moduleData: any) => {
     isLoading.value = true
     error.value = null
     
     try {
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      console.log('💾 [TEACHER] Adding module via API:', moduleData)
       
+      // Make actual API call to create module
+      const response = await apiService.createModule(moduleData)
+      console.log('✅ [TEACHER] Module saved successfully via API:', response)
+      
+      // Convert API response to Module format
+      const savedModule = response.module
       const newModule: Module = {
-        id: `mod${modules.value.length + 1}`,
-        ...moduleData,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        id: savedModule.id,
+        title: savedModule.title,
+        description: savedModule.description,
+        content: savedModule.content || moduleData.content || '',
+        difficulty: savedModule.difficulty,
+        duration: savedModule.duration,
+        skills: savedModule.skills || [],
+        ageGroup: savedModule.ageGroup || '11-14',
+        category: savedModule.category,
+        published: savedModule.published,
+        createdBy: savedModule.created_by || profile.value?.id || 'teacher1',
+        createdAt: new Date(savedModule.created_at),
+        updatedAt: new Date(savedModule.updated_at || savedModule.created_at),
+        // Enhanced content for Try Mode
+        sections: savedModule.sections || [],
+        activities: savedModule.activities || [],
+        quiz: savedModule.quiz || [],
+        // AI-generated content properties
+        learningObjectives: savedModule.learningObjectives || [],
+        prerequisites: savedModule.prerequisites || [],
+        keyTopics: savedModule.keyTopics || []
       }
       
       modules.value.push(newModule)
       return newModule
       
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to add module'
-      console.error('Error adding module:', err)
+    } catch (err: any) {
+      error.value = err.response?.data?.detail || err.message || 'Failed to add module'
+      console.error('❌ [TEACHER] Error adding module:', err)
       throw err
     } finally {
       isLoading.value = false
@@ -738,6 +1082,64 @@ export const useTeacherStore = defineStore('teacher', () => {
     }
   }
 
+  const loadModules = async () => {
+    isLoading.value = true
+    error.value = null
+
+    try {
+      console.log('📚 [TEACHER] Loading modules from API...')
+      
+      // Fetch modules from API
+      const apiModules = await apiService.getTeacherModules()
+      console.log('🌐 [TEACHER] API modules received:', apiModules)
+      
+      // Convert API modules to Module format
+      const convertedModules: Module[] = apiModules.map(apiModule => ({
+        id: apiModule.id,
+        title: apiModule.title,
+        description: apiModule.description,
+        content: apiModule.content || '',
+        difficulty: apiModule.difficulty as 'beginner' | 'intermediate' | 'advanced',
+        duration: apiModule.duration || 30,
+        skills: apiModule.skills || [],
+        ageGroup: apiModule.ageGroup || 'Unknown',
+        category: apiModule.category || 'General',
+        published: apiModule.published || false,
+        createdBy: apiModule.created_by || 'unknown',
+        createdAt: new Date(apiModule.created_at),
+        updatedAt: new Date(apiModule.updated_at),
+        // Enhanced content
+        sections: apiModule.sections || [],
+        activities: apiModule.activities || [],
+        quiz: apiModule.quiz || [],
+        // AI-generated content properties
+        learningObjectives: apiModule.learningObjectives || [],
+        prerequisites: apiModule.prerequisites || [],
+        keyTopics: apiModule.keyTopics || []
+      }))
+      
+      // Merge with existing demo modules (keep demo modules for now)
+      const allModules = [...demoModules, ...convertedModules]
+      modules.value = allModules
+      
+      console.log('✅ [TEACHER] Modules loaded successfully:', modules.value.length)
+      console.log('📊 [TEACHER] - Demo modules:', demoModules.length)
+      console.log('📊 [TEACHER] - API modules:', convertedModules.length)
+      
+    } catch (err) {
+      error.value = err instanceof Error ? err.message : 'Failed to load modules'
+      console.error('❌ [TEACHER] Failed to load modules:', err)
+      
+      // Fallback to demo modules only
+      console.log('🔄 [TEACHER] Falling back to demo modules only')
+      modules.value = demoModules
+      
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   const clearError = () => {
     error.value = null
   }
@@ -760,6 +1162,7 @@ export const useTeacherStore = defineStore('teacher', () => {
     
     // Actions
     loadTeacherProfile,
+    loadModules,
     addClass,
     updateClass,
     deleteClass,

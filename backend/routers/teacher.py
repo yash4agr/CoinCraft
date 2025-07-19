@@ -11,7 +11,7 @@ from database import get_async_session
 from auth import current_active_user, get_user_manager, UserManager
 from models import (
     User, TeacherProfile, Class, ClassStudent, Module, ModuleSection, 
-    UserModuleProgress, Transaction, Goal, Achievement, UserAchievement
+    QuizQuestion, QuizOption, UserModuleProgress, Transaction, Goal, Achievement, UserAchievement
 )
 from schemas import UserRead
 
@@ -463,7 +463,7 @@ async def create_module(
     current_user: User = Depends(current_active_user),
     session: AsyncSession = Depends(get_async_session)
 ):
-    """Create a new learning module."""
+    """Create a new learning module with enhanced content (sections, activities, quiz)."""
     
     if current_user.role != 'teacher':
         raise HTTPException(
@@ -471,37 +471,129 @@ async def create_module(
             detail="Only teachers can create modules"
         )
     
-    # Create module
-    new_module = Module(
-        title=module_data['title'],
-        description=module_data['description'],
-        category=module_data.get('category', 'General'),
-        difficulty=module_data.get('difficulty', 'beginner'),
-        estimated_duration=module_data.get('duration', 30),
-        points_reward=module_data.get('points_reward', 0),
-        created_by=current_user.id,
-        is_published=module_data.get('published', False)
-    )
-    
-    session.add(new_module)
-    await session.commit()
-    
-    print(f"✅ [BACKEND] Created module: {new_module.title} (ID: {new_module.id})")
-    
-    return {
-        "message": "Module created successfully",
-        "module": {
-            "id": new_module.id,
-            "title": new_module.title,
-            "description": new_module.description,
-            "category": new_module.category,
-            "difficulty": new_module.difficulty,
-            "duration": new_module.estimated_duration,
-            "points_reward": new_module.points_reward,
-            "published": new_module.is_published,
-            "created_at": new_module.created_at.isoformat()
+    try:
+        # Create module
+        new_module = Module(
+            title=module_data['title'],
+            description=module_data['description'],
+            category=module_data.get('category', 'General'),
+            difficulty=module_data.get('difficulty', 'beginner'),
+            estimated_duration=module_data.get('duration', 30),
+            points_reward=module_data.get('points_reward', 0),
+            created_by=current_user.id,
+            is_published=module_data.get('published', False)
+        )
+        
+        session.add(new_module)
+        await session.flush()  # Get the module ID
+        
+        # Create sections if provided
+        sections_data = []
+        if 'sections' in module_data and module_data['sections']:
+            for i, section_data in enumerate(module_data['sections']):
+                section = ModuleSection(
+                    module_id=new_module.id,
+                    title=section_data['title'],
+                    type=section_data.get('type', 'lesson'),
+                    content=section_data.get('content', ''),
+                    order_index=section_data.get('orderIndex', i + 1),
+                    points_reward=0
+                )
+                session.add(section)
+                sections_data.append({
+                    "title": section.title,
+                    "type": section.type,
+                    "content": section.content,
+                    "duration": section_data.get('duration', ''),
+                    "orderIndex": section.order_index
+                })
+        
+        # Create quiz questions if provided
+        quiz_data = []
+        if 'quiz' in module_data and module_data['quiz']:
+            # Create a quiz section first
+            quiz_section = ModuleSection(
+                module_id=new_module.id,
+                title="Module Quiz",
+                type="quiz",
+                content="Knowledge check for this module",
+                order_index=len(module_data.get('sections', [])) + 1,
+                points_reward=0
+            )
+            session.add(quiz_section)
+            await session.flush()  # Get the section ID
+            
+            for i, question_data in enumerate(module_data['quiz']):
+                question = QuizQuestion(
+                    section_id=quiz_section.id,
+                    question_text=question_data['question'],
+                    explanation=question_data.get('explanation', ''),
+                    points=1,
+                    order_index=i + 1
+                )
+                session.add(question)
+                await session.flush()  # Get the question ID
+                
+                # Create options
+                options_data = []
+                for j, option_data in enumerate(question_data.get('options', [])):
+                    option = QuizOption(
+                        question_id=question.id,
+                        option_text=option_data['text'],
+                        is_correct=option_data.get('isCorrect', False),
+                        order_index=j + 1
+                    )
+                    session.add(option)
+                    options_data.append({
+                        "text": option.option_text,
+                        "isCorrect": option.is_correct
+                    })
+                
+                quiz_data.append({
+                    "question": question.question_text,
+                    "type": question_data.get('type', 'multiple_choice'),
+                    "options": options_data,
+                    "explanation": question.explanation
+                })
+        
+        await session.commit()
+        
+        print(f"✅ [BACKEND] Created enhanced module: {new_module.title} (ID: {new_module.id})")
+        print(f"📚 [BACKEND] - Sections: {len(sections_data)}")
+        print(f"🎯 [BACKEND] - Activities: {len(module_data.get('activities', []))}")
+        print(f"❓ [BACKEND] - Quiz questions: {len(quiz_data)}")
+        
+        return {
+            "message": "Module created successfully",
+            "module": {
+                "id": new_module.id,
+                "title": new_module.title,
+                "description": new_module.description,
+                "category": new_module.category,
+                "difficulty": new_module.difficulty,
+                "duration": new_module.estimated_duration,
+                "ageGroup": module_data.get('targetAge', module_data.get('ageGroup', 'Unknown')),
+                "skills": module_data.get('skills', module_data.get('keyTopics', [])),
+                "points_reward": new_module.points_reward,
+                "published": new_module.is_published,
+                "created_at": new_module.created_at.isoformat(),
+                # Enhanced content
+                "sections": sections_data,
+                "activities": module_data.get('activities', []),
+                "quiz": quiz_data,
+                "learningObjectives": module_data.get('learningObjectives', []),
+                "prerequisites": module_data.get('prerequisites', []),
+                "keyTopics": module_data.get('keyTopics', [])
+            }
         }
-    }
+        
+    except Exception as e:
+        await session.rollback()
+        print(f"❌ [BACKEND] Error creating module: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create module: {str(e)}"
+        )
 
 @router.get("/modules", response_model=List[dict])
 async def get_teacher_modules(
@@ -536,6 +628,59 @@ async def get_teacher_modules(
             completion_rate = len(completed) / len(progress_data) * 100
             if completed:
                 avg_score = sum(p.score or 0 for p in completed) / len(completed)
+
+        # Get enhanced content (sections, activities, quiz)
+        sections_stmt = select(ModuleSection).where(
+            and_(ModuleSection.module_id == module.id, ModuleSection.type != 'quiz')
+        ).order_by(ModuleSection.order_index)
+        sections_result = await session.execute(sections_stmt)
+        sections = sections_result.scalars().all()
+        
+        sections_data = []
+        for section in sections:
+            sections_data.append({
+                "title": section.title,
+                "type": section.type,
+                "content": section.content,
+                "duration": "10 minutes",  # Default duration
+                "orderIndex": section.order_index
+            })
+
+        # Get quiz questions
+        quiz_stmt = select(ModuleSection).where(
+            and_(ModuleSection.module_id == module.id, ModuleSection.type == 'quiz')
+        )
+        quiz_section_result = await session.execute(quiz_stmt)
+        quiz_section = quiz_section_result.scalar_one_or_none()
+        
+        quiz_data = []
+        if quiz_section:
+            questions_stmt = select(QuizQuestion).where(
+                QuizQuestion.section_id == quiz_section.id
+            ).order_by(QuizQuestion.order_index)
+            questions_result = await session.execute(questions_stmt)
+            questions = questions_result.scalars().all()
+            
+            for question in questions:
+                options_stmt = select(QuizOption).where(
+                    QuizOption.question_id == question.id
+                ).order_by(QuizOption.order_index)
+                options_result = await session.execute(options_stmt)
+                options = options_result.scalars().all()
+                
+                options_data = []
+                for option in options:
+                    options_data.append({
+                        "text": option.option_text,
+                        "isCorrect": option.is_correct
+                    })
+                
+                quiz_data.append({
+                    "question": question.question_text,
+                    "type": "multiple_choice",  # Default type
+                    "options": options_data,
+                    "explanation": question.explanation or ""
+                })
         
         modules_data.append({
             "id": module.id,
@@ -544,12 +689,21 @@ async def get_teacher_modules(
             "category": module.category,
             "difficulty": module.difficulty,
             "duration": module.estimated_duration,
+            "ageGroup": "Unknown",  # Could be stored separately in future
+            "skills": [],  # Could be stored separately in future
             "points_reward": module.points_reward,
             "published": module.is_published,
             "completion_rate": round(completion_rate, 1),
             "avg_score": round(avg_score, 1),
             "created_at": module.created_at.isoformat(),
-            "updated_at": module.updated_at.isoformat()
+            "updated_at": module.updated_at.isoformat(),
+            # Enhanced content
+            "sections": sections_data,
+            "activities": [],  # Activities stored separately in future
+            "quiz": quiz_data,
+            "learningObjectives": [],  # Could be stored separately in future
+            "prerequisites": [],
+            "keyTopics": []
         })
     
     return modules_data
@@ -645,4 +799,4 @@ async def get_performance_analytics(
         "class_performance": class_performance,
         "total_students": total_students,
         "timeframe": timeframe
-    } 
+    }
