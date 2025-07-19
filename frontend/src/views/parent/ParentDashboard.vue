@@ -255,7 +255,28 @@
 <v-card class="pa-4">
   <v-card-title class="text-h6 font-weight-bold mb-4">
     <v-icon left color="orange">mdi-flash</v-icon>
-    Child List
+    Child List ({{ children.length }} children)
+    <v-spacer />
+    <v-btn 
+      color="primary" 
+      variant="outlined" 
+      size="small"
+      @click="reloadDashboard"
+      :loading="loading"
+      class="me-2"
+    >
+      <v-icon left>mdi-refresh</v-icon>
+      Reload
+    </v-btn>
+    <v-btn 
+      color="info" 
+      variant="text" 
+      size="small"
+      @click="showDebugInfo"
+    >
+      <v-icon left>mdi-bug</v-icon>
+      Debug
+    </v-btn>
   </v-card-title>
 
   <div style="overflow-x: auto;">
@@ -271,14 +292,24 @@
         </tr>
       </thead>
       <tbody>
-        <tr v-for="(child, index) in children" :key="child.id">
-          <td>{{ index + 1 }}</td>
-          <td>{{ child.name }}</td>
-          <td>{{ child.age }}</td>
-          <td>{{ child.email || '—' }}</td>
-          <td>{{ child.name.toLowerCase() }}{{ child.age }}</td>
-          <td>{{ child.password }}</td>
-        </tr>
+        <template v-if="children.length === 0">
+          <tr>
+            <td colspan="6" class="text-center py-4 text-medium-emphasis">
+              <v-icon class="mb-2">mdi-account-child-outline</v-icon><br>
+              No children added yet. Click "Add Child" to start!
+            </td>
+          </tr>
+        </template>
+        <template v-else>
+          <tr v-for="(child, index) in children" :key="child.id">
+            <td>{{ index + 1 }}</td>
+            <td>{{ child.name }}</td>
+            <td>{{ child.age }}</td>
+            <td>{{ child.email || '—' }}</td>
+            <td>{{ child.username || `${child.name.toLowerCase().replace(/\s+/g, '')}${child.age}` }}</td>
+            <td>{{ child.password || '******' }}</td>
+          </tr>
+        </template>
       </tbody>
     </table>
   </div>
@@ -436,7 +467,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, defineAsyncComponent } from 'vue'
+import { ref, reactive, computed, onMounted, defineAsyncComponent, watch } from 'vue'
 import { useParentStore } from '@/stores/parent'
 import type { Parent, Child } from '@/types'
 
@@ -634,11 +665,19 @@ const addChild = async () => {
       avatarColor: newChild.avatarColor
     }
     
+    console.log('👶 [DASHBOARD] Adding child with data:', childData)
     const result = await parentStore.addChildAPI(childData)
+    
+    console.log('✅ [DASHBOARD] Child added successfully:', result)
     
     showAddChildDialog.value = false
     showSuccessSnackbar.value = true
     successMessage.value = `${newChild.name} added successfully! Username: ${result.username}, Password: ${result.password}`
+    
+    // Force reload dashboard to update child list
+    console.log('🔄 [DASHBOARD] Reloading dashboard...')
+    await parentStore.loadDashboard()
+    console.log('✅ [DASHBOARD] Dashboard reloaded, children count:', parentStore.children.length)
     
     // Reset form
     Object.assign(newChild, {
@@ -648,7 +687,7 @@ const addChild = async () => {
       avatarColor: 'blue'
     })
   } catch (error) {
-    console.error('Failed to add child:', error)
+    console.error('❌ [DASHBOARD] Failed to add child:', error)
     showSuccessSnackbar.value = true
     successMessage.value = `Failed to add child: ${error instanceof Error ? error.message : 'Unknown error'}`
   } finally {
@@ -666,17 +705,100 @@ function generateRandomPassword(length = 10): string {
   return password
 }
 
-// Use store data
-const children = parentStore.children
-const familyStats = parentStore.familyStats
+const reloadDashboard = async () => {
+  try {
+    loading.value = true
+    console.log('🔄 [DASHBOARD] Manually reloading dashboard...')
+    
+    // Force disable demo mode to ensure we get real API data
+    localStorage.removeItem('coincraft_demo_mode')
+    console.log('🔄 [DASHBOARD] Disabled demo mode to ensure real data')
+    
+    await parentStore.loadDashboard()
+    console.log('✅ [DASHBOARD] Dashboard reloaded successfully. Children count:', parentStore.children.length)
+    showSuccessSnackbar.value = true
+    successMessage.value = `Dashboard reloaded! Found ${parentStore.children.length} children.`
+  } catch (error) {
+    console.error('❌ [DASHBOARD] Failed to reload:', error)
+    showSuccessSnackbar.value = true
+    successMessage.value = `Failed to reload dashboard: ${error instanceof Error ? error.message : 'Unknown error'}`
+  } finally {
+    loading.value = false
+  }
+}
+
+const showDebugInfo = () => {
+  console.log('🐛 [DEBUG] Parent store children:', parentStore.children)
+  console.log('🐛 [DEBUG] Component children:', children.value)
+  
+  // Check authentication status
+  const token = localStorage.getItem('auth_token')
+  const user = localStorage.getItem('coincraft_user')
+  const demoMode = localStorage.getItem('coincraft_demo_mode')
+  
+  console.log('🐛 [DEBUG] Auth status:', {
+    token: token ? 'Present' : 'Missing',
+    user: user ? JSON.parse(user) : 'Missing',
+    demoMode: demoMode === 'true' ? 'ON' : 'OFF'
+  })
+  
+  // Show debug info in UI
+  showSuccessSnackbar.value = true
+  successMessage.value = `Debug info in console. Children: ${parentStore.children.length}, Auth: ${token ? 'Yes' : 'No'}, Demo: ${demoMode === 'true' ? 'Yes' : 'No'}`
+  
+  // Force update children array if needed
+  if (parentStore.children.length > 0 && children.value.length === 0) {
+    console.log('🔧 [DEBUG] Fixing reactivity issue...')
+    // Force a reactive update by creating a new array
+    parentStore.$patch({ children: [...parentStore.children] })
+  }
+  
+  // If we're in demo mode, disable it and reload
+  if (demoMode === 'true') {
+    console.log('🔧 [DEBUG] Disabling demo mode and reloading...')
+    localStorage.removeItem('coincraft_demo_mode')
+    setTimeout(() => reloadDashboard(), 100)
+  }
+}
+
+// Use store data with computed for reactivity
+const children = computed(() => {
+  console.log('🔍 [DASHBOARD] Children array in component:', parentStore.children.length, 'items')
+  return parentStore.children
+})
+const familyStats = computed(() => parentStore.familyStats)
+
+// Watch for changes in the children array
+watch(() => parentStore.children, (newChildren) => {
+  console.log('👀 [DASHBOARD] Children array updated:', newChildren.length, 'items')
+}, { deep: true })
 
 // Lifecycle
 onMounted(async () => {
   // Load parent dashboard data
   try {
+    console.log('🔄 [DASHBOARD] Loading dashboard on mount...')
+    
+    // Check if we have a valid auth token
+    const token = localStorage.getItem('auth_token')
+    console.log('🔑 [DASHBOARD] Auth token present:', !!token)
+    
+    // Ensure we're not in demo mode for real data
+    if (localStorage.getItem('coincraft_demo_mode') === 'true') {
+      console.log('⚠️ [DASHBOARD] Demo mode detected, disabling for real data')
+      localStorage.removeItem('coincraft_demo_mode')
+    }
+    
     await parentStore.loadDashboard()
+    console.log('✅ [DASHBOARD] Dashboard loaded on mount, children count:', parentStore.children.length)
+    
+    // Force reload if children array is empty but API returned data
+    if (parentStore.children.length === 0) {
+      console.log('⚠️ [DASHBOARD] Children array is empty, forcing reload...')
+      setTimeout(() => reloadDashboard(), 500)
+    }
   } catch (error) {
-    console.error('Failed to load parent dashboard:', error)
+    console.error('❌ [DASHBOARD] Failed to load parent dashboard:', error)
   }
 })
 </script>
@@ -740,7 +862,33 @@ onMounted(async () => {
 
 .table-responsive {
   overflow-x: auto;
+}
+
+.child-table {
   width: 100%;
+  border-collapse: collapse;
+  margin-top: 16px;
+}
+
+.child-table th,
+.child-table td {
+  padding: 12px 8px;
+  text-align: left;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.child-table th {
+  background-color: #f5f5f5;
+  font-weight: 600;
+  color: #333;
+}
+
+.child-table tbody tr:hover {
+  background-color: #f9f9f9;
+}
+
+.child-table tbody tr:last-child td {
+  border-bottom: none;
 }
 
 .table-responsive table {

@@ -189,6 +189,10 @@ export const useAuthStore = defineStore('auth', () => {
       }
 
       console.log('📝 [AUTH] Calling API registration...');
+      
+      // Disable demo mode to ensure real API calls
+      localStorage.removeItem('coincraft_demo_mode')
+      
       const response = await apiService.register(apiData)
       
       console.log('📝 [AUTH] Registration response:', response);
@@ -224,13 +228,33 @@ export const useAuthStore = defineStore('auth', () => {
       
       // Store session
       localStorage.setItem('coincraft_user', JSON.stringify(localUser))
+      
+      // Ensure we're not in demo mode
+      localStorage.removeItem('coincraft_demo_mode')
 
       console.log('🎉 Registration and login completed successfully!');
 
     } catch (err) {
       console.error('💥 Registration failed:', err);
-      error.value = err instanceof Error ? err.message : 'Registration failed'
-      throw err
+      
+      // Provide more helpful error messages
+      let errorMessage = 'Registration failed. Please try again.';
+      
+      if (err instanceof Error) {
+        errorMessage = err.message;
+        
+        // Enhance common error messages
+        if (errorMessage.includes('already exists')) {
+          errorMessage = 'A user with this email already exists. Please try another email address.';
+        } else if (errorMessage.includes('server error') || errorMessage.includes('500')) {
+          errorMessage = 'Server error. Please try again later or contact support.';
+        } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
+          errorMessage = 'Network error. Please check your internet connection and try again.';
+        }
+      }
+      
+      error.value = errorMessage;
+      throw new Error(errorMessage);
     } finally {
       isLoading.value = false
     }

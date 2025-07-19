@@ -128,12 +128,15 @@ export const useChildStore = defineStore('child', () => {
     }
 
     try {
+      console.log('🎯 [CHILD] Creating new goal:', goal.name)
+      
+      // For now, use the existing API method until we add child-specific methods
       const apiGoal = {
         user_id: '', // Will be set by backend
         title: goal.name,
         description: goal.name,
         target_amount: goal.targetAmount,
-        current_amount: goal.currentAmount,
+        current_amount: goal.currentAmount || 0,
         icon: goal.icon,
         color: 'blue'
       }
@@ -146,17 +149,18 @@ export const useChildStore = defineStore('child', () => {
 
       if (response.data) {
         const newGoal: Goal = {
-          id: response.data.id,
-          name: response.data.title,
-          targetAmount: response.data.target_amount,
-          currentAmount: response.data.current_amount,
-          icon: response.data.icon,
-          createdAt: new Date(response.data.created_at)
+          id: response.data.goal.id,
+          name: response.data.goal.name,
+          targetAmount: response.data.goal.targetAmount,
+          currentAmount: response.data.goal.currentAmount,
+          icon: response.data.goal.icon,
+          createdAt: new Date(response.data.goal.createdAt)
         }
         goals.value.push(newGoal)
+        console.log('✅ [CHILD] Goal created successfully:', newGoal.name)
       }
     } catch (error) {
-      console.error('Failed to add goal:', error)
+      console.error('❌ [CHILD] Failed to add goal:', error)
       throw error
     }
   }
@@ -175,6 +179,8 @@ export const useChildStore = defineStore('child', () => {
     }
 
     try {
+      console.log('💰 [CHILD] Updating goal progress:', goalId, '+', amount, 'coins')
+      
       const response = await apiService.updateGoalProgress(goalId, amount)
       
       if (response.error) {
@@ -185,10 +191,11 @@ export const useChildStore = defineStore('child', () => {
         const goal = goals.value.find(g => g.id === goalId)
         if (goal) {
           goal.currentAmount = response.data.current_amount
+          console.log('✅ [CHILD] Goal progress updated:', goal.name, '=', goal.currentAmount)
         }
       }
     } catch (error) {
-      console.error('Failed to update goal progress:', error)
+      console.error('❌ [CHILD] Failed to update goal progress:', error)
       throw error
     }
   }

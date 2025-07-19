@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { apiService } from '@/services/api'
 
 export interface Student {
   id: string
@@ -381,11 +382,14 @@ export const useTeacherStore = defineStore('teacher', () => {
   const loadTeacherProfile = async () => {
     isLoading.value = true
     error.value = null
-    
+
     try {
-      // TODO: Replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      console.log('👨‍🏫 [TEACHER] Loading teacher profile...')
       
+      // For now, use demo data until we implement teacher-specific API methods
+      console.log('📊 [TEACHER] Using demo data for now...')
+      
+      // Update profile with demo data
       profile.value = {
         id: 'teacher1',
         name: 'Mrs. Johnson',
@@ -394,13 +398,15 @@ export const useTeacherStore = defineStore('teacher', () => {
         avatar: 'https://avataaars.io/?avatarStyle=Circle&topType=LongHairStraight&accessoriesType=Blank&hairColor=Brown&facialHairType=Blank&clotheType=BlazerShirt&eyeType=Default&eyebrowType=Default&mouthType=Default&skinColor=Light',
         classes: []
       }
-      
+
+      // Update classes with demo data
       classes.value = demoClasses
       modules.value = demoModules
-      
+
+      console.log('✅ [TEACHER] Demo profile loaded successfully')
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to load teacher profile'
-      console.error('Error loading teacher profile:', err)
+      console.error('❌ [TEACHER] Failed to load profile:', err)
+      error.value = err instanceof Error ? err.message : 'Failed to load profile'
     } finally {
       isLoading.value = false
     }

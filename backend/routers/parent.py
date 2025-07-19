@@ -2,6 +2,7 @@
 
 from typing import List, Optional
 from datetime import datetime, timedelta
+import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_
@@ -78,6 +79,10 @@ async def get_parent_dashboard(
     children_result = await session.execute(children_stmt)
     children_data = children_result.all()
     
+    print(f"🔍 [BACKEND] Dashboard: Found {len(children_data)} children for parent {current_user.id}")
+    for user, profile in children_data:
+        print(f"  - Child: {user.name} (ID: {user.id}, Age: {profile.age})")
+    
     children = []
     family_stats = FamilyStats()
     family_stats.total_children = len(children_data)
@@ -119,6 +124,8 @@ async def get_parent_dashboard(
             "avatar_url": user.avatar_url,
             "active_goals": active_goals,
             "completed_tasks": completed_tasks,
+            "username": f"{user.name.lower().replace(' ', '')}{child_profile.age}",
+            "email": user.email,
             "recent_activity": [
                 {
                     "id": t.id,
@@ -188,20 +195,56 @@ async def add_child(
         avatar_url=child_data.get('avatar_url', '👶' if child_data['age'] < 11 else '🧒')
     )
     
-    child_user = await user_manager.create(user_data)
+    # Create child user account
+    try:
+        child_user = await user_manager.create(user_data)
+        print(f"🔍 [BACKEND] Created child user: {child_user.id} - {child_user.name}")
+    except Exception as e:
+        print(f"❌ [BACKEND] Error creating user: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create child user: {str(e)}"
+        )
     
     # Create child profile
-    child_profile = ChildProfile(
-        user_id=child_user.id,
-        age=child_data['age'],
-        coins=0,
-        level=1,
-        streak_days=0,
-        parent_id=current_user.id
-    )
+    try:
+        child_profile = ChildProfile(
+            user_id=child_user.id,
+            age=child_data['age'],
+            coins=0,
+            level=1,
+            streak_days=0,
+            parent_id=current_user.id
+        )
+        
+        session.add(child_profile)
+        await session.commit()
+        print(f"✅ [BACKEND] Child profile committed to database: {child_profile.user_id}")
+    except Exception as e:
+        print(f"❌ [BACKEND] Error creating child profile: {e}")
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create child profile: {str(e)}"
+        )
     
-    session.add(child_profile)
-    await session.commit()
+    # Verify the child was saved by querying it back
+    verify_stmt = select(User, ChildProfile).join(
+        ChildProfile, User.id == ChildProfile.user_id
+    ).where(
+        and_(User.id == child_user.id, ChildProfile.parent_id == current_user.id)
+    )
+    verify_result = await session.execute(verify_stmt)
+    verified_child = verify_result.first()
+    
+    if not verified_child:
+        print(f"❌ [BACKEND] ERROR: Child not found after creation!")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to create child - database verification failed"
+        )
+    
+    print(f"✅ [BACKEND] Child verified in database: {verified_child[0].name}")
     
     return {
         "message": "Child added successfully",

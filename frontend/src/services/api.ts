@@ -217,6 +217,13 @@ class ApiService {
         
         if (response.status >= 500) {
           console.log(`🔥 [API] Server error ${response.status}`);
+          
+          // For registration endpoint, provide more specific error
+          if (url.includes('/register')) {
+            console.log(`🔥 [API] Registration server error`);
+            throw new Error('Registration failed - server error. Please try again with a different email or username.');
+          }
+          
           throw new Error('Server error - please try again later');
         }
         
@@ -226,6 +233,14 @@ class ApiService {
           return {};
         });
         console.log(`📄 [API] Error data:`, errorData);
+        
+        // Enhanced error messages for registration
+        if (url.includes('/register') && errorData.detail) {
+          if (errorData.detail.includes('already exists')) {
+            throw new Error('A user with this email already exists. Please try another email address.');
+          }
+        }
+        
         throw new Error(errorData.detail || errorData.message || `HTTP ${response.status}: ${response.statusText}`);
       }
 
@@ -378,32 +393,57 @@ class ApiService {
       password: '***' 
     });
 
-    const response = await this.request<{ access_token: string; token_type: string; user: User }>('/api/auth/register', {
-      method: 'POST',
-      body: JSON.stringify(userData),
-    });
+    try {
+      const response = await this.request<{ access_token: string; token_type: string; user: User }>('/api/auth/register', {
+        method: 'POST',
+        body: JSON.stringify(userData),
+      });
 
-    console.log('📝 [REGISTER] Registration response received:', response);
+      console.log('📝 [REGISTER] Registration response received:', response);
 
-    if (response.error) {
-      console.error('❌ Registration failed:', response.error);
-      return { error: response.error };
-    }
-
-    if (!response.data?.access_token) {
-      console.error('❌ No access token in registration response:', response);
-      return { error: 'Registration failed - no access token received' };
-    }
-
-    console.log('🔑 Registration successful, saving token...');
-    this.saveToken(response.data.access_token);
-
-    return {
-      data: {
-        access_token: response.data.access_token,
-        user: response.data.user
+      if (response.error) {
+        console.error('❌ Registration failed:', response.error);
+        
+        // Enhance error message for common issues
+        let errorMessage = response.error;
+        if (errorMessage.includes('already exists')) {
+          errorMessage = 'A user with this email already exists. Please try another email address.';
+        } else if (errorMessage.includes('500')) {
+          errorMessage = 'Server error. Please try again later or contact support.';
+        }
+        
+        return { error: errorMessage };
       }
-    };
+
+      if (!response.data?.access_token) {
+        console.error('❌ No access token in registration response:', response);
+        return { error: 'Registration failed - no access token received' };
+      }
+
+      console.log('🔑 Registration successful, saving token...');
+      this.saveToken(response.data.access_token);
+
+      return {
+        data: {
+          access_token: response.data.access_token,
+          user: response.data.user
+        }
+      };
+    } catch (error) {
+      console.error('💥 [REGISTER] Unexpected error during registration:', error);
+      
+      // Provide more helpful error messages
+      let errorMessage = 'Registration failed. Please try again.';
+      if (error instanceof Error) {
+        if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
+          errorMessage = 'Network error. Please check your internet connection and try again.';
+        } else if (error.message.includes('500')) {
+          errorMessage = 'Server error. Please try again later or contact support.';
+        }
+      }
+      
+      return { error: errorMessage };
+    }
   }
 
   async logout(): Promise<ApiResponse<void>> {

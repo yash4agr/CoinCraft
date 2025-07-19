@@ -10,6 +10,14 @@ export interface Child {
   goalsActive: number
   lastActivity: Date
   avatar: string
+  email?: string
+  username?: string
+  password?: string
+  completedTasks?: number
+  recentActivity?: any[]
+  currentGoals?: any[]
+  initials?: string
+  avatarColor?: string
 }
 
 export interface Task {
@@ -117,6 +125,16 @@ export const useParentStore = defineStore('parent', () => {
     try {
       console.log('🏠 [PARENT] Loading parent dashboard...')
       
+      // Check if we're in demo mode
+      const isDemoMode = localStorage.getItem('coincraft_demo_mode') === 'true'
+      console.log('🏠 [PARENT] Demo mode:', isDemoMode ? 'ON' : 'OFF')
+      
+      if (isDemoMode) {
+        console.log('🏠 [PARENT] Using demo data in demo mode')
+        // Use demo data in demo mode
+        return
+      }
+      
       const response = await apiService.request('/api/parent/dashboard', {
         method: 'GET'
       })
@@ -126,18 +144,45 @@ export const useParentStore = defineStore('parent', () => {
       }
 
       if (response.data) {
-        children.value = response.data.children.map((child: any) => ({
+        console.log('📊 [PARENT] Dashboard response:', response.data)
+        console.log('👶 [PARENT] Children data:', response.data.children)
+        console.log('🔍 [PARENT] Raw children count:', response.data.children.length)
+        console.log('👤 [PARENT] Parent info:', response.data.parent)
+        
+        // Store parent info in localStorage for reference
+        localStorage.setItem('coincraft_parent_id', response.data.parent.id)
+        localStorage.setItem('coincraft_parent_email', response.data.parent.email)
+        
+        // Clear children array first
+        children.value = []
+        
+        // Map children data
+        children.value = response.data.children.map((child: any) => {
+          console.log('👤 [PARENT] Mapping child:', child.name, 'with username:', child.username)
+          return {
           id: child.id,
           name: child.name,
           age: child.age,
           coins: child.coins,
           goalsActive: child.active_goals,
           lastActivity: new Date(),
-          avatar: child.avatar_url || '👤'
-        }))
+          avatar: child.avatar_url || '👤',
+          email: child.email || 'Not set',
+          username: child.username || `${child.name.toLowerCase().replace(/\s+/g, '')}${child.age}`,
+          password: '******',  // Placeholder for security
+          completedTasks: child.completed_tasks || 0,
+          recentActivity: child.recent_activity || [],
+          currentGoals: [],  // Default empty goals
+          initials: child.name.charAt(0).toUpperCase(),
+          avatarColor: 'blue'  // Default color
+        }
+        })
+
+        console.log('✅ [PARENT] Mapped children array:', children.value.length, 'items')
+        console.log('👶 [PARENT] Final children data:', children.value)
 
         familyStats.value = response.data.family_stats
-        console.log('✅ [PARENT] Dashboard loaded successfully')
+        console.log('✅ [PARENT] Dashboard loaded successfully, children count:', children.value.length)
       }
     } catch (err) {
       console.error('❌ [PARENT] Failed to load dashboard:', err)

@@ -20,6 +20,9 @@ from routers.classes import router as classes_router
 from routers.redemptions import router as redemptions_router
 from routers.dashboard import router as dashboard_router
 from routers.parent import router as parent_router
+from routers.teacher import router as teacher_router
+from routers.child import router as child_router
+from routers.teen import router as teen_router
 
 
 class HealthCheck(BaseModel):
@@ -138,6 +141,9 @@ app.include_router(classes_router, prefix="/api", tags=["Teachers"])
 app.include_router(redemptions_router, prefix="/api", tags=["Redemptions"])
 app.include_router(dashboard_router, prefix="/api", tags=["Dashboard"])
 app.include_router(parent_router, prefix="/api/parent", tags=["Parent"])
+app.include_router(teacher_router, prefix="/api/teacher", tags=["Teacher"])
+app.include_router(child_router, prefix="/api/child", tags=["Child"])
+app.include_router(teen_router, prefix="/api/teen", tags=["Teen"])
 
 
 if __name__ == "__main__":
