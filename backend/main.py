@@ -4,6 +4,7 @@ import os
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, status
+from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -43,11 +44,11 @@ async def lifespan(app: FastAPI):
 # Create FastAPI app
 app = FastAPI(
     title="CoinCraft API",
-    description="Financial literacy learning platform API for children, teens, parents, and teachers.",
+    description="...",
     version="1.0.0",
     lifespan=lifespan,
-    docs_url="/docs",
-    redoc_url="/redoc",
+    docs_url=None,
+    redoc_url=None,
 )
 
 # CORS Configuration
@@ -106,6 +107,31 @@ def test_api():
     """Simple test endpoint to verify API is working."""
     return {"message": "API is working", "timestamp": "2025-01-01T00:00:00Z"}
 
+@app.get("/openapi.yaml", include_in_schema=False)
+async def get_openapi_yaml():
+    return FileResponse("swagger.yaml", media_type="application/x-yaml")
+
+@app.get("/docs", include_in_schema=False)
+async def custom_swagger_ui_html():
+    return HTMLResponse("""
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>CoinCraft API Docs</title>
+      <link rel="stylesheet" type="text/css" href="https://unpkg.com/swagger-ui-dist/swagger-ui.css" />
+    </head>
+    <body>
+      <div id="swagger-ui"></div>
+      <script src="https://unpkg.com/swagger-ui-dist/swagger-ui-bundle.js"></script>
+      <script>
+        SwaggerUIBundle({
+          url: '/openapi.yaml',
+          dom_id: '#swagger-ui'
+        });
+      </script>
+    </body>
+    </html>
+    """)
 
 # Authentication routes
 app.include_router(

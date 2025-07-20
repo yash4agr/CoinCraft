@@ -1,8 +1,9 @@
 openapi: 3.1.0
 info:
   title: CoinCraft API
-  description: Financial literacy learning platform API for children, teens, parents,
-    and teachers.
+  description: |
+    Financial literacy learning platform API for children, teens, parents, and teachers. 
+    Each endpoint is mapped to specific user stories to ensure alignment with application requirements.
   version: 1.0.0
 paths:
   /health:
@@ -37,7 +38,9 @@ paths:
     post:
       tags:
       - auth
-      summary: Auth:Jwt.Login
+      summary: Login User
+      description: |
+        **User Story:** As a registered user, I want to log in to the platform so that I can access my personalized dashboard and features.
       operationId: auth_jwt_login_api_auth_jwt_login_post
       requestBody:
         content:
@@ -80,7 +83,9 @@ paths:
     post:
       tags:
       - auth
-      summary: Auth:Jwt.Logout
+      summary: Logout User
+      description: |
+        **User Story:** As a logged-in user, I want to securely log out of my account to protect my information.
       operationId: auth_jwt_logout_api_auth_jwt_logout_post
       responses:
         '200':
@@ -96,8 +101,9 @@ paths:
     post:
       tags:
       - auth
-      summary: Register And Login
-      description: Register a new user and immediately log them in.
+      summary: Register A New User
+      description: |
+        **User Story:** As a new parent or teacher, I want to create an account so that I can access the platform and start managing my children's or students' financial education.
       operationId: register_and_login_api_auth_register_post
       requestBody:
         content:
@@ -273,7 +279,8 @@ paths:
       tags:
       - User Management
       summary: Get Current User Profile
-      description: Get current user's profile (basic info only).
+      description: |
+        **User Story:** As a user, I want to view my own profile information to ensure it is up-to-date.
       operationId: get_current_user_profile_api_users_me_get
       responses:
         '200':
@@ -287,7 +294,9 @@ paths:
     patch:
       tags:
       - users
-      summary: Users:Patch Current User
+      summary: Update Current User Profile
+      description: |
+        **User Story:** As a user, I want to update my profile information, such as my name or password, to keep my account current.
       operationId: users_patch_current_user_api_users_me_patch
       requestBody:
         content:
@@ -984,7 +993,9 @@ paths:
       tags:
       - Tasks
       summary: Update Task Status
-      description: Update task status (complete, approve, reject).
+      description: |
+        **User Story (Child):** As a child, I want to mark a task as "complete" once I have finished it, so my parent can review it.
+        **User Story (Parent):** As a parent, I want to "approve" a completed task to release the coin reward to my child, or "reject" it if it's not done correctly.
       operationId: update_task_status_api_tasks__task_id__put
       security:
       - OAuth2PasswordBearer: []
@@ -1762,8 +1773,8 @@ paths:
       tags:
       - Parent
       summary: Get Parent Dashboard
-      description: Get parent dashboard data including children overview and family
-        stats.
+      description: |
+        **User Story:** As a parent, I want to see a dashboard overview of my children's recent activity, including their coin balance and goal progress, so I can stay informed at a glance.
       operationId: get_parent_dashboard_api_parent_dashboard_get
       responses:
         '200':
@@ -1780,8 +1791,9 @@ paths:
     post:
       tags:
       - Parent
-      summary: Add Child
-      description: Add a new child to the parent's account.
+      summary: Add a New Child
+      description: |
+        **User Story:** As a parent, I want to create an account for my child so they can start learning and earning on the platform under my supervision.
       operationId: add_child_api_parent_children_post
       requestBody:
         content:
@@ -1813,7 +1825,8 @@ paths:
       tags:
       - Parent
       summary: Get Child Progress
-      description: Get detailed progress information for a specific child.
+      description: |
+        **User Story:** As a parent, I want to view a detailed progress report for a specific child, including their completed activities, earnings, and spending habits over time.
       operationId: get_child_progress_api_parent_children__child_id__progress_get
       security:
       - OAuth2PasswordBearer: []
@@ -1851,8 +1864,9 @@ paths:
     post:
       tags:
       - Parent
-      summary: Create Task
-      description: Create a new task for children.
+      summary: Create a New Task
+      description: |
+        **User Story:** As a parent, I want to assign a new task or chore to my child with a coin reward, so they have opportunities to earn money.
       operationId: create_task_api_parent_tasks_post
       security:
       - OAuth2PasswordBearer: []
@@ -1882,8 +1896,9 @@ paths:
     get:
       tags:
       - Parent
-      summary: Get Family Tasks
-      description: Get all tasks for the family with optional filtering.
+      summary: Get All Family Tasks
+      description: |
+        **User Story:** As a parent, I want to view all the tasks I've assigned to my children to see their status (e.g., pending, completed, approved).
       operationId: get_family_tasks_api_parent_tasks_get
       security:
       - OAuth2PasswordBearer: []
@@ -1925,8 +1940,9 @@ paths:
     put:
       tags:
       - Parent
-      summary: Approve Task
-      description: Approve a completed task and award coins.
+      summary: Approve a Task
+      description: |
+        **User Story:** As a parent, I want to approve a completed task to release the coin reward to my child.
       operationId: approve_task_api_parent_tasks__task_id__approve_put
       security:
       - OAuth2PasswordBearer: []
@@ -1957,7 +1973,8 @@ paths:
       tags:
       - Parent
       summary: Get Redemption Requests
-      description: Get redemption requests from children.
+      description: |
+        **User Story:** As a parent, I want to review my child's requests to convert their coins into real money so I can approve or deny them.
       operationId: get_redemption_requests_api_parent_redemptions_get
       security:
       - OAuth2PasswordBearer: []
@@ -1992,7 +2009,8 @@ paths:
       tags:
       - Parent
       summary: Update Parent Settings
-      description: Update parent settings like exchange rate and approval requirements.
+      description: |
+        **User Story:** As a parent, I want to configure settings like the coin-to-money exchange rate and task approval requirements to customize the experience for my family.
       operationId: update_parent_settings_api_parent_settings_put
       requestBody:
         content:
@@ -2024,7 +2042,8 @@ paths:
       tags:
       - Teacher
       summary: Get Teacher Dashboard
-      description: Get teacher dashboard data including classes overview and analytics.
+      description: |
+        **User Story:** As a teacher, I want a dashboard that summarizes my classes' performance and engagement, so I can identify which students or topics need more attention.
       operationId: get_teacher_dashboard_api_teacher_dashboard_get
       responses:
         '200':
@@ -2041,8 +2060,9 @@ paths:
     get:
       tags:
       - Teacher
-      summary: Get Teacher Classes
-      description: Get all classes for the teacher.
+      summary: Get All Teacher/'s Classes
+      description: |
+        **User Story:** As a teacher, I want to see a list of all my classes so I can easily navigate between them.
       operationId: get_teacher_classes_api_teacher_classes_get
       responses:
         '200':
@@ -2060,8 +2080,9 @@ paths:
     post:
       tags:
       - Teacher
-      summary: Create Class
-      description: Create a new class.
+      summary: Create a New Class
+      description: |
+        **User Story:** As a teacher, I want to create a new class for the school year so I can enroll my students and manage their learning modules.
       operationId: create_class_api_teacher_classes_post
       requestBody:
         content:
@@ -2163,8 +2184,9 @@ paths:
     get:
       tags:
       - Teacher
-      summary: Get Teacher Modules
-      description: Get all modules created by the teacher.
+      summary: Get All Teacher's Modules
+      description: |
+        **User Story:** As a teacher, I want to view all the learning modules I have created so I can reuse or edit them for my classes.
       operationId: get_teacher_modules_api_teacher_modules_get
       responses:
         '200':
@@ -2182,9 +2204,9 @@ paths:
     post:
       tags:
       - Teacher
-      summary: Create Module
-      description: Create a new learning module with enhanced content (sections, activities,
-        quiz).
+      summary: Create a New Learning Module
+      description: |
+        **User Story:** As a teacher, I want to create a new learning module with lessons and quizzes on a financial topic, so I can assign it to my class.
       operationId: create_module_api_teacher_modules_post
       requestBody:
         content:
@@ -2215,8 +2237,10 @@ paths:
     get:
       tags:
       - Teacher
-      summary: Get Performance Analytics
-      description: Get performance analytics for the teacher's classes.
+      summary: Get Class Performance Analytics
+      description: |
+        **User Story:** As a teacher, I want to view performance analytics for my class to understand areas where students are struggling or excelling.
+      operationId: get_performance_analytics
       operationId: get_performance_analytics_api_teacher_analytics_performance_get
       security:
       - OAuth2PasswordBearer: []
@@ -2249,7 +2273,8 @@ paths:
       tags:
       - Child
       summary: Get Child Dashboard
-      description: Get child dashboard data including goals, activities, and progress.
+      description: |
+        **User Story:** As a child, I want to see my dashboard with my current coin total, my active goals, and new activities, so I can quickly decide what to do next.
       operationId: get_child_dashboard_api_child_dashboard_get
       responses:
         '200':
@@ -2266,8 +2291,9 @@ paths:
     get:
       tags:
       - Child
-      summary: Get Child Goals
-      description: Get child's goals.
+      summary: Get All Goals
+      description: |
+        **User Story:** As a child, I want to see all my savings goals to check how much I have saved for each one.
       operationId: get_child_goals_api_child_goals_get
       security:
       - OAuth2PasswordBearer: []
@@ -2300,8 +2326,9 @@ paths:
     post:
       tags:
       - Child
-      summary: Create Child Goal
-      description: Create a new goal for the child.
+      summary: Create a New Goal
+      description: |
+        **User Story:** As a child, I want to set a new savings goal for something I want to buy, like a toy or a game, so I can track my progress towards it.
       operationId: create_child_goal_api_child_goals_post
       security:
       - OAuth2PasswordBearer: []
@@ -2372,8 +2399,9 @@ paths:
     get:
       tags:
       - Child
-      summary: Get Child Activities
-      description: Get available activities/games for the child.
+      summary: Get Available Activities
+      description: |
+        **User Story:** As a child, I want to browse available activities and games so I can learn about money and earn coins.
       operationId: get_child_activities_api_child_activities_get
       responses:
         '200':
@@ -2392,8 +2420,9 @@ paths:
     post:
       tags:
       - Child
-      summary: Complete Activity
-      description: Complete an activity and earn coins.
+      summary: Complete an Activity
+      description: |
+        **User Story:** As a child, I want to complete a learning activity or game to earn my coin reward.
       operationId: complete_activity_api_child_activities__activity_id__complete_post
       security:
       - OAuth2PasswordBearer: []
@@ -2432,8 +2461,9 @@ paths:
     get:
       tags:
       - Child
-      summary: Get Child Transactions
-      description: Get child's transaction history.
+      summary: Get Child's Transaction History
+      description: |
+        **User Story:** As a child, I want to see my transaction history so I can understand where my coins came from (earning) and where they went (spending/saving).
       operationId: get_child_transactions_api_child_transactions_get
       security:
       - OAuth2PasswordBearer: []
@@ -2485,8 +2515,8 @@ paths:
       tags:
       - Teen
       summary: Get Teen Dashboard
-      description: Get teen dashboard data including budget overview and advanced
-        features.
+      description: |
+        **User Story:** As a teen, I want a dashboard that shows my budget overview, long-term goals, and advanced financial learning modules.
       operationId: get_teen_dashboard_api_teen_dashboard_get
       responses:
         '200':
@@ -2503,8 +2533,9 @@ paths:
     get:
       tags:
       - Teen
-      summary: Get Teen Budget
-      description: Get teen's budget allocation and management data.
+      summary: Get Budget
+      description: |
+        **User Story:** As a teen, I want to view my current budget and see how my spending aligns with it, so I can make better financial decisions.
       operationId: get_teen_budget_api_teen_budget_get
       responses:
         '200':
@@ -2520,8 +2551,9 @@ paths:
     put:
       tags:
       - Teen
-      summary: Update Teen Budget
-      description: Update teen's budget allocation.
+      summary: Update Budget Allocation
+      description: |
+        **User Story:** As a teen, I want to set or adjust my budget percentages for needs, wants, and savings, so I can manage my money more effectively.
       operationId: update_teen_budget_api_teen_budget_put
       requestBody:
         content:
@@ -2738,8 +2770,9 @@ paths:
     get:
       tags:
       - Teen
-      summary: Get Teen Analytics
-      description: Get comprehensive analytics for teen's financial behavior.
+      summary: Get Financial Analytics
+      description: |
+        **User Story:** As a teen, I want to see analytics and charts about my spending and earning patterns over time, so I can get deeper insights into my financial habits.
       operationId: get_teen_analytics_api_teen_analytics_get
       security:
       - OAuth2PasswordBearer: []

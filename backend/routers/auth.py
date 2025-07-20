@@ -155,7 +155,7 @@ async def register_and_login(
             )
 
         # Generate login token
-        print(f"🔧 [AUTH] Generating login token...")
+        print(f"[AUTH] Generating login token...")
         login_strategy = auth_backend.get_strategy()
         token = await login_strategy.write_token(user)
         print(f"[AUTH] Token generated successfully")
