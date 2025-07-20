@@ -51,10 +51,10 @@ async def get_teacher_classes(
     result = await session.execute(stmt)
     classes = result.scalars().all()
     
-    # Enrich with student counts
+
     enriched_classes = []
     for class_obj in classes:
-        # Count students
+ 
         student_stmt = select(ClassStudent).where(ClassStudent.class_id == class_obj.id)
         student_result = await session.execute(student_stmt)
         students = student_result.scalars().all()
@@ -82,7 +82,7 @@ async def create_class(
             detail="Only teachers can create classes"
         )
     
-    # Get teacher profile
+
     teacher_stmt = select(TeacherProfile).where(TeacherProfile.user_id == teacher_id)
     teacher_result = await session.execute(teacher_stmt)
     teacher_profile = teacher_result.scalar_one_or_none()
@@ -93,10 +93,10 @@ async def create_class(
             detail="Teacher profile not found"
         )
     
-    # Generate unique class code
+
     class_code = generate_class_code()
     
-    # Create class
+
     new_class = Class(
         teacher_id=teacher_profile.id,
         class_code=class_code,
@@ -127,7 +127,7 @@ async def update_class(
             detail="Only teachers can update classes"
         )
     
-    # Get class and verify ownership
+
     stmt = select(Class).join(TeacherProfile).where(
         and_(Class.id == class_id, TeacherProfile.user_id == current_user.id)
     )
@@ -140,7 +140,7 @@ async def update_class(
             detail="Class not found or insufficient permissions"
         )
     
-    # Update class
+
     update_data = class_update.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(class_obj, field, value)
@@ -164,7 +164,7 @@ async def delete_class(
             detail="Only teachers can delete classes"
         )
     
-    # Get class and verify ownership
+
     stmt = select(Class).join(TeacherProfile).where(
         and_(Class.id == class_id, TeacherProfile.user_id == current_user.id)
     )
@@ -177,7 +177,7 @@ async def delete_class(
             detail="Class not found or insufficient permissions"
         )
     
-    # Delete class (this will cascade to ClassStudent records)
+  
     await session.delete(class_obj)
     await session.commit()
     
@@ -197,7 +197,7 @@ async def get_class_students(
             detail="Only teachers can view class students"
         )
     
-    # Verify class ownership
+ 
     stmt = select(Class).join(TeacherProfile).where(
         and_(Class.id == class_id, TeacherProfile.user_id == current_user.id)
     )
@@ -210,7 +210,7 @@ async def get_class_students(
             detail="Class not found or insufficient permissions"
         )
     
-    # Get students
+
     student_stmt = select(User).join(ClassStudent).join(ChildProfile).where(
         ClassStudent.class_id == class_id
     ).options(selectinload(User.child_profile))
@@ -218,10 +218,10 @@ async def get_class_students(
     student_result = await session.execute(student_stmt)
     students = student_result.scalars().all()
     
-    # Convert to StudentRead format
+  
     student_reads = []
     for student in students:
-        # Calculate performance metrics (simplified)
+
         modules_completed = 0
         total_time_spent = 0
         
@@ -266,7 +266,7 @@ async def add_student_to_class(
             detail="Only teachers can add students to classes"
         )
     
-    # Verify class ownership
+ 
     stmt = select(Class).join(TeacherProfile).where(
         and_(Class.id == class_id, TeacherProfile.user_id == current_user.id)
     )
@@ -280,8 +280,7 @@ async def add_student_to_class(
         )
     
     student_id = student_data["student_id"]
-    
-    # Verify student exists and is a child
+ 
     student_stmt = select(User).join(ChildProfile).where(User.id == student_id)
     student_result = await session.execute(student_stmt)
     student = student_result.scalar_one_or_none()
@@ -292,7 +291,7 @@ async def add_student_to_class(
             detail="Student not found"
         )
     
-    # Check if student is already in class
+
     existing_stmt = select(ClassStudent).where(
         and_(ClassStudent.class_id == class_id, ClassStudent.student_id == student_id)
     )

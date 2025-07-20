@@ -30,7 +30,6 @@ async def get_user_transactions(
     if user_id == "me":
         user_id = current_user.id
     elif user_id != current_user.id:
-        # Check if parent viewing child's transactions
         if current_user.role == "parent":
             from models import ChildProfile
             stmt = select(ChildProfile).where(
@@ -49,7 +48,7 @@ async def get_user_transactions(
                 detail="Insufficient permissions"
             )
     
-    # Build query filters
+
     filters = [Transaction.user_id == user_id]
     
     if type:
@@ -61,7 +60,7 @@ async def get_user_transactions(
     if end_date:
         filters.append(Transaction.created_at <= end_date)
     
-    # Get transactions with pagination
+
     stmt = select(Transaction).where(and_(*filters)).order_by(
         Transaction.created_at.desc()
     ).offset(offset).limit(limit)
@@ -69,17 +68,17 @@ async def get_user_transactions(
     result = await session.execute(stmt)
     transactions = result.scalars().all()
     
-    # Get total count
+  
     count_stmt = select(func.count(Transaction.id)).where(and_(*filters))
     count_result = await session.execute(count_stmt)
     total_count = count_result.scalar()
     
-    # Calculate weekly and monthly totals
+
     now = datetime.utcnow()
     week_ago = now - timedelta(days=7)
     month_ago = now - timedelta(days=30)
     
-    # Weekly total
+
     weekly_stmt = select(func.sum(Transaction.amount)).where(
         and_(
             Transaction.user_id == user_id,
@@ -90,7 +89,7 @@ async def get_user_transactions(
     weekly_result = await session.execute(weekly_stmt)
     weekly_total = weekly_result.scalar() or 0
     
-    # Monthly total
+
     monthly_stmt = select(func.sum(Transaction.amount)).where(
         and_(
             Transaction.user_id == user_id,
@@ -120,14 +119,14 @@ async def create_transaction(
     if user_id == "me":
         user_id = current_user.id
     elif user_id != current_user.id:
-        # Only parents can create transactions for their children
+
         if current_user.role != "parent":
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Insufficient permissions"
             )
         
-        # Verify parent-child relationship
+  
         stmt = select(ChildProfile).where(
             and_(ChildProfile.user_id == user_id, ChildProfile.parent_id == current_user.id)
         )
@@ -139,7 +138,7 @@ async def create_transaction(
                 detail="Insufficient permissions"
             )
     
-    # Get user's child profile
+
     stmt = select(ChildProfile).where(ChildProfile.user_id == user_id)
     result = await session.execute(stmt)
     child_profile = result.scalar_one_or_none()
@@ -150,26 +149,26 @@ async def create_transaction(
             detail="User profile not found"
         )
     
-    # Check for spending transactions
+
     if transaction_data.type == "spend" and child_profile.coins < transaction_data.amount:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Insufficient coins for spending"
         )
     
-    # Create transaction
+
     transaction = Transaction(
         user_id=user_id,
         **transaction_data.model_dump()
     )
     session.add(transaction)
     
-    # Update user's coin balance
+
     if transaction_data.type == "earn":
         child_profile.coins += transaction_data.amount
     elif transaction_data.type == "spend":
         child_profile.coins -= transaction_data.amount
-    # For "save" type, coins are typically moved to goals (handled in goals router)
+
     
     await session.commit()
     await session.refresh(transaction)

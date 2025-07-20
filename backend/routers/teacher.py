@@ -65,13 +65,13 @@ async def get_teacher_dashboard(
             detail="Only teachers can access this endpoint"
         )
     
-    # Get teacher profile (create if doesn't exist for legacy users)
+    # Get teacher profile 
     teacher_stmt = select(TeacherProfile).where(TeacherProfile.user_id == current_user.id)
     teacher_result = await session.execute(teacher_stmt)
     teacher_profile = teacher_result.scalar_one_or_none()
     
     if not teacher_profile:
-        # Create teacher profile for legacy users who don't have one
+     
         teacher_profile = TeacherProfile(
             user_id=current_user.id,
             school_name="",
@@ -86,7 +86,7 @@ async def get_teacher_dashboard(
     classes_result = await session.execute(classes_stmt)
     classes_data = classes_result.scalars().all()
     
-    print(f"🔍 [BACKEND] Teacher Dashboard: Found {len(classes_data)} classes for teacher {current_user.id}")
+    print(f"[BACKEND] Teacher Dashboard: Found {len(classes_data)} classes for teacher {current_user.id}")
     
     classes = []
     total_students = 0
@@ -114,7 +114,7 @@ async def get_teacher_dashboard(
                 student_user = student_result.scalar_one_or_none()
                 
                 if student_user:
-                    # Calculate performance based on module progress
+                 
                     progress_stmt = select(UserModuleProgress).where(
                         UserModuleProgress.user_id == student_user.id
                     )
@@ -127,13 +127,13 @@ async def get_teacher_dashboard(
                             avg_score = sum(p.score or 0 for p in completed_modules) / len(completed_modules)
                             class_performance += avg_score
                             
-                            # Check if student needs support (score < 70%)
+                            
                             if avg_score < 70:
                                 class_students_needing_support += 1
                         else:
-                            class_performance += 0  # No completed modules
+                            class_performance += 0 
                     else:
-                        class_performance += 0  # No progress data
+                        class_performance += 0 
             
             class_performance = class_performance / student_count if student_count > 0 else 0
             students_needing_support += class_students_needing_support
@@ -152,7 +152,7 @@ async def get_teacher_dashboard(
         }
         classes.append(class_summary)
     
-    # Calculate overall metrics
+   
     overall_avg_performance = total_performance / len(classes) if classes else 0
     
     return {
@@ -216,7 +216,7 @@ async def create_class(
     session.add(new_class)
     await session.commit()
     
-    print(f"✅ [BACKEND] Created class: {new_class.name} (ID: {new_class.id})")
+    print(f"[BACKEND] Created class: {new_class.name} (ID: {new_class.id})")
     
     return {
         "message": "Class created successfully",
@@ -331,14 +331,14 @@ async def get_class_details(
     
     students = []
     for class_student, user in students_data:
-        # Get student progress
+      
         progress_stmt = select(UserModuleProgress).where(
             UserModuleProgress.user_id == user.id
         )
         progress_result = await session.execute(progress_stmt)
         progress_data = progress_result.scalars().all()
         
-        # Calculate performance
+        
         performance = 0
         needs_support = False
         if progress_data:
@@ -390,7 +390,7 @@ async def add_student_to_class(
             detail="Only teachers can add students to classes"
         )
     
-    # Verify class belongs to teacher
+  
     teacher_stmt = select(TeacherProfile).where(TeacherProfile.user_id == current_user.id)
     teacher_result = await session.execute(teacher_stmt)
     teacher_profile = teacher_result.scalar_one_or_none()
@@ -413,7 +413,7 @@ async def add_student_to_class(
             detail="Class not found"
         )
     
-    # Find student by email or username
+    
     student_email = student_data.get('email')
     student_stmt = select(User).where(User.email == student_email)
     student_result = await session.execute(student_stmt)
@@ -425,7 +425,7 @@ async def add_student_to_class(
             detail="Student not found"
         )
     
-    # Check if student is already in class
+    
     existing_stmt = select(ClassStudent).where(
         and_(ClassStudent.class_id == class_id, ClassStudent.student_id == student.id)
     )
@@ -508,7 +508,7 @@ async def create_module(
                     "orderIndex": section.order_index
                 })
         
-        # Create quiz questions if provided
+
         quiz_data = []
         if 'quiz' in module_data and module_data['quiz']:
             # Create a quiz section first
@@ -521,7 +521,7 @@ async def create_module(
                 points_reward=0
             )
             session.add(quiz_section)
-            await session.flush()  # Get the section ID
+            await session.flush() 
             
             for i, question_data in enumerate(module_data['quiz']):
                 question = QuizQuestion(
@@ -532,7 +532,7 @@ async def create_module(
                     order_index=i + 1
                 )
                 session.add(question)
-                await session.flush()  # Get the question ID
+                await session.flush() 
                 
                 # Create options
                 options_data = []
@@ -558,10 +558,10 @@ async def create_module(
         
         await session.commit()
         
-        print(f"✅ [BACKEND] Created enhanced module: {new_module.title} (ID: {new_module.id})")
-        print(f"📚 [BACKEND] - Sections: {len(sections_data)}")
-        print(f"🎯 [BACKEND] - Activities: {len(module_data.get('activities', []))}")
-        print(f"❓ [BACKEND] - Quiz questions: {len(quiz_data)}")
+        print(f"[BACKEND] Created enhanced module: {new_module.title} (ID: {new_module.id})")
+        print(f"[BACKEND] - Sections: {len(sections_data)}")
+        print(f"[BACKEND] - Activities: {len(module_data.get('activities', []))}")
+        print(f"[BACKEND] - Quiz questions: {len(quiz_data)}")
         
         return {
             "message": "Module created successfully",
@@ -577,7 +577,6 @@ async def create_module(
                 "points_reward": new_module.points_reward,
                 "published": new_module.is_published,
                 "created_at": new_module.created_at.isoformat(),
-                # Enhanced content
                 "sections": sections_data,
                 "activities": module_data.get('activities', []),
                 "quiz": quiz_data,
@@ -589,7 +588,7 @@ async def create_module(
         
     except Exception as e:
         await session.rollback()
-        print(f"❌ [BACKEND] Error creating module: {str(e)}")
+        print(f"[BACKEND] Error creating module: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create module: {str(e)}"
@@ -608,14 +607,13 @@ async def get_teacher_modules(
             detail="Only teachers can view modules"
         )
     
-    # Get modules created by this teacher
+
     modules_stmt = select(Module).where(Module.created_by == current_user.id)
     modules_result = await session.execute(modules_stmt)
     modules = modules_result.scalars().all()
     
     modules_data = []
     for module in modules:
-        # Get module statistics
         progress_stmt = select(UserModuleProgress).where(UserModuleProgress.module_id == module.id)
         progress_result = await session.execute(progress_stmt)
         progress_data = progress_result.scalars().all()
@@ -629,7 +627,7 @@ async def get_teacher_modules(
             if completed:
                 avg_score = sum(p.score or 0 for p in completed) / len(completed)
 
-        # Get enhanced content (sections, activities, quiz)
+
         sections_stmt = select(ModuleSection).where(
             and_(ModuleSection.module_id == module.id, ModuleSection.type != 'quiz')
         ).order_by(ModuleSection.order_index)
@@ -642,7 +640,7 @@ async def get_teacher_modules(
                 "title": section.title,
                 "type": section.type,
                 "content": section.content,
-                "duration": "10 minutes",  # Default duration
+                "duration": "10 minutes", 
                 "orderIndex": section.order_index
             })
 
@@ -689,19 +687,18 @@ async def get_teacher_modules(
             "category": module.category,
             "difficulty": module.difficulty,
             "duration": module.estimated_duration,
-            "ageGroup": "Unknown",  # Could be stored separately in future
-            "skills": [],  # Could be stored separately in future
+            "ageGroup": "Unknown",  
+            "skills": [],  
             "points_reward": module.points_reward,
             "published": module.is_published,
             "completion_rate": round(completion_rate, 1),
             "avg_score": round(avg_score, 1),
             "created_at": module.created_at.isoformat(),
             "updated_at": module.updated_at.isoformat(),
-            # Enhanced content
             "sections": sections_data,
-            "activities": [],  # Activities stored separately in future
+            "activities": [],  
             "quiz": quiz_data,
-            "learningObjectives": [],  # Could be stored separately in future
+            "learningObjectives": [], 
             "prerequisites": [],
             "keyTopics": []
         })
@@ -764,7 +761,6 @@ async def get_performance_analytics(
         class_avg = 0
         if class_students:
             for class_student in class_students:
-                # Get student progress
                 progress_stmt = select(UserModuleProgress).where(
                     and_(
                         UserModuleProgress.user_id == class_student.student_id,

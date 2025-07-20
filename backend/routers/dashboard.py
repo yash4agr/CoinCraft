@@ -61,11 +61,11 @@ async def get_child_dashboard_data(current_user: User, session: AsyncSession):
         "coins": child_profile.coins,
         "level": child_profile.level,
         "streak": child_profile.streak_days,
-        "total_earned": 0,  # Will be calculated from transactions
-        "goals_completed": 0,  # Will be calculated from goals
+        "total_earned": 0,  
+        "goals_completed": 0,  
     }
     
-    # Calculate total earned from transactions
+   
     earned_stmt = select(func.sum(Transaction.amount)).where(
         and_(Transaction.user_id == current_user.id, Transaction.type == "earn")
     )
@@ -73,7 +73,7 @@ async def get_child_dashboard_data(current_user: User, session: AsyncSession):
     total_earned = earned_result.scalar() or 0
     user_stats["total_earned"] = total_earned
     
-    # Recent transactions (last 10)
+   
     trans_stmt = select(Transaction).where(
         Transaction.user_id == current_user.id
     ).order_by(desc(Transaction.created_at)).limit(10)
@@ -89,14 +89,14 @@ async def get_child_dashboard_data(current_user: User, session: AsyncSession):
     goals = goals_result.scalars().all()
     active_goals = [GoalRead.model_validate(g) for g in goals]
     
-    # Count completed goals
+  
     completed_goals_stmt = select(func.count(Goal.id)).where(
         and_(Goal.user_id == current_user.id, Goal.is_completed == True)
     )
     completed_goals_result = await session.execute(completed_goals_stmt)
     user_stats["goals_completed"] = completed_goals_result.scalar() or 0
     
-    # Recent achievements
+    
     achievements_stmt = select(Achievement, UserAchievement.earned_at).join(
         UserAchievement
     ).where(
@@ -128,7 +128,7 @@ async def get_child_dashboard_data(current_user: User, session: AsyncSession):
         progress_result = await session.execute(progress_stmt)
         progress = progress_result.scalar_one_or_none()
         
-        # Create module dict manually to avoid async relationship issues
+      
         module_dict = {
             "id": module.id,
             "title": module.title,
@@ -179,7 +179,7 @@ async def get_parent_dashboard_data(current_user: User, session: AsyncSession):
         "pending_redemptions": 0,
     }
     
-    # Calculate total coins distributed
+
     for child in children:
         earned_stmt = select(func.sum(Transaction.amount)).where(
             and_(Transaction.user_id == child.id, Transaction.type == "earn")
@@ -207,7 +207,7 @@ async def get_parent_dashboard_data(current_user: User, session: AsyncSession):
         pending_redemptions_result = await session.execute(pending_redemptions_stmt)
         user_stats["pending_redemptions"] = pending_redemptions_result.scalar() or 0
     
-    # Recent transactions from all children
+
     if child_ids:
         trans_stmt = select(Transaction).where(
             Transaction.user_id.in_(child_ids)
@@ -228,7 +228,7 @@ async def get_parent_dashboard_data(current_user: User, session: AsyncSession):
         goals = goals_result.scalars().all()
         active_goals = [GoalRead.model_validate(g) for g in goals]
     
-    # No achievements or learning modules for parents
+
     achievements = []
     learning_modules = []
     
@@ -283,17 +283,17 @@ async def get_teacher_dashboard_data(current_user: User, session: AsyncSession):
     modules_result = await session.execute(modules_stmt)
     user_stats["modules_created"] = modules_result.scalar() or 0
     
-    # No transactions, goals, or achievements for teachers
+  
     recent_transactions = []
     active_goals = []
     achievements = []
     
-    # Show available modules
+ 
     modules_stmt = select(Module).where(Module.is_published == True).limit(6)
     modules_result = await session.execute(modules_stmt)
     modules = modules_result.scalars().all()
     
-    # Create module dicts manually to avoid async relationship issues
+ 
     learning_modules = []
     for module in modules:
         module_dict = {
@@ -331,7 +331,7 @@ async def get_todays_goals(
     if user_id == "me":
         user_id = current_user.id
     elif user_id != current_user.id:
-        # Parents can view their children's progress
+      
         if current_user.role != "parent":
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -342,10 +342,10 @@ async def get_todays_goals(
     if current_user.role in ["younger_child", "older_child"]:
         today = datetime.utcnow().date()
         
-        # Calculate daily progress
+    
         today_start = datetime.combine(today, datetime.min.time())
         
-        # Lessons read today
+    
         lessons_stmt = select(func.count(UserModuleProgress.id)).where(
             and_(
                 UserModuleProgress.user_id == user_id,
@@ -356,7 +356,7 @@ async def get_todays_goals(
         lessons_result = await session.execute(lessons_stmt)
         lessons_read = lessons_result.scalar() or 0
         
-        # Coins earned today
+       
         coins_stmt = select(func.sum(Transaction.amount)).where(
             and_(
                 Transaction.user_id == user_id,
@@ -367,7 +367,7 @@ async def get_todays_goals(
         coins_result = await session.execute(coins_stmt)
         coins_earned = coins_result.scalar() or 0
         
-        # Games completed today
+       
         games_stmt = select(func.count(UserModuleProgress.id)).where(
             and_(
                 UserModuleProgress.user_id == user_id,
@@ -378,7 +378,7 @@ async def get_todays_goals(
         games_result = await session.execute(games_stmt)
         games_completed = games_result.scalar() or 0
         
-        # Practice time (simplified)
+ 
         practice_time = min(lessons_read * 5 + games_completed * 3, 20)
         
         return [
@@ -427,11 +427,10 @@ async def update_goal_progress(
     session: AsyncSession = Depends(get_async_session)
 ):
     """Update progress on a daily goal."""
-    # This is mainly for tracking daily goal completion
-    # In a real implementation, this would update progress tracking
+
     current_value = progress_data.get("current", 0)
     
-    # Return updated progress (simplified)
+
     return {
         "id": goal_id,
         "current": current_value,

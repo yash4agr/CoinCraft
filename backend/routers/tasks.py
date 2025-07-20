@@ -49,7 +49,7 @@ async def assign_task(
             detail="Only parents can assign tasks"
         )
     
-    # Verify the assigned_to user is a child of this parent
+
     stmt = select(ChildProfile).where(
         and_(ChildProfile.user_id == task_data.assigned_to, ChildProfile.parent_id == parent_id)
     )
@@ -95,21 +95,21 @@ async def update_task_status(
     
     # Check permissions based on action
     if task_update.status in ["completed", "in_progress"]:
-        # Child can mark as completed
+
         if current_user.id != task.assigned_to:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only the assigned child can complete tasks"
             )
     elif task_update.status in ["approved", "rejected"]:
-        # Parent can approve/reject
+ 
         if current_user.id != task.assigned_by:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Only the assigning parent can approve/reject tasks"
             )
     else:
-        # General updates (title, description, etc.) by parent only
+ 
         if current_user.id != task.assigned_by:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -121,7 +121,7 @@ async def update_task_status(
     for field, value in update_data.items():
         setattr(task, field, value)
     
-    # Handle status-specific logic
+   
     if task_update.status == "completed":
         task.completed_at = datetime.utcnow()
     elif task_update.status == "approved":
@@ -170,7 +170,7 @@ async def delete_task(
             detail="Task not found"
         )
     
-    # Only parent who assigned the task can delete it
+
     if current_user.id != task.assigned_by:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

@@ -58,7 +58,7 @@ async def get_child_dashboard(
     child_profile = child_result.scalar_one_or_none()
     
     if not child_profile:
-        # Create child profile for legacy users
+        
         child_profile = ChildProfile(
             user_id=current_user.id,
             age=10,  # Default age
@@ -69,7 +69,7 @@ async def get_child_dashboard(
         session.add(child_profile)
         await session.commit()
     
-    print(f"🔍 [BACKEND] Child Dashboard: Loading data for child {current_user.id}")
+    print(f"[BACKEND] Child Dashboard: Loading data for child {current_user.id}")
     
     # Get child's goals
     goals_stmt = select(Goal).where(
@@ -115,7 +115,7 @@ async def get_child_dashboard(
     progress_result = await session.execute(progress_stmt)
     user_progress = {p.module_id: p for p in progress_result.scalars().all()}
     
-    # Calculate today's goals (simplified - just active goals)
+  
     todays_goals = []
     for goal in active_goals[:4]:  # Limit to 4 goals
         progress_percentage = (goal.current_amount / goal.target_amount * 100) if goal.target_amount > 0 else 0
@@ -128,7 +128,7 @@ async def get_child_dashboard(
             "colorScheme": "green" if progress_percentage > 50 else "yellow"
         })
     
-    # Prepare activities/adventures
+
     adventures = []
     for module in available_modules[:6]:  # Limit to 6 activities
         progress = user_progress.get(module.id)
@@ -220,7 +220,7 @@ async def get_child_goals(
             detail="Only children can access this endpoint"
         )
     
-    # Build query based on status
+
     query = select(Goal).where(Goal.user_id == current_user.id)
     
     if status == "active":
@@ -278,7 +278,7 @@ async def create_child_goal(
     session.add(new_goal)
     await session.commit()
     
-    print(f"✅ [BACKEND] Created goal: {new_goal.title} (ID: {new_goal.id})")
+    print(f"[BACKEND] Created goal: {new_goal.title} (ID: {new_goal.id})")
     
     return {
         "message": "Goal created successfully",
@@ -333,25 +333,25 @@ async def update_goal_progress(
     
     amount = progress_data.get('amount', 0)
     
-    # Check if child has enough coins
+ 
     if amount > child_profile.coins:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Not enough coins"
         )
     
-    # Update goal progress
+
     goal.current_amount = min(goal.current_amount + amount, goal.target_amount)
     
-    # Check if goal is completed
+  
     if goal.current_amount >= goal.target_amount:
         goal.is_completed = True
         goal.updated_at = datetime.utcnow()
     
-    # Deduct coins from child
+ 
     child_profile.coins -= amount
     
-    # Create transaction record
+
     transaction = Transaction(
         user_id=current_user.id,
         type='spend',
@@ -365,7 +365,7 @@ async def update_goal_progress(
     session.add(transaction)
     await session.commit()
     
-    print(f"✅ [BACKEND] Updated goal progress: {goal.title} (+{amount} coins)")
+    print(f"[BACKEND] Updated goal progress: {goal.title} (+{amount} coins)")
     
     return {
         "message": "Goal progress updated successfully",
@@ -392,14 +392,14 @@ async def get_child_activities(
             detail="Only children can access activities"
         )
     
-    # Get available modules (activities)
+
     modules_stmt = select(Module).where(
         and_(Module.is_published == True, Module.difficulty.in_(['easy', 'medium']))
     ).order_by(Module.difficulty, Module.title)
     modules_result = await session.execute(modules_stmt)
     modules = modules_result.scalars().all()
     
-    # Get child's progress
+
     progress_stmt = select(UserModuleProgress).where(
         UserModuleProgress.user_id == current_user.id
     )
@@ -439,7 +439,7 @@ async def complete_activity(
             detail="Only children can complete activities"
         )
     
-    # Get module/activity
+ 
     module_stmt = select(Module).where(Module.id == activity_id)
     module_result = await session.execute(module_stmt)
     module = module_result.scalar_one_or_none()
@@ -461,7 +461,7 @@ async def complete_activity(
             detail="Child profile not found"
         )
     
-    # Check if already completed
+
     progress_stmt = select(UserModuleProgress).where(
         and_(UserModuleProgress.user_id == current_user.id, UserModuleProgress.module_id == activity_id)
     )
@@ -474,11 +474,11 @@ async def complete_activity(
             detail="Activity already completed"
         )
     
-    # Calculate score and coins earned
+ 
     score = completion_data.get('score', 100)
     coins_earned = int((score / 100) * module.points_reward)
     
-    # Update or create progress
+
     if existing_progress:
         existing_progress.is_completed = True
         existing_progress.score = score
@@ -495,10 +495,10 @@ async def complete_activity(
         )
         session.add(new_progress)
     
-    # Add coins to child
+ 
     child_profile.coins += coins_earned
     
-    # Create transaction record
+
     transaction = Transaction(
         user_id=current_user.id,
         type='earn',
@@ -513,7 +513,7 @@ async def complete_activity(
     session.add(transaction)
     await session.commit()
     
-    print(f"✅ [BACKEND] Activity completed: {module.title} (+{coins_earned} coins)")
+    print(f"[BACKEND] Activity completed: {module.title} (+{coins_earned} coins)")
     
     return {
         "message": "Activity completed successfully",
@@ -540,7 +540,7 @@ async def get_child_transactions(
             detail="Only children can view transactions"
         )
     
-    # Get transactions
+ 
     transactions_stmt = select(Transaction).where(
         Transaction.user_id == current_user.id
     ).order_by(Transaction.created_at.desc()).limit(limit)
@@ -593,7 +593,7 @@ async def get_child_stats(
     active_goals = [g for g in goals if not g.is_completed]
     completed_goals = [g for g in goals if g.is_completed]
     
-    # Get activities stats
+
     progress_stmt = select(UserModuleProgress).where(
         and_(UserModuleProgress.user_id == current_user.id, UserModuleProgress.is_completed == True)
     )

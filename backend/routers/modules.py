@@ -24,7 +24,7 @@ async def get_activities(
     session: AsyncSession = Depends(get_async_session)
 ):
     """Get learning activities and modules with filtering options."""
-    # Build filters
+
     filters = [Module.is_published == True]
     
     if difficulty:
@@ -32,15 +32,15 @@ async def get_activities(
     if category:
         filters.append(Module.category == category)
     
-    # Get modules
+ 
     stmt = select(Module).where(and_(*filters)).order_by(Module.created_at.desc())
     result = await session.execute(stmt)
     modules = result.scalars().all()
     
-    # Convert to ActivityRead format and add user progress
+    
     activities = []
     for module in modules:
-        # Get user progress if exists
+        
         if current_user.role in ["younger_child", "older_child"]:
             progress_stmt = select(UserModuleProgress).where(
                 and_(
@@ -54,11 +54,11 @@ async def get_activities(
         else:
             is_completed = False
         
-        # Filter by completion status if specified
+       
         if completed is not None and is_completed != completed:
             continue
         
-        # Determine age group based on difficulty for filtering
+       
         module_age_group = "younger_child" if module.difficulty == "easy" else "older_child"
         if age_group and module_age_group != age_group:
             continue
@@ -72,7 +72,7 @@ async def get_activities(
             coins=module.points_reward,
             duration=module.estimated_duration or 15,
             completed=is_completed,
-            icon="ri-book-line",  # Default icon
+            icon="ri-book-line",  
             category=module.category or "financial_literacy",
             age_group=module_age_group
         )
@@ -88,7 +88,7 @@ async def get_activity(
     session: AsyncSession = Depends(get_async_session)
 ):
     """Get detailed information about a specific learning activity or module."""
-    # Get module
+
     stmt = select(Module).where(Module.id == activity_id)
     result = await session.execute(stmt)
     module = result.scalar_one_or_none()
@@ -99,7 +99,7 @@ async def get_activity(
             detail="Activity not found"
         )
     
-    # Get user progress
+
     user_progress = None
     if current_user.role in ["younger_child", "older_child"]:
         progress_stmt = select(UserModuleProgress).where(
@@ -150,7 +150,7 @@ async def complete_activity(
             detail="Activity not found"
         )
     
-    # Get or create user progress
+  
     progress_stmt = select(UserModuleProgress).where(
         and_(
             UserModuleProgress.user_id == current_user.id,
@@ -167,7 +167,7 @@ async def complete_activity(
         )
         session.add(progress)
     
-    # Update progress
+ 
     progress.progress_percentage = progress_data.get("progress_percentage", 100.0)
     progress.score = progress_data.get("score", 0.0)
     progress.time_spent = progress_data.get("time_spent", 0)
@@ -176,7 +176,7 @@ async def complete_activity(
     if progress.is_completed and not progress.completed_at:
         progress.completed_at = datetime.utcnow()
         
-        # Award coins to child
+   
         child_stmt = select(ChildProfile).where(ChildProfile.user_id == current_user.id)
         child_result = await session.execute(child_stmt)
         child_profile = child_result.scalar_one()
@@ -184,7 +184,7 @@ async def complete_activity(
         coins_earned = module.points_reward
         child_profile.coins += coins_earned
         
-        # Create transaction record
+      
         transaction = Transaction(
             user_id=current_user.id,
             type="earn",
@@ -234,7 +234,7 @@ async def get_learning_modules(
     session: AsyncSession = Depends(get_async_session)
 ):
     """Get all learning modules with optional filters."""
-    # Build filters
+ 
     filters = [Module.is_published == True]
     
     if difficulty:
@@ -244,17 +244,17 @@ async def get_learning_modules(
     if created_by:
         filters.append(Module.created_by == created_by)
     
-    # Get modules
+  
     stmt = select(Module).where(and_(*filters)).order_by(Module.created_at.desc())
     result = await session.execute(stmt)
     modules = result.scalars().all()
     
-    # Add user progress for children
+
     enriched_modules = []
     for module in modules:
         module_dict = ModuleRead.model_validate(module).model_dump()
         
-        # Add user progress if child
+     
         if current_user.role in ["younger_child", "older_child"]:
             progress_stmt = select(UserModuleProgress).where(
                 and_(

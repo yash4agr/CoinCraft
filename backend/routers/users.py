@@ -23,8 +23,6 @@ async def get_current_user_profile(
 ):
     """Get current user's profile (basic info only)."""
     try:
-        # Return the current user directly without loading relationships
-        # This avoids the async greenlet issues
         return UserRead(
             id=current_user.id,
             email=current_user.email,
@@ -38,9 +36,7 @@ async def get_current_user_profile(
             is_verified=current_user.is_verified
         )
     except Exception as e:
-        # Log the error for debugging
         print(f"Error in get_current_user_profile: {e}")
-        # Return the current_user object directly as fallback
         return current_user
 
 
@@ -51,20 +47,16 @@ async def get_user_profile(
     session: AsyncSession = Depends(get_async_session)
 ):
     """Get user profile with role-specific data."""
-    # Allow users to get their own profile or "me"
     if user_id == "me":
         user_id = current_user.id
     elif user_id != current_user.id:
-        # Check if current user has permission to view this profile
-        # Parents can view their children, teachers can view their students
-        # For now, allow only own profile access
         if current_user.role not in ["parent", "teacher"]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Insufficient permissions"
             )
     
-    # Get user with profile data
+
     stmt = select(User).options(
         selectinload(User.child_profile),
         selectinload(User.parent_profile),
@@ -135,7 +127,7 @@ async def create_child_account(
             detail="Only parents can create child accounts"
         )
     
-    # Determine child role based on age
+
     age = child_data.get("age", 10)
     child_role = "younger_child" if age < 13 else "older_child"
     
@@ -143,7 +135,7 @@ async def create_child_account(
     from auth import get_user_db, get_user_manager
     from schemas import UserCreate
     
-    # Get dependencies
+
     user_db = await anext(get_user_db(session))
     user_manager = await anext(get_user_manager(user_db))
     
@@ -157,8 +149,7 @@ async def create_child_account(
     )
     
     new_user = await user_manager.create(user_create)
-    
-    # Create child profile
+  
     child_profile = ChildProfile(
         user_id=new_user.id,
         age=age,
@@ -204,7 +195,7 @@ async def update_child_info(
     session: AsyncSession = Depends(get_async_session)
 ):
     """Update a child's profile information."""
-    # Get child and verify parent relationship
+
     stmt = select(ChildProfile).where(ChildProfile.user_id == child_id)
     result = await session.execute(stmt)
     child_profile = result.scalar_one_or_none()
@@ -215,21 +206,21 @@ async def update_child_info(
             detail="Child not found"
         )
     
-    # Check permissions
+ 
     if child_profile.parent_id != current_user.id and child_id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Insufficient permissions"
         )
     
-    # Update child profile
+  
     update_data = child_update.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(child_profile, field, value)
     
     await session.commit()
     
-    # Get updated user
+
     stmt = select(User).options(selectinload(User.child_profile)).where(User.id == child_id)
     result = await session.execute(stmt)
     user = result.scalar_one()

@@ -21,7 +21,7 @@ from schemas import (
 
 router = APIRouter()
 
-# Parent-specific data models
+
 class ChildSummary:
     def __init__(self, child: User, profile: ChildProfile):
         self.id = child.id
@@ -48,30 +48,30 @@ async def get_parent_dashboard(
 ):
     """Get parent dashboard data including children overview and family stats."""
     
-    # Verify user is a parent
+
     if current_user.role != 'parent':
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only parents can access this endpoint"
         )
     
-    # Get parent profile (create if doesn't exist for legacy users)
+
     parent_stmt = select(ParentProfile).where(ParentProfile.user_id == current_user.id)
     parent_result = await session.execute(parent_stmt)
     parent_profile = parent_result.scalar_one_or_none()
     
     if not parent_profile:
-        # Create parent profile for legacy users who don't have one
+        
         parent_profile = ParentProfile(
             user_id=current_user.id,
-            exchange_rate=1.0,  # 1 coin = $1 by default
-            auto_approval_limit=0.0,  # Require approval for all redemptions
+            exchange_rate=1.0,  
+            auto_approval_limit=0.0,  
             require_approval=True
         )
         session.add(parent_profile)
         await session.commit()
     
-    # Get children
+
     children_stmt = select(User, ChildProfile).join(
         ChildProfile, User.id == ChildProfile.user_id
     ).where(ChildProfile.parent_id == current_user.id)
@@ -79,7 +79,7 @@ async def get_parent_dashboard(
     children_result = await session.execute(children_stmt)
     children_data = children_result.all()
     
-    print(f"🔍 [BACKEND] Dashboard: Found {len(children_data)} children for parent {current_user.id}")
+    print(f"[BACKEND] Dashboard: Found {len(children_data)} children for parent {current_user.id}")
     for user, profile in children_data:
         print(f"  - Child: {user.name} (ID: {user.id}, Age: {profile.age})")
     
@@ -88,14 +88,14 @@ async def get_parent_dashboard(
     family_stats.total_children = len(children_data)
     
     for user, child_profile in children_data:
-        # Get child's active goals
+
         goals_stmt = select(func.count(Goal.id)).where(
             and_(Goal.user_id == user.id, Goal.is_completed == False)
         )
         goals_result = await session.execute(goals_stmt)
         active_goals = goals_result.scalar() or 0
         
-        # Get child's completed tasks (last 30 days)
+ 
         thirty_days_ago = datetime.utcnow() - timedelta(days=30)
         tasks_stmt = select(func.count(Task.id)).where(
             and_(
@@ -107,7 +107,7 @@ async def get_parent_dashboard(
         tasks_result = await session.execute(tasks_stmt)
         completed_tasks = tasks_result.scalar() or 0
         
-        # Get recent activity (last 5 transactions)
+
         activity_stmt = select(Transaction).where(
             Transaction.user_id == user.id
         ).order_by(Transaction.created_at.desc()).limit(5)
@@ -138,7 +138,7 @@ async def get_parent_dashboard(
         }
         children.append(child_data)
         
-        # Update family stats
+ 
         family_stats.total_coins_earned += child_profile.coins
         family_stats.completed_tasks += completed_tasks
         family_stats.active_goals += active_goals
@@ -175,7 +175,7 @@ async def add_child(
             detail="Only parents can add children"
         )
     
-    # Generate child credentials
+  
     username = f"{child_data['name'].lower().replace(' ', '')}{child_data['age']}"
     email = child_data.get('email', f"{username}@family.local")
     
@@ -184,7 +184,7 @@ async def add_child(
     import secrets
     import string
     
-    # Generate a simple password for the child
+   
     password = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(8))
     
     user_data = UserCreate(
@@ -195,12 +195,12 @@ async def add_child(
         avatar_url=child_data.get('avatar_url', '👶' if child_data['age'] < 11 else '🧒')
     )
     
-    # Create child user account
+
     try:
         child_user = await user_manager.create(user_data)
-        print(f"🔍 [BACKEND] Created child user: {child_user.id} - {child_user.name}")
+        print(f"[BACKEND] Created child user: {child_user.id} - {child_user.name}")
     except Exception as e:
-        print(f"❌ [BACKEND] Error creating user: {e}")
+        print(f"[BACKEND] Error creating user: {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create child user: {str(e)}"
@@ -219,16 +219,16 @@ async def add_child(
         
         session.add(child_profile)
         await session.commit()
-        print(f"✅ [BACKEND] Child profile committed to database: {child_profile.user_id}")
+        print(f"[BACKEND] Child profile committed to database: {child_profile.user_id}")
     except Exception as e:
-        print(f"❌ [BACKEND] Error creating child profile: {e}")
+        print(f"[BACKEND] Error creating child profile: {e}")
         await session.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to create child profile: {str(e)}"
         )
     
-    # Verify the child was saved by querying it back
+   
     verify_stmt = select(User, ChildProfile).join(
         ChildProfile, User.id == ChildProfile.user_id
     ).where(
@@ -238,13 +238,13 @@ async def add_child(
     verified_child = verify_result.first()
     
     if not verified_child:
-        print(f"❌ [BACKEND] ERROR: Child not found after creation!")
+        print(f"[BACKEND] ERROR: Child not found after creation!")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to create child - database verification failed"
         )
     
-    print(f"✅ [BACKEND] Child verified in database: {verified_child[0].name}")
+    print(f"[BACKEND] Child verified in database: {verified_child[0].name}")
     
     return {
         "message": "Child added successfully",
@@ -303,7 +303,7 @@ async def get_child_progress(
         start_date = now - timedelta(days=365)
     
     # Get statistics
-    # Total rewards/coins earned
+  
     rewards_stmt = select(func.sum(Transaction.amount)).where(
         and_(
             Transaction.user_id == child_id,
@@ -491,7 +491,7 @@ async def get_family_tasks(
             detail="Only parents can view family tasks"
         )
     
-    # Get all children of this parent
+
     children_stmt = select(ChildProfile.user_id).where(ChildProfile.parent_id == current_user.id)
     children_result = await session.execute(children_stmt)
     children_ids = [row[0] for row in children_result.all()]
@@ -626,8 +626,7 @@ async def get_redemption_requests(
     children_result = await session.execute(children_stmt)
     children_ids = [row[0] for row in children_result.all()]
     
-    # Get redemption requests (this would be a separate model in a real app)
-    # For now, return empty list as the RedemptionRequest model isn't defined
+
     return []
 
 @router.put("/settings", response_model=dict)

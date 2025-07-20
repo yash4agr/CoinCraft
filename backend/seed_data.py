@@ -37,9 +37,9 @@ async def seed_data():
                     role="parent",
                     avatar_url="👩‍💼"
                 ))
-                print("✅ Created parent user")
+                print("Created parent user")
             except exceptions.UserAlreadyExists:
-                print("ℹ️  Parent user already exists, skipping...")
+                print("Parent user already exists, skipping...")
                 parent_user = await user_manager.get_by_email("parent@demo.com")
             
             # Create parent profile if it doesn't exist
@@ -56,9 +56,9 @@ async def seed_data():
                     require_approval=True
                 )
                 session.add(parent_profile)
-                print("✅ Created parent profile")
+                print("Created parent profile")
             else:
-                print("ℹ️  Parent profile already exists, skipping...")
+                print("Parent profile already exists, skipping...")
             
             # 2. Teacher user
             try:
@@ -69,9 +69,9 @@ async def seed_data():
                     role="teacher",
                     avatar_url="👩‍🏫"
                 ))
-                print("✅ Created teacher user")
+                print("Created teacher user")
             except exceptions.UserAlreadyExists:
-                print("ℹ️  Teacher user already exists, skipping...")
+                print("Teacher user already exists, skipping...")
                 teacher_user = await user_manager.get_by_email("teacher@demo.com")
             
             # Create teacher profile if it doesn't exist
@@ -87,9 +87,9 @@ async def seed_data():
                     subject="Financial Education"
                 )
                 session.add(teacher_profile)
-                print("✅ Created teacher profile")
+                print("Created teacher profile")
             else:
-                print("ℹ️  Teacher profile already exists, skipping...")
+                print("Teacher profile already exists, skipping...")
             
             # 3. Younger child user
             try:
@@ -100,9 +100,9 @@ async def seed_data():
                     role="younger_child",
                     avatar_url="🦸‍♀️"
                 ))
-                print("✅ Created younger child user")
+                print("Created younger child user")
             except exceptions.UserAlreadyExists:
-                print("ℹ️  Younger child user already exists, skipping...")
+                print("Younger child user already exists, skipping...")
                 child1_user = await user_manager.get_by_email("luna@demo.com")
             
             # Create child profile if it doesn't exist
@@ -121,9 +121,9 @@ async def seed_data():
                     last_activity_date=datetime.utcnow()
                 )
                 session.add(child1_profile)
-                print("✅ Created child1 profile (Luna)")
+                print("Created child1 profile (Luna)")
             else:
-                print("ℹ️  Child1 profile (Luna) already exists, skipping...")
+                print("ℹChild1 profile (Luna) already exists, skipping...")
             
             # 4. Older child user
             try:
@@ -134,9 +134,9 @@ async def seed_data():
                     role="older_child",
                     avatar_url="🧙‍♂️"
                 ))
-                print("✅ Created older child user")
+                print("Created older child user")
             except exceptions.UserAlreadyExists:
-                print("ℹ️  Older child user already exists, skipping...")
+                print("Older child user already exists, skipping...")
                 child2_user = await user_manager.get_by_email("harry@demo.com")
             
             # Create child profile if it doesn't exist
@@ -155,9 +155,9 @@ async def seed_data():
                     last_activity_date=datetime.utcnow()
                 )
                 session.add(child2_profile)
-                print("✅ Created child2 profile (Harry)")
+                print("Created child2 profile (Harry)")
             else:
-                print("ℹ️  Child2 profile (Harry) already exists, skipping...")
+                print("Child2 profile (Harry) already exists, skipping...")
             
             # Create some goals
             goals_data = [
@@ -352,16 +352,16 @@ async def seed_data():
                 session.add(shop_item)
             
             await session.commit()
-            print("✅ Data seeding completed successfully!")
+            print("Data seeding completed successfully!")
             
-            print("\n🔑 Demo Login Credentials:")
+            print("\n Demo Login Credentials:")
             print("Parent: parent@demo.com / demo123")
             print("Teacher: teacher@demo.com / demo123") 
             print("Child (9y): luna@demo.com / demo123")
             print("Teen (14y): harry@demo.com / demo123")
             
         except Exception as e:
-            print(f"❌ Error seeding data: {e}")
+            print(f"Error seeding data: {e}")
             await session.rollback()
             raise
         finally:

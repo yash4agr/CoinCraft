@@ -20,7 +20,7 @@ async def register_and_login(
 ):
     """Register a new user and immediately log them in."""
     try:
-        print(f"🔍 [AUTH] Registration attempt for email: {user_data.email}, role: {user_data.role}")
+        print(f"[AUTH] Registration attempt for email: {user_data.email}, role: {user_data.role}")
         
         # Validate required fields
         if not user_data.email or not user_data.email.strip():
@@ -47,13 +47,13 @@ async def register_and_login(
                 detail="Invalid role specified"
             )
         
-        print(f"✅ [AUTH] Input validation passed")
+        print(f"[AUTH] Input validation passed")
         
-        # Check if user already exists using direct database query
+  
         try:
-            print(f"🔍 [AUTH] Checking if user exists with email: {user_data.email}")
+            print(f"[AUTH] Checking if user exists with email: {user_data.email}")
             
-            # Use direct database query instead of user_manager.get_by_email
+
             from sqlalchemy import select
             from models import User as UserModel
             
@@ -62,35 +62,35 @@ async def register_and_login(
             existing_user = result.scalar_one_or_none()
             
             if existing_user:
-                print(f"❌ [AUTH] User already exists: {user_data.email}")
+                print(f"[AUTH] User already exists: {user_data.email}")
                 raise HTTPException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="User with this email already exists"
                 )
-            print(f"✅ [AUTH] Email is available, proceeding with registration")
+            print(f"[AUTH] Email is available, proceeding with registration")
             
         except HTTPException:
-            # Re-raise HTTP exceptions
+
             raise
         except Exception as e:
-            print(f"❌ [AUTH] Error checking existing user: {type(e).__name__}: {str(e)}")
-            print(f"❌ [AUTH] Exception details: {repr(e)}")
-            # This is an unexpected database error
+            print(f"[AUTH] Error checking existing user: {type(e).__name__}: {str(e)}")
+            print(f"[AUTH] Exception details: {repr(e)}")
+
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Database error during user lookup: {str(e)}"
             )
             
         # Create the user
-        print(f"🔧 [AUTH] Creating user with email: {user_data.email}")
-        print(f"🔧 [AUTH] User data: name={user_data.name}, role={user_data.role}")
+        print(f"[AUTH] Creating user with email: {user_data.email}")
+        print(f"[AUTH] User data: name={user_data.name}, role={user_data.role}")
         try:
             user = await user_manager.create(user_data)
-            print(f"✅ [AUTH] User created successfully with ID: {user.id}")
+            print(f"[AUTH] User created successfully with ID: {user.id}")
         except Exception as user_error:
-            print(f"❌ [AUTH] Failed to create user: {type(user_error).__name__}: {str(user_error)}")
-            print(f"❌ [AUTH] User creation exception details: {repr(user_error)}")
-            # Check for common errors
+            print(f" [AUTH] Failed to create user: {type(user_error).__name__}: {str(user_error)}")
+            print(f"[AUTH] User creation exception details: {repr(user_error)}")
+       
             error_str = str(user_error).lower()
             if "already exists" in error_str or "unique" in error_str or "duplicate" in error_str:
                 raise HTTPException(
@@ -102,7 +102,7 @@ async def register_and_login(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     detail="Invalid user data provided"
                 )
-            # Re-raise the exception for other errors
+            
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to create user: {str(user_error)}"
@@ -110,16 +110,16 @@ async def register_and_login(
         
         # Create role-specific profile
         if user.role == 'parent':
-            print(f"🔧 [AUTH] Creating parent profile for user: {user.id}")
+            print(f"[AUTH] Creating parent profile for user: {user.id}")
             parent_profile = ParentProfile(
                 user_id=user.id,
-                exchange_rate=1.0,  # 1 coin = $1 by default
-                auto_approval_limit=0.0,  # Require approval for all redemptions
+                exchange_rate=1.0,  
+                auto_approval_limit=0.0, 
                 require_approval=True
             )
             session.add(parent_profile)
         elif user.role == 'teacher':
-            print(f"🔧 [AUTH] Creating teacher profile for user: {user.id}")
+            print(f"[AUTH] Creating teacher profile for user: {user.id}")
             teacher_profile = TeacherProfile(
                 user_id=user.id,
                 school_name="",
@@ -128,7 +128,7 @@ async def register_and_login(
             )
             session.add(teacher_profile)
         elif user.role in ['younger_child', 'older_child']:
-            print(f"🔧 [AUTH] Creating child profile for user: {user.id}")
+            print(f"[AUTH] Creating child profile for user: {user.id}")
             child_profile = ChildProfile(
                 user_id=user.id,
                 age=8 if user.role == 'younger_child' else 13,
@@ -140,15 +140,15 @@ async def register_and_login(
             session.add(child_profile)
         
         try:
-            print(f"🔧 [AUTH] Committing profile to database...")
+            print(f"[AUTH] Committing profile to database...")
             await session.commit()
-            print(f"✅ [AUTH] Profile committed successfully")
+            print(f"[AUTH] Profile committed successfully")
         except Exception as commit_error:
-            print(f"❌ [AUTH] Error committing profile: {str(commit_error)}")
+            print(f"[AUTH] Error committing profile: {str(commit_error)}")
             await session.rollback()
-            # We need to delete the user since the profile creation failed
-            print(f"🔧 [AUTH] Rolling back user creation...")
-            # This would ideally delete the user, but we'll continue for now
+            
+            print(f"[AUTH] Rolling back user creation...")
+            
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Failed to create user profile: {str(commit_error)}"
@@ -158,9 +158,9 @@ async def register_and_login(
         print(f"🔧 [AUTH] Generating login token...")
         login_strategy = auth_backend.get_strategy()
         token = await login_strategy.write_token(user)
-        print(f"✅ [AUTH] Token generated successfully")
+        print(f"[AUTH] Token generated successfully")
 
-        # Convert user to response format
+
         user_response = UserRead(
             id=user.id,
             email=user.email,
@@ -174,7 +174,7 @@ async def register_and_login(
             is_verified=user.is_verified
         )
 
-        print(f"✅ [AUTH] Registration and login successful for user: {user.id}")
+        print(f"[AUTH] Registration and login successful for user: {user.id}")
         return {
             "access_token": token,
             "token_type": "bearer",
@@ -182,19 +182,19 @@ async def register_and_login(
         }
 
     except HTTPException as http_ex:
-        print(f"❌ [AUTH] HTTP exception during registration: {http_ex.detail}")
+        print(f"[AUTH] HTTP exception during registration: {http_ex.detail}")
         await session.rollback()
         raise
     except Exception as e:
-        print(f"❌ [AUTH] Unexpected error during registration: {type(e).__name__}: {str(e)}")
-        print(f"❌ [AUTH] Full exception details: {repr(e)}")
-        print(f"❌ [AUTH] Exception traceback:")
+        print(f"[AUTH] Unexpected error during registration: {type(e).__name__}: {str(e)}")
+        print(f"[AUTH] Full exception details: {repr(e)}")
+        print(f"[AUTH] Exception traceback:")
         import traceback
         traceback.print_exc()
         
         await session.rollback()
         
-        # Provide more specific error messages based on exception type
+
         if "ValidationError" in type(e).__name__:
             error_detail = "Invalid user data provided. Please check your input."
         elif "IntegrityError" in type(e).__name__ or "unique" in str(e).lower():
@@ -210,7 +210,6 @@ async def register_and_login(
         )
 
 
-# Removed problematic /verify endpoint that was causing import issues
 
 
 @router.post("/logout")

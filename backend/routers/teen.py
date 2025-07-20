@@ -17,7 +17,7 @@ from schemas import UserRead
 
 router = APIRouter()
 
-# Teen-specific data models
+
 class TeenDashboardData:
     def __init__(self, user: User, profile: ChildProfile, goals: List[Goal], 
                  transactions: List[Transaction], budget_allocations: dict):
@@ -40,23 +40,23 @@ async def get_teen_dashboard(
 ):
     """Get teen dashboard data including budget overview and advanced features."""
     
-    # Verify user is an older child
+
     if current_user.role != 'older_child':
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only older children can access this endpoint"
         )
     
-    # Get child profile
+
     child_stmt = select(ChildProfile).where(ChildProfile.user_id == current_user.id)
     child_result = await session.execute(child_stmt)
     child_profile = child_result.scalar_one_or_none()
     
     if not child_profile:
-        # Create child profile for legacy users
+  
         child_profile = ChildProfile(
             user_id=current_user.id,
-            age=15,  # Default age for teens
+            age=15,  
             coins=0,
             level=1,
             streak_days=0
@@ -64,23 +64,23 @@ async def get_teen_dashboard(
         session.add(child_profile)
         await session.commit()
     
-    print(f"🔍 [BACKEND] Teen Dashboard: Loading data for teen {current_user.id}")
+    print(f"[BACKEND] Teen Dashboard: Loading data for teen {current_user.id}")
     
-    # Get teen's goals (categorized)
+  
     goals_stmt = select(Goal).where(
         and_(Goal.user_id == current_user.id, Goal.is_completed == False)
     ).order_by(Goal.created_at.desc())
     goals_result = await session.execute(goals_stmt)
     active_goals = goals_result.scalars().all()
     
-    # Get recent transactions
+
     transactions_stmt = select(Transaction).where(
         Transaction.user_id == current_user.id
     ).order_by(Transaction.created_at.desc()).limit(10)
     transactions_result = await session.execute(transactions_stmt)
     recent_transactions = transactions_result.scalars().all()
     
-    # Get recent achievements
+  
     achievements_stmt = select(UserAchievement, Achievement).join(
         Achievement, UserAchievement.achievement_id == Achievement.id
     ).where(
@@ -89,21 +89,20 @@ async def get_teen_dashboard(
     achievements_result = await session.execute(achievements_stmt)
     achievements_data = achievements_result.all()
     
-    # Get available advanced activities/modules
+
     modules_stmt = select(Module).where(
         and_(Module.is_published == True, Module.difficulty.in_(['medium', 'hard']))
     ).order_by(Module.difficulty, Module.title)
     modules_result = await session.execute(modules_stmt)
     available_modules = modules_result.scalars().all()
     
-    # Get teen's module progress
+
     progress_stmt = select(UserModuleProgress).where(
         UserModuleProgress.user_id == current_user.id
     )
     progress_result = await session.execute(progress_stmt)
     user_progress = {p.module_id: p for p in progress_result.scalars().all()}
-    
-    # Calculate budget allocations (default 40-35-25 split)
+   
     total_coins = child_profile.coins
     budget_allocations = {
         "saving": int(total_coins * 0.4),
@@ -111,7 +110,7 @@ async def get_teen_dashboard(
         "wants": int(total_coins * 0.25)
     }
     
-    # Prepare categorized goals
+ 
     categorized_goals = {
         "saving": [],
         "spending": [],
@@ -121,7 +120,7 @@ async def get_teen_dashboard(
     for goal in active_goals:
         category = goal.category if hasattr(goal, 'category') else 'saving'
         if category not in categorized_goals:
-            category = 'saving'  # Default category
+            category = 'saving'  
         
         progress_percentage = (goal.current_amount / goal.target_amount * 100) if goal.target_amount > 0 else 0
         categorized_goals[category].append({
@@ -136,9 +135,9 @@ async def get_teen_dashboard(
             "deadline": goal.deadline.isoformat() if goal.deadline else None
         })
     
-    # Prepare advanced activities
+  
     activities = []
-    for module in available_modules[:8]:  # Limit to 8 activities
+    for module in available_modules[:8]:  
         progress = user_progress.get(module.id)
         completed = progress.is_completed if progress else False
         
@@ -156,7 +155,7 @@ async def get_teen_dashboard(
             "bookmarked": False
         })
     
-    # Prepare achievements
+   
     achievements = []
     for user_achievement, achievement in achievements_data:
         achievements.append({
@@ -169,8 +168,7 @@ async def get_teen_dashboard(
             "date": user_achievement.earned_at.strftime("%b %d"),
             "colorScheme": "gold" if achievement.rarity == "rare" else "silver"
         })
-    
-    # Prepare quick actions
+
     quick_actions = [
         {
             "id": "budget",
@@ -253,7 +251,7 @@ async def get_teen_budget(
             detail="Only older children can access budget management"
         )
     
-    # Get child profile
+
     child_stmt = select(ChildProfile).where(ChildProfile.user_id == current_user.id)
     child_result = await session.execute(child_stmt)
     child_profile = child_result.scalar_one_or_none()
@@ -264,14 +262,14 @@ async def get_teen_budget(
             detail="Child profile not found"
         )
     
-    # Get recent transactions by category
+
     transactions_stmt = select(Transaction).where(
         Transaction.user_id == current_user.id
     ).order_by(Transaction.created_at.desc()).limit(20)
     transactions_result = await session.execute(transactions_stmt)
     transactions = transactions_result.scalars().all()
     
-    # Calculate budget allocations
+
     total_coins = child_profile.coins
     budget_allocations = {
         "saving": int(total_coins * 0.4),
@@ -279,7 +277,7 @@ async def get_teen_budget(
         "wants": int(total_coins * 0.25)
     }
     
-    # Categorize transactions
+  
     categorized_transactions = {
         "saving": [],
         "spending": [],
@@ -351,7 +349,7 @@ async def update_teen_budget(
             detail="Budget percentages must total 100%"
         )
     
-    # Get child profile
+
     child_stmt = select(ChildProfile).where(ChildProfile.user_id == current_user.id)
     child_result = await session.execute(child_stmt)
     child_profile = child_result.scalar_one_or_none()
@@ -362,7 +360,7 @@ async def update_teen_budget(
             detail="Child profile not found"
         )
     
-    # Update budget allocations (in a real app, you'd store this in a separate table)
+    # Update budget allocations 
     total_coins = child_profile.coins
     new_allocations = {
         "saving": int(total_coins * (saving / 100)),
@@ -370,7 +368,7 @@ async def update_teen_budget(
         "wants": int(total_coins * (wants / 100))
     }
     
-    print(f"✅ [BACKEND] Updated teen budget: {saving}% saving, {spending}% spending, {wants}% wants")
+    print(f"[BACKEND] Updated teen budget: {saving}% saving, {spending}% spending, {wants}% wants")
     
     return {
         "message": "Budget updated successfully",
@@ -471,17 +469,16 @@ async def create_teen_goal(
         is_completed=False
     )
     
-    # Add category attribute (you might need to add this to your Goal model)
-    # new_goal.category = category
+
     
-    # Add deadline if provided
+
     if goal_data.get('deadline'):
         new_goal.deadline = datetime.fromisoformat(goal_data['deadline'].replace('Z', '+00:00'))
     
     session.add(new_goal)
     await session.commit()
     
-    print(f"✅ [BACKEND] Created teen goal: {new_goal.title} (Category: {category})")
+    print(f"[BACKEND] Created teen goal: {new_goal.title} (Category: {category})")
     
     return {
         "message": "Goal created successfully",
@@ -515,7 +512,7 @@ async def get_teen_activities(
             detail="Only older children can access explore activities"
         )
     
-    # Build query
+
     query = select(Module).where(Module.is_published == True)
     
     if category:
@@ -546,7 +543,7 @@ async def get_teen_activities(
     modules_result = await session.execute(query)
     modules = modules_result.scalars().all()
     
-    # Get user's progress
+
     progress_stmt = select(UserModuleProgress).where(
         UserModuleProgress.user_id == current_user.id
     )
@@ -590,7 +587,7 @@ async def create_conversion_request(
             detail="Only older children can create conversion requests"
         )
     
-    # Get child profile
+
     child_stmt = select(ChildProfile).where(ChildProfile.user_id == current_user.id)
     child_result = await session.execute(child_stmt)
     child_profile = child_result.scalar_one_or_none()
@@ -605,21 +602,21 @@ async def create_conversion_request(
     dollar_amount = request_data.get('dollarAmount', 0)
     reason = request_data.get('reason', '')
     
-    # Validate amounts
+
     if coin_amount <= 0 or dollar_amount <= 0:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid amounts"
         )
     
-    # Check if child has enough coins
+
     if coin_amount > child_profile.coins:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Insufficient coins"
         )
     
-    # Create redemption request
+ 
     redemption_request = RedemptionRequest(
         user_id=current_user.id,
         item_name=f"Coin Conversion: {coin_amount} coins",
@@ -631,7 +628,7 @@ async def create_conversion_request(
     session.add(redemption_request)
     await session.commit()
     
-    print(f"✅ [BACKEND] Created conversion request: {coin_amount} coins for ${dollar_amount}")
+    print(f"[BACKEND] Created conversion request: {coin_amount} coins for ${dollar_amount}")
     
     return {
         "message": "Conversion request created successfully",
@@ -658,7 +655,7 @@ async def get_conversion_requests(
             detail="Only older children can view conversion requests"
         )
     
-    # Get redemption requests
+
     requests_stmt = select(RedemptionRequest).where(
         RedemptionRequest.user_id == current_user.id
     ).order_by(RedemptionRequest.created_at.desc())
@@ -671,7 +668,7 @@ async def get_conversion_requests(
         requests_data.append({
             "id": request.id,
             "coinAmount": request.coins_cost,
-            "dollarAmount": request.coins_cost * 0.01,  # Mock conversion rate
+            "dollarAmount": request.coins_cost * 0.01, 
             "reason": request.description or "Coin conversion",
             "status": request.status,
             "requestDate": request.created_at.isoformat(),
@@ -705,7 +702,7 @@ async def get_teen_analytics(
     else:  # year
         start_date = now - timedelta(days=365)
     
-    # Get transactions in timeframe
+
     transactions_stmt = select(Transaction).where(
         and_(
             Transaction.user_id == current_user.id,
@@ -715,12 +712,12 @@ async def get_teen_analytics(
     transactions_result = await session.execute(transactions_stmt)
     transactions = transactions_result.scalars().all()
     
-    # Calculate analytics
+
     total_earned = sum(t.amount for t in transactions if t.type == 'earn')
     total_spent = sum(t.amount for t in transactions if t.type == 'spend')
     total_saved = sum(t.amount for t in transactions if t.type == 'save')
     
-    # Get goals analytics
+
     goals_stmt = select(Goal).where(Goal.user_id == current_user.id)
     goals_result = await session.execute(goals_stmt)
     goals = goals_result.scalars().all()
@@ -728,7 +725,7 @@ async def get_teen_analytics(
     active_goals = [g for g in goals if not g.is_completed]
     completed_goals = [g for g in goals if g.is_completed]
     
-    # Get activities analytics
+
     progress_stmt = select(UserModuleProgress).where(
         and_(
             UserModuleProgress.user_id == current_user.id,
@@ -759,7 +756,7 @@ async def get_teen_analytics(
             "by_category": {
                 "saving": total_saved,
                 "spending": total_spent,
-                "wants": 0  # Would need to track this separately
+                "wants": 0  
             }
         }
     } 

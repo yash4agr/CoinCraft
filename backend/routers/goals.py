@@ -24,7 +24,7 @@ async def get_user_goals(
     if user_id == "me":
         user_id = current_user.id
     elif user_id != current_user.id:
-        # Check if parent viewing child's goals
+       
         if current_user.role == "parent":
             stmt = select(ChildProfile).where(
                 and_(ChildProfile.user_id == user_id, ChildProfile.parent_id == current_user.id)
@@ -42,7 +42,7 @@ async def get_user_goals(
                 detail="Insufficient permissions"
             )
     
-    # Get goals
+   
     stmt = select(Goal).where(Goal.user_id == user_id).order_by(Goal.created_at.desc())
     result = await session.execute(stmt)
     goals = result.scalars().all()
@@ -66,7 +66,7 @@ async def create_goal(
             detail="Can only create goals for yourself"
         )
     
-    # Create goal
+    
     goal = Goal(
         user_id=user_id,
         **goal_data.model_dump()
@@ -95,7 +95,7 @@ async def update_goal(
             detail="Can only update your own goals"
         )
     
-    # Get goal
+  
     stmt = select(Goal).where(and_(Goal.id == goal_id, Goal.user_id == user_id))
     result = await session.execute(stmt)
     goal = result.scalar_one_or_none()
@@ -105,8 +105,7 @@ async def update_goal(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Goal not found"
         )
-    
-    # Update goal
+   
     update_data = goal_update.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(goal, field, value)
@@ -180,7 +179,7 @@ async def contribute_to_goal(
             detail="Goal not found"
         )
     
-    # Get user's child profile to check coins
+    
     profile_stmt = select(ChildProfile).where(ChildProfile.user_id == user_id)
     profile_result = await session.execute(profile_stmt)
     child_profile = profile_result.scalar_one_or_none()
@@ -191,24 +190,24 @@ async def contribute_to_goal(
             detail="Only children can contribute to goals"
         )
     
-    # Check if user has enough coins
+  
     if child_profile.coins < contribution.amount:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Insufficient coins"
         )
     
-    # Update goal and user coins
+    
     goal.current_amount += contribution.amount
     child_profile.coins -= contribution.amount
     
-    # Check if goal is completed
+  
     if goal.current_amount >= goal.target_amount:
         goal.is_completed = True
     
     goal.updated_at = datetime.utcnow()
     
-    # Create transaction record
+   
     transaction = Transaction(
         user_id=user_id,
         type="save",

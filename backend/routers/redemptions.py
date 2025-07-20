@@ -30,7 +30,7 @@ async def get_conversion_requests(
             detail="Insufficient permissions"
         )
     
-    # Build query
+
     filters = [RedemptionRequest.user_id == user_id]
     if status:
         filters.append(RedemptionRequest.status == status)
@@ -60,7 +60,7 @@ async def create_conversion_request(
             detail="Can only create conversion requests for yourself"
         )
     
-    # Get child profile and parent's exchange rate
+  
     stmt = select(ChildProfile).where(ChildProfile.user_id == user_id)
     result = await session.execute(stmt)
     child_profile = result.scalar_one_or_none()
@@ -71,22 +71,22 @@ async def create_conversion_request(
             detail="Only children can request money conversion"
         )
     
-    # Check if child has enough coins
+  
     if child_profile.coins < request_data.coins_amount:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Insufficient coins"
         )
     
-    # Get parent's exchange rate
+
     parent_stmt = select(ParentProfile).where(ParentProfile.user_id == child_profile.parent_id)
     parent_result = await session.execute(parent_stmt)
     parent_profile = parent_result.scalar_one()
     
-    # Calculate cash amount
+
     cash_amount = request_data.coins_amount * parent_profile.exchange_rate
     
-    # Create redemption request
+
     redemption_request = RedemptionRequest(
         user_id=user_id,
         coins_amount=request_data.coins_amount,
@@ -95,7 +95,7 @@ async def create_conversion_request(
     )
     session.add(redemption_request)
     
-    # Reserve coins (subtract from balance)
+
     child_profile.coins -= request_data.coins_amount
     
     await session.commit()
@@ -121,7 +121,7 @@ async def get_parent_redemption_requests(
             detail="Only parents can view their children's redemption requests"
         )
     
-    # Get redemption requests from children
+
     stmt = select(RedemptionRequest).join(ChildProfile).where(
         ChildProfile.parent_id == parent_id
     ).order_by(RedemptionRequest.created_at.desc())
@@ -132,7 +132,7 @@ async def get_parent_redemption_requests(
     # Add child info to each request
     enriched_requests = []
     for req in requests:
-        # Get child info
+
         child_stmt = select(User).join(ChildProfile).where(ChildProfile.user_id == req.user_id)
         child_result = await session.execute(child_stmt)
         child = child_result.scalar_one()
@@ -166,7 +166,7 @@ async def approve_redemption_request(
             detail="Redemption request not found"
         )
     
-    # Check if current user is the parent
+
     child_stmt = select(ChildProfile).where(ChildProfile.user_id == redemption_request.user_id)
     child_result = await session.execute(child_stmt)
     child_profile = child_result.scalar_one()
@@ -206,7 +206,7 @@ async def reject_redemption_request(
             detail="Redemption request not found"
         )
     
-    # Check if current user is the parent
+ 
     child_stmt = select(ChildProfile).where(ChildProfile.user_id == redemption_request.user_id)
     child_result = await session.execute(child_stmt)
     child_profile = child_result.scalar_one()
@@ -217,12 +217,12 @@ async def reject_redemption_request(
             detail="Only the parent can reject redemption requests"
         )
     
-    # Update request and return coins to child
+  
     redemption_request.status = "rejected"
     redemption_request.approved_by = current_user.id
     redemption_request.approved_at = datetime.utcnow()
     
-    # Return coins to child
+    
     child_profile.coins += redemption_request.coins_amount
     
     await session.commit()
