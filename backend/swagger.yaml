@@ -1,0 +1,3855 @@
+openapi: 3.1.0
+info:
+  title: CoinCraft API
+  description: Financial literacy learning platform API for children, teens, parents,
+    and teachers.
+  version: 1.0.0
+paths:
+  /health:
+    get:
+      tags:
+      - healthcheck
+      summary: Perform a Health Check
+      description: "## Perform a Health Check\nEndpoint to perform a healthcheck on.\n\
+        \nReturns:\n    HealthCheck: Returns a JSON response with the health status"
+      operationId: get_health_health_get
+      responses:
+        '200':
+          description: Return HTTP Status Code 200 (OK)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheck'
+  /api/test:
+    get:
+      tags:
+      - test
+      summary: Test Api
+      description: Simple test endpoint to verify API is working.
+      operationId: test_api_api_test_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /api/auth/jwt/login:
+    post:
+      tags:
+      - auth
+      summary: Auth:Jwt.Login
+      operationId: auth_jwt_login_api_auth_jwt_login_post
+      requestBody:
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Body_auth_jwt_login_api_auth_jwt_login_post'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BearerResponse'
+              example:
+                access_token: eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ1c2VyX2lkIjoiOTIyMWZmYzktNjQwZi00MzcyLTg2ZDMtY2U2NDJjYmE1NjAzIiwiYXVkIjoiZmFzdGFwaS11c2VyczphdXRoIiwiZXhwIjoxNTcxNTA0MTkzfQ.M10bjOe45I5Ncu_uXvOmVV8QxnL-nZfcH96U90JaocI
+                token_type: bearer
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+              examples:
+                LOGIN_BAD_CREDENTIALS:
+                  summary: Bad credentials or the user is inactive.
+                  value:
+                    detail: LOGIN_BAD_CREDENTIALS
+                LOGIN_USER_NOT_VERIFIED:
+                  summary: The user is not verified.
+                  value:
+                    detail: LOGIN_USER_NOT_VERIFIED
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/auth/jwt/logout:
+    post:
+      tags:
+      - auth
+      summary: Auth:Jwt.Logout
+      operationId: auth_jwt_logout_api_auth_jwt_logout_post
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '401':
+          description: Missing token or inactive user.
+      security:
+      - OAuth2PasswordBearer: []
+  /api/auth/register:
+    post:
+      tags:
+      - auth
+      summary: Register And Login
+      description: Register a new user and immediately log them in.
+      operationId: register_and_login_api_auth_register_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Register And Login Api Auth Register Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/auth/logout:
+    post:
+      tags:
+      - auth
+      summary: Logout User
+      description: 'Logout user.
+
+
+        Note: In JWT-based auth, logout is typically handled client-side
+
+        by removing the token. This endpoint exists for API consistency.'
+      operationId: logout_user_api_auth_logout_post
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+  /api/auth/forgot-password:
+    post:
+      tags:
+      - auth
+      summary: Reset:Forgot Password
+      operationId: reset_forgot_password_api_auth_forgot_password_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Body_reset_forgot_password_api_auth_forgot_password_post'
+        required: true
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/auth/reset-password:
+    post:
+      tags:
+      - auth
+      summary: Reset:Reset Password
+      operationId: reset_reset_password_api_auth_reset_password_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Body_reset_reset_password_api_auth_reset_password_post'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+              examples:
+                RESET_PASSWORD_BAD_TOKEN:
+                  summary: Bad or expired token.
+                  value:
+                    detail: RESET_PASSWORD_BAD_TOKEN
+                RESET_PASSWORD_INVALID_PASSWORD:
+                  summary: Password validation failed.
+                  value:
+                    detail:
+                      code: RESET_PASSWORD_INVALID_PASSWORD
+                      reason: Password should be at least 3 characters
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/auth/request-verify-token:
+    post:
+      tags:
+      - auth
+      summary: Verify:Request-Token
+      operationId: verify_request_token_api_auth_request_verify_token_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Body_verify_request_token_api_auth_request_verify_token_post'
+        required: true
+      responses:
+        '202':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/auth/verify:
+    post:
+      tags:
+      - auth
+      summary: Verify:Verify
+      operationId: verify_verify_api_auth_verify_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Body_verify_verify_api_auth_verify_post'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRead'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+              examples:
+                VERIFY_USER_BAD_TOKEN:
+                  summary: Bad token, not existing user ornot the e-mail currently
+                    set for the user.
+                  value:
+                    detail: VERIFY_USER_BAD_TOKEN
+                VERIFY_USER_ALREADY_VERIFIED:
+                  summary: The user is already verified.
+                  value:
+                    detail: VERIFY_USER_ALREADY_VERIFIED
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/users/me:
+    get:
+      tags:
+      - User Management
+      summary: Get Current User Profile
+      description: Get current user's profile (basic info only).
+      operationId: get_current_user_profile_api_users_me_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRead'
+      security:
+      - OAuth2PasswordBearer: []
+    patch:
+      tags:
+      - users
+      summary: Users:Patch Current User
+      operationId: users_patch_current_user_api_users_me_patch
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRead'
+        '401':
+          description: Missing token or inactive user.
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+              examples:
+                UPDATE_USER_EMAIL_ALREADY_EXISTS:
+                  summary: A user with this email already exists.
+                  value:
+                    detail: UPDATE_USER_EMAIL_ALREADY_EXISTS
+                UPDATE_USER_INVALID_PASSWORD:
+                  summary: Password validation failed.
+                  value:
+                    detail:
+                      code: UPDATE_USER_INVALID_PASSWORD
+                      reason: Password should beat least 3 characters
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /api/users/{id}:
+    get:
+      tags:
+      - users
+      summary: Users:User
+      operationId: users_user_api_users__id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRead'
+        '401':
+          description: Missing token or inactive user.
+        '403':
+          description: Not a superuser.
+        '404':
+          description: The user does not exist.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    patch:
+      tags:
+      - users
+      summary: Users:Patch User
+      operationId: users_patch_user_api_users__id__patch
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRead'
+        '401':
+          description: Missing token or inactive user.
+        '403':
+          description: Not a superuser.
+        '404':
+          description: The user does not exist.
+        '400':
+          content:
+            application/json:
+              examples:
+                UPDATE_USER_EMAIL_ALREADY_EXISTS:
+                  summary: A user with this email already exists.
+                  value:
+                    detail: UPDATE_USER_EMAIL_ALREADY_EXISTS
+                UPDATE_USER_INVALID_PASSWORD:
+                  summary: Password validation failed.
+                  value:
+                    detail:
+                      code: UPDATE_USER_INVALID_PASSWORD
+                      reason: Password should beat least 3 characters
+              schema:
+                $ref: '#/components/schemas/ErrorModel'
+          description: Bad Request
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - users
+      summary: Users:Delete User
+      operationId: users_delete_user_api_users__id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Id
+      responses:
+        '204':
+          description: Successful Response
+        '401':
+          description: Missing token or inactive user.
+        '403':
+          description: Not a superuser.
+        '404':
+          description: The user does not exist.
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/users/{user_id}:
+    get:
+      tags:
+      - User Management
+      summary: Get User Profile
+      description: Get user profile with role-specific data.
+      operationId: get_user_profile_api_users__user_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: User Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    put:
+      tags:
+      - User Management
+      summary: Update User Profile
+      description: Update user profile information.
+      operationId: update_user_profile_api_users__user_id__put
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: User Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/users/{parent_id}/children:
+    post:
+      tags:
+      - User Management
+      summary: Create Child Account
+      description: Create a new child account linked to a parent.
+      operationId: create_child_account_api_users__parent_id__children_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: parent_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Parent Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              title: Child Data
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+      - User Management
+      summary: Get Parent Children
+      description: Get children accounts associated with a parent.
+      operationId: get_parent_children_api_users__parent_id__children_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: parent_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Parent Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserRead'
+                title: Response Get Parent Children Api Users  Parent Id  Children
+                  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/users/children/{child_id}:
+    put:
+      tags:
+      - User Management
+      summary: Update Child Info
+      description: Update a child's profile information.
+      operationId: update_child_info_api_users_children__child_id__put
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: child_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Child Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChildProfileUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/users/{user_id}/goals:
+    get:
+      tags:
+      - Goals
+      summary: Get User Goals
+      description: Get all goals for a user.
+      operationId: get_user_goals_api_users__user_id__goals_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: User Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GoalRead'
+                title: Response Get User Goals Api Users  User Id  Goals Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - Goals
+      summary: Create Goal
+      description: Create a new financial goal.
+      operationId: create_goal_api_users__user_id__goals_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: User Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoalCreate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoalRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/users/{user_id}/goals/{goal_id}:
+    put:
+      tags:
+      - Goals
+      summary: Update Goal
+      description: Update an existing financial goal.
+      operationId: update_goal_api_users__user_id__goals__goal_id__put
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: User Id
+      - name: goal_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Goal Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoalUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GoalRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Goals
+      summary: Delete Goal
+      description: Delete a financial goal.
+      operationId: delete_goal_api_users__user_id__goals__goal_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: User Id
+      - name: goal_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Goal Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/users/{user_id}/goals/{goal_id}/contribute:
+    post:
+      tags:
+      - Goals
+      summary: Contribute To Goal
+      description: Add coins to a financial goal.
+      operationId: contribute_to_goal_api_users__user_id__goals__goal_id__contribute_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: User Id
+      - name: goal_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Goal Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GoalContribution'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/users/{user_id}/transactions:
+    get:
+      tags:
+      - Transactions
+      summary: Get User Transactions
+      description: Get user transactions with optional filters.
+      operationId: get_user_transactions_api_users__user_id__transactions_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: User Id
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 20
+          title: Limit
+      - name: offset
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 0
+          default: 0
+          title: Offset
+      - name: type
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^(earn|spend|save)$
+          - type: 'null'
+          title: Type
+      - name: category
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Category
+      - name: start_date
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Start Date
+      - name: end_date
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: End Date
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionList'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - Transactions
+      summary: Create Transaction
+      description: Create a new transaction.
+      operationId: create_transaction_api_users__user_id__transactions_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: User Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransactionCreate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Create Transaction Api Users  User Id  Transactions
+                  Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/parents/{parent_id}/tasks:
+    get:
+      tags:
+      - Tasks
+      summary: Get Assigned Tasks
+      description: Get tasks assigned by a parent.
+      operationId: get_assigned_tasks_api_parents__parent_id__tasks_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: parent_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Parent Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TaskRead'
+                title: Response Get Assigned Tasks Api Parents  Parent Id  Tasks Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - Tasks
+      summary: Assign Task
+      description: Assign a new task to a child.
+      operationId: assign_task_api_parents__parent_id__tasks_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: parent_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Parent Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskCreate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/tasks/{task_id}:
+    put:
+      tags:
+      - Tasks
+      summary: Update Task Status
+      description: Update task status (complete, approve, reject).
+      operationId: update_task_status_api_tasks__task_id__put
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Task Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaskRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Tasks
+      summary: Delete Task
+      description: Delete a task.
+      operationId: delete_task_api_tasks__task_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Task Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/activities:
+    get:
+      tags:
+      - Activities & Learning
+      summary: Get Activities
+      description: Get learning activities and modules with filtering options.
+      operationId: get_activities_api_activities_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: difficulty
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^(easy|medium|hard)$
+          - type: 'null'
+          title: Difficulty
+      - name: category
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Category
+      - name: age_group
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^(younger_child|older_child)$
+          - type: 'null'
+          title: Age Group
+      - name: completed
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Completed
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ActivityRead'
+                title: Response Get Activities Api Activities Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/activities/{activity_id}:
+    get:
+      tags:
+      - Activities & Learning
+      summary: Get Activity
+      description: Get detailed information about a specific learning activity or
+        module.
+      operationId: get_activity_api_activities__activity_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: activity_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Activity Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/activities/{activity_id}/complete:
+    post:
+      tags:
+      - Activities & Learning
+      summary: Complete Activity
+      description: Record progress and mark an activity as completed.
+      operationId: complete_activity_api_activities__activity_id__complete_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: activity_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Activity Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              title: Progress Data
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/learning-modules:
+    get:
+      tags:
+      - Activities & Learning
+      summary: Get Learning Modules
+      description: Get all learning modules with optional filters.
+      operationId: get_learning_modules_api_learning_modules_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: difficulty
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^(easy|medium|hard)$
+          - type: 'null'
+          title: Difficulty
+      - name: category
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Category
+      - name: age_group
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+            pattern: ^(younger_child|older_child)$
+          - type: 'null'
+          title: Age Group
+      - name: created_by
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Created By
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ModuleRead'
+                title: Response Get Learning Modules Api Learning Modules Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/learning-modules/{module_id}/complete:
+    post:
+      tags:
+      - Activities & Learning
+      summary: Complete Module
+      description: Record completion of a learning module.
+      operationId: complete_module_api_learning_modules__module_id__complete_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: module_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Module Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              title: Completion Data
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/teachers/{teacher_id}/classes:
+    get:
+      tags:
+      - Teachers
+      summary: Get Teacher Classes
+      description: Get all classes managed by a teacher.
+      operationId: get_teacher_classes_api_teachers__teacher_id__classes_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: teacher_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Teacher Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ClassRead'
+                title: Response Get Teacher Classes Api Teachers  Teacher Id  Classes
+                  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - Teachers
+      summary: Create Class
+      description: Create a new class for a teacher.
+      operationId: create_class_api_teachers__teacher_id__classes_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: teacher_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Teacher Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassCreate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/classes/{class_id}:
+    put:
+      tags:
+      - Teachers
+      summary: Update Class
+      description: Update class information.
+      operationId: update_class_api_classes__class_id__put
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: class_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Class Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClassUpdate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ClassRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    delete:
+      tags:
+      - Teachers
+      summary: Delete Class
+      description: Delete a class.
+      operationId: delete_class_api_classes__class_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: class_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Class Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/classes/{class_id}/students:
+    get:
+      tags:
+      - Teachers
+      summary: Get Class Students
+      description: Get all students in a class.
+      operationId: get_class_students_api_classes__class_id__students_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: class_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Class Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/StudentRead'
+                title: Response Get Class Students Api Classes  Class Id  Students
+                  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - Teachers
+      summary: Add Student To Class
+      description: Add a student to a class.
+      operationId: add_student_to_class_api_classes__class_id__students_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: class_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Class Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              title: Student Data
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StudentRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/classes/{class_id}/students/{student_id}:
+    delete:
+      tags:
+      - Teachers
+      summary: Remove Student From Class
+      description: Remove a student from a class.
+      operationId: remove_student_from_class_api_classes__class_id__students__student_id__delete
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: class_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Class Id
+      - name: student_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Student Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/users/{user_id}/conversion-requests:
+    get:
+      tags:
+      - Redemptions
+      summary: Get Conversion Requests
+      description: Get money conversion (redemption) requests for a user.
+      operationId: get_conversion_requests_api_users__user_id__conversion_requests_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: User Id
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          title: Status
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RedemptionRequestRead'
+                title: Response Get Conversion Requests Api Users  User Id  Conversion
+                  Requests Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - Redemptions
+      summary: Create Conversion Request
+      description: Create a new request to convert virtual coins to real money.
+      operationId: create_conversion_request_api_users__user_id__conversion_requests_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: User Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RedemptionRequestCreate'
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Create Conversion Request Api Users  User Id  Conversion
+                  Requests Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/parents/{parent_id}/redemption-requests:
+    get:
+      tags:
+      - Redemptions
+      summary: Get Parent Redemption Requests
+      description: Get redemption requests from a parent's children.
+      operationId: get_parent_redemption_requests_api_parents__parent_id__redemption_requests_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: parent_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Parent Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RedemptionRequestRead'
+                title: Response Get Parent Redemption Requests Api Parents  Parent
+                  Id  Redemption Requests Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/redemption-requests/{request_id}/approve:
+    put:
+      tags:
+      - Redemptions
+      summary: Approve Redemption Request
+      description: Approve a redemption request.
+      operationId: approve_redemption_request_api_redemption_requests__request_id__approve_put
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: request_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Request Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedemptionRequestRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/redemption-requests/{request_id}/reject:
+    put:
+      tags:
+      - Redemptions
+      summary: Reject Redemption Request
+      description: Reject a redemption request.
+      operationId: reject_redemption_request_api_redemption_requests__request_id__reject_put
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: request_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Request Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RedemptionRequestRead'
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/dashboard/{user_role}:
+    get:
+      tags:
+      - Dashboard
+      summary: Get Dashboard Data
+      description: Get role-specific dashboard data with appropriate metrics and information.
+      operationId: get_dashboard_data_api_dashboard__user_role__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: user_role
+        in: path
+        required: true
+        schema:
+          type: string
+          title: User Role
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/progress-goals/{user_id}:
+    get:
+      tags:
+      - Dashboard
+      summary: Get Todays Goals
+      description: Get daily progress goals and statistics.
+      operationId: get_todays_goals_api_progress_goals__user_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: user_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: User Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ProgressGoal'
+                title: Response Get Todays Goals Api Progress Goals  User Id  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/progress-goals/{goal_id}/update:
+    put:
+      tags:
+      - Dashboard
+      summary: Update Goal Progress
+      description: Update progress on a daily goal.
+      operationId: update_goal_progress_api_progress_goals__goal_id__update_put
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: goal_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Goal Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              title: Progress Data
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema: {}
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/parent/dashboard:
+    get:
+      tags:
+      - Parent
+      summary: Get Parent Dashboard
+      description: Get parent dashboard data including children overview and family
+        stats.
+      operationId: get_parent_dashboard_api_parent_dashboard_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Get Parent Dashboard Api Parent Dashboard Get
+      security:
+      - OAuth2PasswordBearer: []
+  /api/parent/children:
+    post:
+      tags:
+      - Parent
+      summary: Add Child
+      description: Add a new child to the parent's account.
+      operationId: add_child_api_parent_children_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              additionalProperties: true
+              type: object
+              title: Child Data
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Add Child Api Parent Children Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /api/parent/children/{child_id}/progress:
+    get:
+      tags:
+      - Parent
+      summary: Get Child Progress
+      description: Get detailed progress information for a specific child.
+      operationId: get_child_progress_api_parent_children__child_id__progress_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: child_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Child Id
+      - name: timeframe
+        in: query
+        required: false
+        schema:
+          type: string
+          default: month
+          title: Timeframe
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Get Child Progress Api Parent Children  Child Id  Progress
+                  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/parent/tasks:
+    post:
+      tags:
+      - Parent
+      summary: Create Task
+      description: Create a new task for children.
+      operationId: create_task_api_parent_tasks_post
+      security:
+      - OAuth2PasswordBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              title: Task Data
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Create Task Api Parent Tasks Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    get:
+      tags:
+      - Parent
+      summary: Get Family Tasks
+      description: Get all tasks for the family with optional filtering.
+      operationId: get_family_tasks_api_parent_tasks_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+      - name: child_id
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Child Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response Get Family Tasks Api Parent Tasks Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/parent/tasks/{task_id}/approve:
+    put:
+      tags:
+      - Parent
+      summary: Approve Task
+      description: Approve a completed task and award coins.
+      operationId: approve_task_api_parent_tasks__task_id__approve_put
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: task_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Task Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Approve Task Api Parent Tasks  Task Id  Approve Put
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/parent/redemptions:
+    get:
+      tags:
+      - Parent
+      summary: Get Redemption Requests
+      description: Get redemption requests from children.
+      operationId: get_redemption_requests_api_parent_redemptions_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response Get Redemption Requests Api Parent Redemptions Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/parent/settings:
+    put:
+      tags:
+      - Parent
+      summary: Update Parent Settings
+      description: Update parent settings like exchange rate and approval requirements.
+      operationId: update_parent_settings_api_parent_settings_put
+      requestBody:
+        content:
+          application/json:
+            schema:
+              additionalProperties: true
+              type: object
+              title: Settings Data
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Update Parent Settings Api Parent Settings Put
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /api/teacher/dashboard:
+    get:
+      tags:
+      - Teacher
+      summary: Get Teacher Dashboard
+      description: Get teacher dashboard data including classes overview and analytics.
+      operationId: get_teacher_dashboard_api_teacher_dashboard_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Get Teacher Dashboard Api Teacher Dashboard Get
+      security:
+      - OAuth2PasswordBearer: []
+  /api/teacher/classes:
+    get:
+      tags:
+      - Teacher
+      summary: Get Teacher Classes
+      description: Get all classes for the teacher.
+      operationId: get_teacher_classes_api_teacher_classes_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  additionalProperties: true
+                  type: object
+                type: array
+                title: Response Get Teacher Classes Api Teacher Classes Get
+      security:
+      - OAuth2PasswordBearer: []
+    post:
+      tags:
+      - Teacher
+      summary: Create Class
+      description: Create a new class.
+      operationId: create_class_api_teacher_classes_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              additionalProperties: true
+              type: object
+              title: Class Data
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Create Class Api Teacher Classes Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /api/teacher/classes/{class_id}:
+    get:
+      tags:
+      - Teacher
+      summary: Get Class Details
+      description: Get detailed information about a specific class.
+      operationId: get_class_details_api_teacher_classes__class_id__get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: class_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Class Id
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Get Class Details Api Teacher Classes  Class Id  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/teacher/classes/{class_id}/students:
+    post:
+      tags:
+      - Teacher
+      summary: Add Student To Class
+      description: Add a student to a class.
+      operationId: add_student_to_class_api_teacher_classes__class_id__students_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: class_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Class Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              title: Student Data
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Add Student To Class Api Teacher Classes  Class Id  Students
+                  Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/teacher/modules:
+    get:
+      tags:
+      - Teacher
+      summary: Get Teacher Modules
+      description: Get all modules created by the teacher.
+      operationId: get_teacher_modules_api_teacher_modules_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  additionalProperties: true
+                  type: object
+                type: array
+                title: Response Get Teacher Modules Api Teacher Modules Get
+      security:
+      - OAuth2PasswordBearer: []
+    post:
+      tags:
+      - Teacher
+      summary: Create Module
+      description: Create a new learning module with enhanced content (sections, activities,
+        quiz).
+      operationId: create_module_api_teacher_modules_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              additionalProperties: true
+              type: object
+              title: Module Data
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Create Module Api Teacher Modules Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /api/teacher/analytics/performance:
+    get:
+      tags:
+      - Teacher
+      summary: Get Performance Analytics
+      description: Get performance analytics for the teacher's classes.
+      operationId: get_performance_analytics_api_teacher_analytics_performance_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: timeframe
+        in: query
+        required: false
+        schema:
+          type: string
+          default: month
+          title: Timeframe
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Get Performance Analytics Api Teacher Analytics Performance
+                  Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/child/dashboard:
+    get:
+      tags:
+      - Child
+      summary: Get Child Dashboard
+      description: Get child dashboard data including goals, activities, and progress.
+      operationId: get_child_dashboard_api_child_dashboard_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Get Child Dashboard Api Child Dashboard Get
+      security:
+      - OAuth2PasswordBearer: []
+  /api/child/goals:
+    get:
+      tags:
+      - Child
+      summary: Get Child Goals
+      description: Get child's goals.
+      operationId: get_child_goals_api_child_goals_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response Get Child Goals Api Child Goals Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - Child
+      summary: Create Child Goal
+      description: Create a new goal for the child.
+      operationId: create_child_goal_api_child_goals_post
+      security:
+      - OAuth2PasswordBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              title: Goal Data
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Create Child Goal Api Child Goals Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/child/goals/{goal_id}/progress:
+    put:
+      tags:
+      - Child
+      summary: Update Goal Progress
+      description: Update goal progress by adding coins.
+      operationId: update_goal_progress_api_child_goals__goal_id__progress_put
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: goal_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Goal Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              title: Progress Data
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Update Goal Progress Api Child Goals  Goal Id  Progress
+                  Put
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/child/activities:
+    get:
+      tags:
+      - Child
+      summary: Get Child Activities
+      description: Get available activities/games for the child.
+      operationId: get_child_activities_api_child_activities_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  additionalProperties: true
+                  type: object
+                type: array
+                title: Response Get Child Activities Api Child Activities Get
+      security:
+      - OAuth2PasswordBearer: []
+  /api/child/activities/{activity_id}/complete:
+    post:
+      tags:
+      - Child
+      summary: Complete Activity
+      description: Complete an activity and earn coins.
+      operationId: complete_activity_api_child_activities__activity_id__complete_post
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: activity_id
+        in: path
+        required: true
+        schema:
+          type: string
+          title: Activity Id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              title: Completion Data
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Complete Activity Api Child Activities  Activity Id  Complete
+                  Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/child/transactions:
+    get:
+      tags:
+      - Child
+      summary: Get Child Transactions
+      description: Get child's transaction history.
+      operationId: get_child_transactions_api_child_transactions_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          default: 20
+          title: Limit
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response Get Child Transactions Api Child Transactions Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/child/stats:
+    get:
+      tags:
+      - Child
+      summary: Get Child Stats
+      description: Get child's statistics and progress.
+      operationId: get_child_stats_api_child_stats_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Get Child Stats Api Child Stats Get
+      security:
+      - OAuth2PasswordBearer: []
+  /api/teen/dashboard:
+    get:
+      tags:
+      - Teen
+      summary: Get Teen Dashboard
+      description: Get teen dashboard data including budget overview and advanced
+        features.
+      operationId: get_teen_dashboard_api_teen_dashboard_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Get Teen Dashboard Api Teen Dashboard Get
+      security:
+      - OAuth2PasswordBearer: []
+  /api/teen/budget:
+    get:
+      tags:
+      - Teen
+      summary: Get Teen Budget
+      description: Get teen's budget allocation and management data.
+      operationId: get_teen_budget_api_teen_budget_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Get Teen Budget Api Teen Budget Get
+      security:
+      - OAuth2PasswordBearer: []
+    put:
+      tags:
+      - Teen
+      summary: Update Teen Budget
+      description: Update teen's budget allocation.
+      operationId: update_teen_budget_api_teen_budget_put
+      requestBody:
+        content:
+          application/json:
+            schema:
+              additionalProperties: true
+              type: object
+              title: Budget Data
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Update Teen Budget Api Teen Budget Put
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /api/teen/goals:
+    get:
+      tags:
+      - Teen
+      summary: Get Teen Goals
+      description: Get teen's goals with advanced filtering.
+      operationId: get_teen_goals_api_teen_goals_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: category
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Category
+      - name: status
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Status
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response Get Teen Goals Api Teen Goals Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+    post:
+      tags:
+      - Teen
+      summary: Create Teen Goal
+      description: Create a new goal for the teen with advanced features.
+      operationId: create_teen_goal_api_teen_goals_post
+      security:
+      - OAuth2PasswordBearer: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: true
+              title: Goal Data
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Create Teen Goal Api Teen Goals Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/teen/explore:
+    get:
+      tags:
+      - Teen
+      summary: Get Teen Activities
+      description: Get advanced activities for teens with filtering and search.
+      operationId: get_teen_activities_api_teen_explore_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: category
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Category
+      - name: difficulty
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Difficulty
+      - name: duration
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Duration
+      - name: search
+        in: query
+        required: false
+        schema:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Search
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  additionalProperties: true
+                title: Response Get Teen Activities Api Teen Explore Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+  /api/teen/conversion-requests:
+    get:
+      tags:
+      - Teen
+      summary: Get Conversion Requests
+      description: Get teen's conversion request history.
+      operationId: get_conversion_requests_api_teen_conversion_requests_get
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                items:
+                  additionalProperties: true
+                  type: object
+                type: array
+                title: Response Get Conversion Requests Api Teen Conversion Requests
+                  Get
+      security:
+      - OAuth2PasswordBearer: []
+    post:
+      tags:
+      - Teen
+      summary: Create Conversion Request
+      description: Create a coin-to-money conversion request.
+      operationId: create_conversion_request_api_teen_conversion_requests_post
+      requestBody:
+        content:
+          application/json:
+            schema:
+              additionalProperties: true
+              type: object
+              title: Request Data
+        required: true
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                additionalProperties: true
+                type: object
+                title: Response Create Conversion Request Api Teen Conversion Requests
+                  Post
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+      security:
+      - OAuth2PasswordBearer: []
+  /api/teen/analytics:
+    get:
+      tags:
+      - Teen
+      summary: Get Teen Analytics
+      description: Get comprehensive analytics for teen's financial behavior.
+      operationId: get_teen_analytics_api_teen_analytics_get
+      security:
+      - OAuth2PasswordBearer: []
+      parameters:
+      - name: timeframe
+        in: query
+        required: false
+        schema:
+          type: string
+          default: month
+          title: Timeframe
+      responses:
+        '200':
+          description: Successful Response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: true
+                title: Response Get Teen Analytics Api Teen Analytics Get
+        '422':
+          description: Validation Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+components:
+  schemas:
+    ActivityRead:
+      properties:
+        id:
+          type: string
+          title: Id
+        title:
+          type: string
+          title: Title
+        description:
+          type: string
+          title: Description
+        type:
+          type: string
+          title: Type
+        difficulty:
+          type: string
+          title: Difficulty
+        coins:
+          type: integer
+          title: Coins
+        duration:
+          type: integer
+          title: Duration
+        completed:
+          type: boolean
+          title: Completed
+        icon:
+          type: string
+          title: Icon
+        category:
+          type: string
+          title: Category
+        age_group:
+          type: string
+          title: Age Group
+      type: object
+      required:
+      - id
+      - title
+      - description
+      - type
+      - difficulty
+      - coins
+      - duration
+      - completed
+      - icon
+      - category
+      - age_group
+      title: ActivityRead
+    BearerResponse:
+      properties:
+        access_token:
+          type: string
+          title: Access Token
+        token_type:
+          type: string
+          title: Token Type
+      type: object
+      required:
+      - access_token
+      - token_type
+      title: BearerResponse
+    Body_auth_jwt_login_api_auth_jwt_login_post:
+      properties:
+        grant_type:
+          anyOf:
+          - type: string
+            pattern: ^password$
+          - type: 'null'
+          title: Grant Type
+        username:
+          type: string
+          title: Username
+        password:
+          type: string
+          format: password
+          title: Password
+        scope:
+          type: string
+          title: Scope
+          default: ''
+        client_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Client Id
+        client_secret:
+          anyOf:
+          - type: string
+          - type: 'null'
+          format: password
+          title: Client Secret
+      type: object
+      required:
+      - username
+      - password
+      title: Body_auth_jwt_login_api_auth_jwt_login_post
+    Body_reset_forgot_password_api_auth_forgot_password_post:
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email
+      type: object
+      required:
+      - email
+      title: Body_reset_forgot_password_api_auth_forgot_password_post
+    Body_reset_reset_password_api_auth_reset_password_post:
+      properties:
+        token:
+          type: string
+          title: Token
+        password:
+          type: string
+          title: Password
+      type: object
+      required:
+      - token
+      - password
+      title: Body_reset_reset_password_api_auth_reset_password_post
+    Body_verify_request_token_api_auth_request_verify_token_post:
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email
+      type: object
+      required:
+      - email
+      title: Body_verify_request_token_api_auth_request_verify_token_post
+    Body_verify_verify_api_auth_verify_post:
+      properties:
+        token:
+          type: string
+          title: Token
+      type: object
+      required:
+      - token
+      title: Body_verify_verify_api_auth_verify_post
+    ChildProfileUpdate:
+      properties:
+        age:
+          anyOf:
+          - type: integer
+            maximum: 18.0
+            minimum: 6.0
+          - type: 'null'
+          title: Age
+        coins:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Coins
+        level:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Level
+        streak_days:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Streak Days
+        last_activity_date:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Last Activity Date
+      type: object
+      title: ChildProfileUpdate
+    ClassCreate:
+      properties:
+        name:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Name
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+      type: object
+      required:
+      - name
+      title: ClassCreate
+    ClassRead:
+      properties:
+        name:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Name
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        id:
+          type: string
+          title: Id
+        teacher_id:
+          type: string
+          title: Teacher Id
+        class_code:
+          type: string
+          title: Class Code
+        is_active:
+          type: boolean
+          title: Is Active
+          default: true
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        students_count:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Students Count
+          default: 0
+        average_performance:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Average Performance
+          default: 0.0
+      type: object
+      required:
+      - name
+      - id
+      - teacher_id
+      - class_code
+      - created_at
+      title: ClassRead
+    ClassUpdate:
+      properties:
+        name:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Name
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        is_active:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Active
+      type: object
+      required:
+      - name
+      title: ClassUpdate
+    ErrorModel:
+      properties:
+        detail:
+          anyOf:
+          - type: string
+          - additionalProperties:
+              type: string
+            type: object
+          title: Detail
+      type: object
+      required:
+      - detail
+      title: ErrorModel
+    GoalContribution:
+      properties:
+        amount:
+          type: integer
+          exclusiveMinimum: 0.0
+          title: Amount
+      type: object
+      required:
+      - amount
+      title: GoalContribution
+    GoalCreate:
+      properties:
+        title:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Title
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        target_amount:
+          type: integer
+          exclusiveMinimum: 0.0
+          title: Target Amount
+        icon:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Icon
+        color:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Color
+        deadline:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Deadline
+      type: object
+      required:
+      - title
+      - target_amount
+      title: GoalCreate
+    GoalRead:
+      properties:
+        title:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Title
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        target_amount:
+          type: integer
+          exclusiveMinimum: 0.0
+          title: Target Amount
+        icon:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Icon
+        color:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Color
+        deadline:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Deadline
+        id:
+          type: string
+          title: Id
+        user_id:
+          type: string
+          title: User Id
+        current_amount:
+          type: integer
+          title: Current Amount
+          default: 0
+        is_completed:
+          type: boolean
+          title: Is Completed
+          default: false
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+      type: object
+      required:
+      - title
+      - target_amount
+      - id
+      - user_id
+      - created_at
+      - updated_at
+      title: GoalRead
+    GoalUpdate:
+      properties:
+        title:
+          anyOf:
+          - type: string
+            maxLength: 200
+            minLength: 1
+          - type: 'null'
+          title: Title
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        target_amount:
+          anyOf:
+          - type: integer
+            exclusiveMinimum: 0.0
+          - type: 'null'
+          title: Target Amount
+        icon:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Icon
+        color:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Color
+        deadline:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Deadline
+      type: object
+      title: GoalUpdate
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          type: array
+          title: Detail
+      type: object
+      title: HTTPValidationError
+    HealthCheck:
+      properties:
+        status:
+          type: string
+          title: Status
+          default: OK
+      type: object
+      title: HealthCheck
+      description: Response model for health check.
+    ModuleRead:
+      properties:
+        title:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Title
+        description:
+          type: string
+          title: Description
+        category:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Category
+        difficulty:
+          type: string
+          pattern: ^(easy|medium|hard)$
+          title: Difficulty
+          default: easy
+        estimated_duration:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Estimated Duration
+        points_reward:
+          type: integer
+          title: Points Reward
+          default: 0
+        id:
+          type: string
+          title: Id
+        created_by:
+          type: string
+          title: Created By
+        is_published:
+          type: boolean
+          title: Is Published
+          default: false
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+        user_progress:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: User Progress
+      type: object
+      required:
+      - title
+      - description
+      - id
+      - created_by
+      - created_at
+      - updated_at
+      title: ModuleRead
+    ProgressGoal:
+      properties:
+        id:
+          type: string
+          title: Id
+        title:
+          type: string
+          title: Title
+        current:
+          type: integer
+          title: Current
+        total:
+          type: integer
+          title: Total
+        icon:
+          type: string
+          title: Icon
+        color_scheme:
+          type: string
+          title: Color Scheme
+      type: object
+      required:
+      - id
+      - title
+      - current
+      - total
+      - icon
+      - color_scheme
+      title: ProgressGoal
+    RedemptionRequestCreate:
+      properties:
+        coins_amount:
+          type: integer
+          exclusiveMinimum: 0.0
+          title: Coins Amount
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+      type: object
+      required:
+      - coins_amount
+      title: RedemptionRequestCreate
+    RedemptionRequestRead:
+      properties:
+        coins_amount:
+          type: integer
+          exclusiveMinimum: 0.0
+          title: Coins Amount
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        id:
+          type: string
+          title: Id
+        user_id:
+          type: string
+          title: User Id
+        cash_amount:
+          type: number
+          title: Cash Amount
+        status:
+          type: string
+          title: Status
+          default: pending
+        approved_by:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Approved By
+        approved_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Approved At
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        child:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Child
+      type: object
+      required:
+      - coins_amount
+      - id
+      - user_id
+      - cash_amount
+      - created_at
+      title: RedemptionRequestRead
+    StudentRead:
+      properties:
+        user_id:
+          type: string
+          title: User Id
+        name:
+          type: string
+          title: Name
+        email:
+          type: string
+          title: Email
+        avatar_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Avatar Url
+        age:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Age
+        level:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Level
+        performance_score:
+          anyOf:
+          - type: number
+          - type: 'null'
+          title: Performance Score
+        needs_support:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Needs Support
+        last_activity_date:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Last Activity Date
+        modules_completed:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Modules Completed
+        total_time_spent:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Total Time Spent
+        progress:
+          anyOf:
+          - additionalProperties: true
+            type: object
+          - type: 'null'
+          title: Progress
+      type: object
+      required:
+      - user_id
+      - name
+      - email
+      title: StudentRead
+    TaskCreate:
+      properties:
+        title:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Title
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        coins_reward:
+          type: integer
+          exclusiveMinimum: 0.0
+          title: Coins Reward
+        due_date:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Due Date
+        requires_approval:
+          type: boolean
+          title: Requires Approval
+          default: true
+        assigned_to:
+          type: string
+          title: Assigned To
+      type: object
+      required:
+      - title
+      - coins_reward
+      - assigned_to
+      title: TaskCreate
+    TaskRead:
+      properties:
+        title:
+          type: string
+          maxLength: 200
+          minLength: 1
+          title: Title
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        coins_reward:
+          type: integer
+          exclusiveMinimum: 0.0
+          title: Coins Reward
+        due_date:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Due Date
+        requires_approval:
+          type: boolean
+          title: Requires Approval
+          default: true
+        id:
+          type: string
+          title: Id
+        assigned_by:
+          type: string
+          title: Assigned By
+        assigned_to:
+          type: string
+          title: Assigned To
+        status:
+          type: string
+          title: Status
+          default: pending
+        completed_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Completed At
+        approved_at:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Approved At
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - title
+      - coins_reward
+      - id
+      - assigned_by
+      - assigned_to
+      - created_at
+      title: TaskRead
+    TaskUpdate:
+      properties:
+        title:
+          anyOf:
+          - type: string
+            maxLength: 200
+            minLength: 1
+          - type: 'null'
+          title: Title
+        description:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Description
+        coins_reward:
+          anyOf:
+          - type: integer
+            exclusiveMinimum: 0.0
+          - type: 'null'
+          title: Coins Reward
+        due_date:
+          anyOf:
+          - type: string
+            format: date-time
+          - type: 'null'
+          title: Due Date
+        requires_approval:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Requires Approval
+        status:
+          anyOf:
+          - type: string
+            pattern: ^(pending|in_progress|completed|approved|rejected)$
+          - type: 'null'
+          title: Status
+      type: object
+      title: TaskUpdate
+    TransactionCreate:
+      properties:
+        type:
+          type: string
+          pattern: ^(earn|spend|save)$
+          title: Type
+        amount:
+          type: integer
+          exclusiveMinimum: 0.0
+          title: Amount
+        description:
+          type: string
+          maxLength: 500
+          minLength: 1
+          title: Description
+        category:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Category
+        source:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Source
+        reference_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reference Id
+        reference_type:
+          anyOf:
+          - type: string
+            pattern: ^(goal|task|activity|shop|redemption)$
+          - type: 'null'
+          title: Reference Type
+      type: object
+      required:
+      - type
+      - amount
+      - description
+      title: TransactionCreate
+    TransactionList:
+      properties:
+        transactions:
+          items:
+            $ref: '#/components/schemas/TransactionRead'
+          type: array
+          title: Transactions
+        total_count:
+          type: integer
+          title: Total Count
+        weekly_total:
+          type: integer
+          title: Weekly Total
+        monthly_total:
+          type: integer
+          title: Monthly Total
+      type: object
+      required:
+      - transactions
+      - total_count
+      - weekly_total
+      - monthly_total
+      title: TransactionList
+    TransactionRead:
+      properties:
+        type:
+          type: string
+          pattern: ^(earn|spend|save)$
+          title: Type
+        amount:
+          type: integer
+          exclusiveMinimum: 0.0
+          title: Amount
+        description:
+          type: string
+          maxLength: 500
+          minLength: 1
+          title: Description
+        category:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Category
+        source:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Source
+        reference_id:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Reference Id
+        reference_type:
+          anyOf:
+          - type: string
+            pattern: ^(goal|task|activity|shop|redemption)$
+          - type: 'null'
+          title: Reference Type
+        id:
+          type: string
+          title: Id
+        user_id:
+          type: string
+          title: User Id
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+      type: object
+      required:
+      - type
+      - amount
+      - description
+      - id
+      - user_id
+      - created_at
+      title: TransactionRead
+    UserCreate:
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email
+        password:
+          type: string
+          title: Password
+        is_active:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Active
+          default: true
+        is_superuser:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Superuser
+          default: false
+        is_verified:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Verified
+          default: false
+        name:
+          type: string
+          title: Name
+        role:
+          $ref: '#/components/schemas/UserRoleEnum'
+        avatar_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Avatar Url
+      type: object
+      required:
+      - email
+      - password
+      - name
+      - role
+      title: UserCreate
+    UserRead:
+      properties:
+        id:
+          type: string
+          title: Id
+        email:
+          type: string
+          format: email
+          title: Email
+        is_active:
+          type: boolean
+          title: Is Active
+        is_superuser:
+          type: boolean
+          title: Is Superuser
+        is_verified:
+          type: boolean
+          title: Is Verified
+        name:
+          type: string
+          title: Name
+        role:
+          $ref: '#/components/schemas/UserRoleEnum'
+        avatar_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Avatar Url
+        created_at:
+          type: string
+          format: date-time
+          title: Created At
+        updated_at:
+          type: string
+          format: date-time
+          title: Updated At
+      type: object
+      required:
+      - id
+      - email
+      - is_active
+      - is_superuser
+      - is_verified
+      - name
+      - role
+      - created_at
+      - updated_at
+      title: UserRead
+    UserRoleEnum:
+      type: string
+      enum:
+      - parent
+      - teacher
+      - younger_child
+      - older_child
+      title: UserRoleEnum
+    UserUpdate:
+      properties:
+        password:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Password
+        email:
+          anyOf:
+          - type: string
+            format: email
+          - type: 'null'
+          title: Email
+        is_active:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Active
+        is_superuser:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Superuser
+        is_verified:
+          anyOf:
+          - type: boolean
+          - type: 'null'
+          title: Is Verified
+        name:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Name
+        avatar_url:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Avatar Url
+      type: object
+      title: UserUpdate
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          type: array
+          title: Location
+        msg:
+          type: string
+          title: Message
+        type:
+          type: string
+          title: Error Type
+      type: object
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+  securitySchemes:
+    OAuth2PasswordBearer:
+      type: oauth2
+      flows:
+        password:
+          scopes: {}
+          tokenUrl: auth/jwt/login
