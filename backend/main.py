@@ -2,6 +2,8 @@
 
 import os
 from contextlib import asynccontextmanager
+from dotenv import load_dotenv
+load_dotenv()
 
 from fastapi import FastAPI, status
 from fastapi.responses import FileResponse, HTMLResponse
@@ -106,6 +108,17 @@ def get_health() -> HealthCheck:
 def test_api():
     """Simple test endpoint to verify API is working."""
     return {"message": "API is working", "timestamp": "2025-01-01T00:00:00Z"}
+
+@app.get("/api/status", tags=["test"])
+def get_status():
+    """Get backend status and environment configuration."""
+    return {
+        "status": "OK",
+        "environment": os.getenv("ENVIRONMENT", "unknown"),
+        "database_type": "SQLite" if "sqlite" in os.getenv("DATABASE_URL", "") else "Other",
+        "secret_key_configured": bool(os.getenv("SECRET_KEY")),
+        "algorithm": os.getenv("ALGORITHM", "HS256")
+    }
 
 @app.get("/openapi.yaml", include_in_schema=False)
 async def get_openapi_yaml():
