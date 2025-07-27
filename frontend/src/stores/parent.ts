@@ -51,6 +51,26 @@ export const useParentStore = defineStore('parent', () => {
     completedTasks: 0,
     activeGoals: 0
   })
+  // const children = ref<Child[]>([
+  //   {
+  //     id: '1',
+  //     name: 'Luna',
+  //     age: 9,
+  //     coins: 135,
+  //     goalsActive: 2,
+  //     lastActivity: new Date(Date.now() - 7200000),
+  //     avatar: '👧'
+  //   },
+  //   {
+  //     id: '2',
+  //     name: 'Harry',
+  //     age: 12,
+  //     coins: 245,
+  //     goalsActive: 1,
+  //     lastActivity: new Date(Date.now() - 86400000),
+  //     avatar: '👦'
+  //   }
+  // ])
 
   const tasks = ref<Task[]>([
     {

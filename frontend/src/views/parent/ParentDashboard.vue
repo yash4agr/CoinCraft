@@ -269,7 +269,7 @@
               color="primary"
               variant="tonal"
               prepend-icon="mdi-eye"
-              @click="setActiveNav('childprogress')"
+              class="{active: activeNav === 'childprogress'}" @click="setActiveNav('childprogress')"
             >
               Details
             </v-btn>
@@ -578,6 +578,109 @@ const parent = ref<Parent>({
 });
 
 // Use store data (defined below with onMounted)
+// // Family stats
+// const familyStats = ref<FamilyStats>({
+//   totalChildren: 2,
+//   totalCoinsEarned: 485,
+//   completedTasks: 47,
+//   activeGoals: 5
+// })
+
+// // Children data
+// const children = ref<Child[]>([
+//   {
+//     id: '1',
+//     name: 'Luna',
+//     age: 9,
+//     email: 'luna@example.com',
+//     password: generateRandomPassword(6),
+//     initials: 'L',
+//     avatarColor: 'purple',
+//     coins: 125,
+//     completedTasks: 23,
+//     currentGoals: [
+//       {
+//         id: '1',
+//         name: 'Magic Hat',
+//         target: 50,
+//         saved: 35,
+//         icon: 'mdi-hat-fedora',
+//         color: 'purple'
+//       },
+//       {
+//         id: '2',
+//         name: 'Art Supplies',
+//         target: 30,
+//         saved: 18,
+//         icon: 'mdi-palette',
+//         color: 'orange'
+//       }
+//     ],
+//     recentActivity: [
+//       {
+//         id: '1',
+//         title: 'Completed homework',
+//         icon: 'mdi-check-circle',
+//         color: 'success',
+//         coins: 15,
+//         timestamp: new Date(Date.now() - 2 * 60 * 60 * 1000)
+//       },
+//       {
+//         id: '2',
+//         title: 'Finished "Smart Shopping" module',
+//         icon: 'mdi-graduation-cap',
+//         color: 'info',
+//         coins: 25,
+//         timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
+//       }
+//     ],
+//     parentId: '1',
+//     createdAt: new Date(),
+//     updatedAt: new Date()
+//   },
+//   {
+//     id: '2',
+//     name: 'Harry',
+//     age: 12,
+//     email: 'harry@example.com',
+//     password: generateRandomPassword(6),
+//     initials: 'H',
+//     avatarColor: 'blue',
+//     coinBalance: 280,
+//     completedTasks: 24,
+//     currentGoals: [
+//       {
+//         id: '3',
+//         name: 'Headphones',
+//         target: 120,
+//         saved: 95,
+//         icon: 'mdi-headphones',
+//         color: 'blue'
+//       }
+//     ],
+//     recentActivity: [
+//       {
+//         id: '3',
+//         title: 'Created budget plan',
+//         icon: 'mdi-calculator',
+//         color: 'primary',
+//         coins: 20,
+//         timestamp: new Date(Date.now() - 4 * 60 * 60 * 1000)
+//       },
+//       {
+//         id: '4',
+//         title: 'Cleaned room',
+//         icon: 'mdi-broom',
+//         color: 'success',
+//         coins: 10,
+//         timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
+//       }
+//     ],
+//     parentId: '1',
+//     createdAt: new Date(),
+//     updatedAt: new Date()
+//   }
+// ])
 
 // Alerts and notifications
 const alerts = ref([
