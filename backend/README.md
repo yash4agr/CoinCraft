@@ -34,17 +34,17 @@ pip install fastapi uvicorn sqlalchemy asyncpg fastapi-users
 uv sync
 ```
 
-### 🔧 Configuration
+### Configuration
 
 
-### 🗄️ Database Setup
+### Database Setup
 
 ```bash
 # Run database migrations and seed data
 python seed_data.py
 ```
 
-### 🏃 Running the Server
+### Running the Server
 
 ```bash
 # Development server with auto-reload
@@ -56,7 +56,7 @@ uvicorn main:app --reload
 
 Server will start at: `http://localhost:8000`
 
-## 📚 API Documentation
+## API Documentation
 
 ### Swagger UI (Interactive)
 ```
@@ -73,7 +73,7 @@ http://localhost:8000/redoc
 http://localhost:8000/openapi.json
 ```
 
-## 🔐 Authentication
+## Authentication
 
 The API uses JWT tokens for authentication. Available user roles:
 - `teacher` - Create modules, manage classes
@@ -88,7 +88,7 @@ Parent: parent@demo.com / demo123
 Child: child@demo.com / demo123
 ```
 
-## 🛠️ API Endpoints
+## API Endpoints
 
 ### Core Endpoints
 - **Authentication**: `/api/auth/`
@@ -109,7 +109,7 @@ Child: child@demo.com / demo123
 - **Transactions**: `/api/transactions/`
 - **Achievements**: `/api/achievements/`
 
-## 🤖 AI Module Generation
+## AI Module Generation
 
 Enhanced modules with sections, activities, and quizzes powered by Cerebras AI.
 
@@ -131,7 +131,7 @@ POST /api/teacher/modules
 }
 ```
 
-## 🗃️ Database Schema
+## Database Schema
 
 ### Core Models
 - **Users** - Authentication and profiles
@@ -147,7 +147,7 @@ Modules -> ModuleSections -> QuizQuestions -> QuizOptions
 Users -> UserModuleProgress -> Modules
 ```
 
-## 🔧 Development
+## Development
 
 ### Project Structure
 ```
@@ -172,7 +172,7 @@ backend/
 3. Create router in `routers/`
 4. Include router in `main.py`
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -193,7 +193,7 @@ Check `FRONTEND_URL` in `.env` matches your frontend URL
 ### Logs
 Server logs include SQL queries and API requests for debugging.
 
-## 🚀 Production Deployment
+## Production Deployment
 
 ### Environment Variables
 Set production values for:
