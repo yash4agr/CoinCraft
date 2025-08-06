@@ -228,19 +228,19 @@
                   <v-card-text class="py-3">
                     <div class="d-flex justify-space-between align-center mb-2">
                       <span class="text-subtitle-2 font-weight-medium">{{ goal.title }}</span>
-                      <v-chip size="small" :color="getGoalStatusColor(goal.status)">
-                        {{ goal.status }}
+                      <v-chip size="small" :color="getGoalStatusColor(goal.is_completed ? 'completed' : 'active')">
+                        {{ goal.is_completed ? 'Completed' : 'Active' }}
                       </v-chip>
                     </div>
                     <v-progress-linear
-                      :model-value="(goal.currentAmount / goal.targetAmount) * 100"
+                      :model-value="(goal.current_amount / goal.target_amount) * 100"
                       color="primary"
                       height="6"
                       rounded
                       class="mb-2"
                     />
                     <div class="text-caption text-medium-emphasis">
-                      {{ goal.currentAmount }} / {{ goal.targetAmount }} {{ goal.unit }}
+                      {{ goal.current_amount }} / {{ goal.target_amount }} {{ goal.unit }}
                     </div>
                   </v-card-text>
                 </v-card>
@@ -276,7 +276,7 @@
                         <div class="text-caption text-medium-emphasis">{{ achievement.description }}</div>
                       </div>
                       <div class="text-caption text-disabled">
-                        {{ formatDate(achievement.earnedAt) }}
+                        {{ achievement.earned_at ? new Date(achievement.earned_at).toLocaleDateString() : 'N/A' }}
                       </div>
                     </div>
                   </v-card-text>
@@ -387,8 +387,12 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import type { User, Goal, Achievement } from '@/types'
+import type { User, Goal, Achievement, ChildProgress } from '@/types'  
+import { useParentStore } from '@/stores/parent'
 import LearningProgressChart from './LearningProgressChart.vue'
+
+// Store
+const parentStore = useParentStore()
 
 // Data
 const loading = ref(false)
@@ -397,10 +401,8 @@ const exportDialog = ref(false)
 const selectedChildId = ref<string>('')
 const timeframe = ref('month')
 
-const children = ref<User[]>([
-  { id: '1', name: 'Luna', email: 'emma@example.com', role: 'child', avatar: '' },
-  { id: '2', name: 'Harry', email: 'liam@example.com', role: 'child', avatar: '' }
-])
+// Use real children data from parent store
+const children = computed(() => parentStore.children)
 
 const timeframes = [
   { title: 'Last Week', value: 'week' },
@@ -459,49 +461,13 @@ const recentActivities = ref([
   }
 ])
 
-const activeGoals = ref<Goal[]>([
-  {
-    id: '1',
-    title: 'Daily Reading',
-    description: 'Read for 30 minutes every day',
-    targetValue: 30,
-    currentValue: 22,
-    unit: 'minutes',
-    deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    status: 'active',
-    reward: 100
-  },
-  {
-    id: '2',
-    title: 'Math Mastery',
-    description: 'Complete 20 math exercises',
-    targetValue: 20,
-    currentValue: 15,
-    unit: 'exercises',
-    deadline: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000),
-    status: 'active',
-    reward: 200
-  }
-])
+parentStore.getChildProgress(children.value[0]?.id || '')
+console.log(parentStore.childProgress, 'childProgress')
 
-const achievements = ref<Achievement[]>([
-  {
-    id: '1',
-    title: 'Reading Champion',
-    description: 'Read 5 books in one week',
-    icon: 'mdi-book-open',
-    rarity: 'gold',
-    earnedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)
-  },
-  {
-    id: '2',
-    title: 'Math Wizard',
-    description: 'Solved 100 math problems',
-    icon: 'mdi-calculator',
-    rarity: 'silver',
-    earnedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000)
-  }
-])
+const childProgress = computed(() => parentStore.childProgress as ChildProgress)
+
+const activeGoals = computed(() => childProgress.value.active_goals)
+const achievements = computed(() => childProgress.value.achievements)
 
 const recommendations = ref([
   {
@@ -542,9 +508,7 @@ const loadChildProgress = async () => {
   
   loading.value = true
   try {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    // Update stats, activities, etc. based on selected child and timeframe
+    await parentStore.getChildProgress(selectedChildId.value)
   } catch (error) {
     showSnackbar('Failed to load child progress', 'error')
   } finally {
@@ -640,9 +604,13 @@ const showSnackbar = (message: string, color: string = 'success') => {
 }
 
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
+  // Load parent data to get real children
+  await parentStore.refreshData()
+  
+  // Select first child if available
   if (children.value.length > 0) {
-    selectedChildId.value = children.value[0].id
+    selectedChildId.value = children.value[0]?.id || ''
     loadChildProgress()
   }
 })

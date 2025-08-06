@@ -1,342 +1,208 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { apiService, type User as ApiUser, type LoginRequest, type RegisterRequest } from '../services/api'
+import { apiService } from '../services/api'
+import { validateUser } from '../utils/typeMappers'
+import type { User, UserRole } from '../types'
 
-export interface User {
-  id: string
-  fullName: string
-  email: string
-  username: string
-  role: 'parent' | 'teacher' | 'younger_child' | 'older_child'
-  coins?: number
-  avatar?: string
-  createdAt: string
-}
-
-export interface LoginCredentials {
-  username: string
+// Updated interface to match FastAPI OAuth2 requirements (email as username)
+interface LoginCredentials {
+  username: string  // Will be email for FastAPI compatibility
   password: string
 }
 
-export interface RegisterData {
-  fullName: string
+// Updated interface to match backend UserCreate schema
+interface RegisterData {
+  name: string
   email: string
-  username: string
-  role: 'parent' | 'teacher'
   password: string
+  role: UserRole  // Use proper UserRole type
+  avatar_url?: string
+  age?: number  // For child profiles
+}
+
+// Error interface for better error handling
+interface AuthError {
+  message: string
+  code?: string
+  details?: any
 }
 
 export const useAuthStore = defineStore('auth', () => {
   // State
   const user = ref<User | null>(null)
+  const token = ref<string | null>(null)
   const isLoading = ref(false)
-  const error = ref<string | null>(null)
-  const isAuthenticated = ref(false)
-
-  // Demo users for development
-  const demoUsers: User[] = [
-    {
-      id: '1',
-      fullName: 'Luna Smith',
-      email: 'luna@demo.com',
-      username: 'luna_demo',
-      role: 'younger_child',
-      coins: 135,
-      avatar: '🦸‍♀️',
-      createdAt: '2024-01-15'
-    },
-    {
-      id: '2',
-      fullName: 'Harry Johnson',
-      email: 'harry@demo.com',
-      username: 'harry_demo',
-      role: 'older_child',
-      coins: 245,
-      avatar: '🧙‍♂️',
-      createdAt: '2024-01-10'
-    },
-    {
-      id: '3',
-      fullName: 'Sarah Parent',
-      email: 'sarah@demo.com',
-      username: 'parent_demo',
-      role: 'parent',
-      avatar: '👩‍💼',
-      createdAt: '2024-01-05'
-    },
-    {
-      id: '4',
-      fullName: 'Mrs. Johnson',
-      email: 'teacher@demo.com',
-      username: 'teacher_demo',
-      role: 'teacher',
-      avatar: '👩‍🏫',
-      createdAt: '2024-01-01'
-    }
-  ]
+  const error = ref<AuthError | null>(null)
 
   // Getters
+  const isAuthenticated = computed(() => !!token.value && !!user.value)
   const userRole = computed(() => user.value?.role)
   const isParent = computed(() => user.value?.role === 'parent')
   const isTeacher = computed(() => user.value?.role === 'teacher')
-  const isChild = computed(() => 
-    user.value?.role === 'younger_child' || user.value?.role === 'older_child'
-  )
+  const isChild = computed(() => user.value?.role === 'younger_child')
+  const isTeen = computed(() => user.value?.role === 'older_child')
 
   // Actions
-  const login = async (credentials: LoginCredentials): Promise<void> => {
-    console.log('🎬 [AUTH] ===== LOGIN PROCESS STARTED =====');
-    console.log('🎬 [AUTH] Input credentials:', { username: credentials.username, password: '***' });
-    console.log('🎬 [AUTH] Auth store state before login:', { 
-      isLoading: isLoading.value, 
-      isAuthenticated: isAuthenticated.value,
-      hasUser: !!user.value,
-      hasError: !!error.value
-    });
+  const login = async (credentials: LoginCredentials): Promise<boolean> => {
+    console.log('🔐 [AUTH] Attempting login for:', credentials.username)
     
     isLoading.value = true
     error.value = null
 
     try {
-      console.log('🔐 [AUTH] Starting login process...');
-      console.log('🔐 [AUTH] Converting credentials to API format...');
-      
-      // Convert to API format (username -> email)
-      const apiCredentials: LoginRequest = {
-        email: credentials.username, // Using username as email for demo
-        password: credentials.password
-      }
-
-      console.log('🔐 [AUTH] API credentials prepared:', { email: apiCredentials.email, password: '***' });
-      console.log('📡 [AUTH] Calling apiService.login()...');
-      
-      const response = await apiService.login(apiCredentials)
-      
-      console.log('🔍 [AUTH] API Service response received');
-      console.log('🔍 [AUTH] Response type:', typeof response);
-      console.log('🔍 [AUTH] Response structure:', {
-        hasError: !!response.error,
-        hasData: !!response.data,
-        errorMessage: response.error,
-        dataKeys: response.data ? Object.keys(response.data) : 'N/A'
-      });
-      console.log('🔍 [AUTH] Full response:', response);
+      const response = await apiService.login(credentials)
       
       if (response.error) {
-        console.error('❌ Login error:', response.error)
         throw new Error(response.error)
       }
 
-      if (!response.data) {
-        console.error('❌ No data received from login')
-        throw new Error('Login failed - no data received')
+      if (response.data?.access_token && response.data?.user) {
+        // Validate user data from backend
+        if (!validateUser(response.data.user)) {
+          throw new Error('Invalid user data received from server')
+        }
+
+        token.value = response.data.access_token
+        user.value = response.data.user
+        
+        // Persist to localStorage
+        localStorage.setItem('auth_token', response.data.access_token)
+        localStorage.setItem('auth_user', JSON.stringify(response.data.user))
+        
+        console.log('✅ [AUTH] Login successful for:', user.value.name)
+        return true
       }
 
-      console.log('✅ Login successful, processing user data...')
-      
-      // Convert API user to local user format
-      const apiUser = response.data.user
-      const localUser: User = {
-        id: apiUser.id,
-        fullName: apiUser.name,
-        email: apiUser.email,
-        username: apiUser.email, // Using email as username
-        role: apiUser.role as User['role'],
-        avatar: apiUser.avatar_url || '👤',
-        createdAt: apiUser.created_at
-      }
+      throw new Error('Invalid response from server')
 
-      console.log('👤 User data processed:', localUser)
-
-      user.value = localUser
-      isAuthenticated.value = true
-      
-      // Store session
-      localStorage.setItem('coincraft_user', JSON.stringify(localUser))
-      
-      console.log('🎉 Login completed successfully!')
-
-    } catch (err) {
-      console.error('💥 Login failed:', err)
-      error.value = err instanceof Error ? err.message : 'Login failed'
-      throw err
+    } catch (err: any) {
+      console.error('❌ [AUTH] Login failed:', err.message)
+      error.value = { message: err.message, code: 'LOGIN_FAILED' }
+      return false
     } finally {
       isLoading.value = false
     }
   }
 
-  const register = async (data: RegisterData): Promise<void> => {
-    console.log('📝 [AUTH] ===== REGISTRATION PROCESS STARTED =====');
-    console.log('📝 [AUTH] Registration data:', { 
-      fullName: data.fullName, 
-      email: data.email, 
-      username: data.username, 
-      role: data.role,
-      password: '***' 
-    });
-
+  const register = async (userData: RegisterData): Promise<boolean> => {
+    console.log('📝 [AUTH] Attempting registration for:', userData.email)
+    
     isLoading.value = true
     error.value = null
 
     try {
-      // Convert to API format
-      const apiData: RegisterRequest = {
-        email: data.email,
-        password: data.password,
-        name: data.fullName,
-        role: data.role,
-        avatar_url: data.role === 'parent' ? '👨‍👩‍👧‍👦' : '👩‍🏫'
-      }
-
-      console.log('📝 [AUTH] Calling API registration...');
+      const response = await apiService.register(userData)
       
-      // Disable demo mode to ensure real API calls
-      localStorage.removeItem('coincraft_demo_mode')
-      
-      const response = await apiService.register(apiData)
-      
-      console.log('📝 [AUTH] Registration response:', response);
-
       if (response.error) {
-        console.error('❌ Registration error:', response.error);
         throw new Error(response.error)
       }
 
-      if (!response.data) {
-        console.error('❌ No data received from registration');
-        throw new Error('Registration failed - no data received')
-      }
-
-      console.log('✅ Registration successful, processing user data...');
-
-      // Convert API user to local user format
-      const apiUser = response.data.user
-      const localUser: User = {
-        id: apiUser.id,
-        fullName: apiUser.name,
-        email: apiUser.email,
-        username: apiUser.email, // Using email as username
-        role: apiUser.role as User['role'],
-        avatar: apiUser.avatar_url || '👤',
-        createdAt: apiUser.created_at
-      }
-
-      console.log('👤 User data processed:', localUser);
-
-      user.value = localUser
-      isAuthenticated.value = true
-      
-      // Store session
-      localStorage.setItem('coincraft_user', JSON.stringify(localUser))
-      
-      // Ensure we're not in demo mode
-      localStorage.removeItem('coincraft_demo_mode')
-
-      console.log('🎉 Registration and login completed successfully!');
-
-    } catch (err) {
-      console.error('💥 Registration failed:', err);
-      
-      // Provide more helpful error messages
-      let errorMessage = 'Registration failed. Please try again.';
-      
-      if (err instanceof Error) {
-        errorMessage = err.message;
-        
-        // Enhance common error messages
-        if (errorMessage.includes('already exists')) {
-          errorMessage = 'A user with this email already exists. Please try another email address.';
-        } else if (errorMessage.includes('server error') || errorMessage.includes('500')) {
-          errorMessage = 'Server error. Please try again later or contact support.';
-        } else if (errorMessage.includes('network') || errorMessage.includes('fetch')) {
-          errorMessage = 'Network error. Please check your internet connection and try again.';
+      if (response.data?.access_token && response.data?.user) {
+        // Validate user data from backend
+        if (!validateUser(response.data.user)) {
+          throw new Error('Invalid user data received from server')
         }
+
+        token.value = response.data.access_token
+        user.value = response.data.user
+        
+        // Persist to localStorage
+        localStorage.setItem('auth_token', response.data.access_token)
+        localStorage.setItem('auth_user', JSON.stringify(response.data.user))
+        
+        console.log('✅ [AUTH] Registration successful for:', user.value.name)
+        return true
       }
-      
-      error.value = errorMessage;
-      throw new Error(errorMessage);
+
+      throw new Error('Invalid response from server')
+
+    } catch (err: any) {
+      console.error('❌ [AUTH] Registration failed:', err.message)
+      error.value = { message: err.message, code: 'REGISTRATION_FAILED' }
+      return false
     } finally {
       isLoading.value = false
     }
   }
 
-  const logout = async (): Promise<void> => {
-    try {
-      isLoading.value = true
-      
-      // Call API logout
-      await apiService.logout()
-      
-      // Clear all user-related stores
-      const { useUserStore } = await import('./user')
-      const { useDashboardStore } = await import('./dashboard')
-      const userStore = useUserStore()
-      const dashboardStore = useDashboardStore()
-      
-      // Reset all store states
-      userStore.$reset()
-      dashboardStore.$reset()
-      
-      // Clear authentication state
-      user.value = null
-      isAuthenticated.value = false
-      
-      // Clear session
-      localStorage.removeItem('coincraft_user')
-      
-      // Clear any cached data
-      sessionStorage.clear()
-      
-    } catch (err) {
-      console.error('Logout error:', err)
-      // Even if API logout fails, clear local state
-      user.value = null
-      isAuthenticated.value = false
-      localStorage.removeItem('coincraft_user')
-      sessionStorage.clear()
-    } finally {
-      isLoading.value = false
+    const checkAuth = async (): Promise<boolean> => {
+    console.log('🔍 [AUTH] Checking authentication status...')
+    
+    if (!token.value) {
+      console.log('❌ [AUTH] No token found')
+      return false
     }
-  }
 
-  const checkAuth = async (): Promise<void> => {
     try {
-      // Check if we have a token and it's valid
-      if (!apiService.isAuthenticated()) {
-        return
-      }
-
+      // Verify token is still valid by fetching current user
       const response = await apiService.getCurrentUser()
       
       if (response.error) {
         throw new Error(response.error)
       }
 
-      if (!response.data) {
-        throw new Error('No user data received')
+      if (response.data) {
+        user.value = response.data
+        console.log('✅ [AUTH] Token valid, user verified:', user.value.name)
+        return true
       }
 
-      // Convert API user to local user format
-      const apiUser = response.data
-      const localUser: User = {
-        id: apiUser.id,
-        fullName: apiUser.name,
-        email: apiUser.email,
-        username: apiUser.email, // Using email as username
-        role: apiUser.role as User['role'],
-        avatar: apiUser.avatar_url || '👤',
-        createdAt: apiUser.created_at
-      }
+      throw new Error('Invalid user data received')
 
-      user.value = localUser
-      isAuthenticated.value = true
-      
-      // Update stored user
-      localStorage.setItem('coincraft_user', JSON.stringify(localUser))
-      
-    } catch (err) {
-      console.error('Auth check error:', err)
+    } catch (err: any) {
+      console.error('❌ [AUTH] Token validation failed:', err.message)
+      // Clear invalid token
       await logout()
+      return false
+    }
+  }
+
+  const logout = async (): Promise<void> => {
+    console.log('🚪 [AUTH] Logging out user:', user.value?.name)
+    
+    try {
+      await apiService.logout()
+    } catch (err) {
+      console.warn('⚠️ [AUTH] Logout API call failed:', err)
+    }
+
+    // Clear state
+    user.value = null
+    token.value = null
+    error.value = null
+
+    // Clear localStorage
+    localStorage.removeItem('auth_token')
+    localStorage.removeItem('auth_user')
+    
+    console.log('✅ [AUTH] Logout complete')
+  }
+
+  const initializeAuth = (): void => {
+    console.log('🔄 [AUTH] Initializing authentication from storage...')
+    
+    try {
+      const storedToken = localStorage.getItem('auth_token')
+      const storedUser = localStorage.getItem('auth_user')
+
+      if (storedToken && storedUser) {
+        token.value = storedToken
+        user.value = JSON.parse(storedUser)
+        
+        console.log('✅ [AUTH] Authentication restored for:', user.value?.name)
+        
+        // Optionally verify token is still valid
+        checkAuth().catch(() => {
+          console.warn('⚠️ [AUTH] Stored token validation failed')
+        })
+      } else {
+        console.log('ℹ️ [AUTH] No stored authentication found')
+      }
+    } catch (err) {
+      console.error('❌ [AUTH] Failed to initialize auth from storage:', err)
+      // Clear corrupted data
+      localStorage.removeItem('auth_token')
+      localStorage.removeItem('auth_user')
     }
   }
 
@@ -344,73 +210,48 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
   }
 
-  const demoLogin = async (role: User['role']): Promise<void> => {
-    // For demo purposes, we can either:
-    // 1. Use real API login with demo credentials
-    // 2. Use mock login for demo pages
-    
-    // Option 1: Real API login (recommended for full demo)
-    const demoCredentials = {
-      parent: { username: 'parent@demo.com', password: 'demo123' },
-      teacher: { username: 'teacher@demo.com', password: 'demo123' },
-      younger_child: { username: 'luna@demo.com', password: 'demo123' },
-      older_child: { username: 'harry@demo.com', password: 'demo123' }
-    }
-
-    const credentials = demoCredentials[role]
-    if (credentials) {
-      await login(credentials)
-    }
-  }
-
-  // Mock login for demo pages (when API is not available)
-  const mockDemoLogin = async (role: User['role']): Promise<void> => {
-    isLoading.value = true
-    error.value = null
+  const refreshUser = async (): Promise<void> => {
+    if (!token.value) return
 
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000))
-
-      // Use mock user data for demo
-      const demoUser = demoUsers.find(u => u.role === role)
-      if (demoUser) {
-        user.value = demoUser
-        isAuthenticated.value = true
-        localStorage.setItem('coincraft_user', JSON.stringify(demoUser))
-        localStorage.setItem('coincraft_demo_mode', 'true')
+      const response = await apiService.getCurrentUser()
+      if (response.data) {
+        // Validate user data from backend
+        if (!validateUser(response.data)) {
+          console.error('❌ [AUTH] Invalid user data received during refresh')
+          return
+        }
+        
+        user.value = response.data
+        localStorage.setItem('auth_user', JSON.stringify(response.data))
       }
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Demo login failed'
-      throw err
-    } finally {
-      isLoading.value = false
+      console.error('❌ [AUTH] Failed to refresh user data:', err)
     }
   }
 
   return {
     // State
     user,
+    token,
     isLoading,
     error,
-    isAuthenticated,
     
     // Getters
+    isAuthenticated,
     userRole,
     isParent,
     isTeacher,
     isChild,
+    isTeen,
     
     // Actions
     login,
     register,
     logout,
     checkAuth,
+    initializeAuth,
     clearError,
-    demoLogin,
-    mockDemoLogin,
-    
-    // Demo data
-    demoUsers
+    refreshUser
   }
 })

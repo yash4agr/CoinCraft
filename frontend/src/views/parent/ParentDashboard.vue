@@ -1,10 +1,10 @@
 <template>
 <div class="parent-dashboard-layout">
     <aside class="sidebar">
-      <div class="sidebar-header">
+      <!-- <div class="sidebar-header">
         <img src="/coin.svg" alt="CoinCraft" class="sidebar-logo" />
         <span class="sidebar-title">CoinCraft</span>
-      </div>
+      </div> -->
       <nav class="sidebar-nav">
         <ul>
           <li :class="{ active: activeNav === 'dashboard' }" @click="setActiveNav('dashboard')">
@@ -48,7 +48,7 @@
           <v-avatar color="primary" size="32" class="me-2">
             <v-icon color="white">mdi-account-heart</v-icon>
           </v-avatar>
-          <span class="font-weight-medium">{{ parent.name }}</span>
+          <span class="font-weight-medium">{{ authStore.user?.name || 'Parent' }}</span>
         </div>
         <v-btn
           variant="text"
@@ -77,7 +77,7 @@
                     <v-icon color="white">mdi-account-heart</v-icon>
                   </v-avatar>
                   <div>
-                    <h2 class="text-h6 text-md-h5 mb-1">Welcome back, {{ parent.name }}!</h2>
+                    <h2 class="text-h6 text-md-h5 mb-1">Welcome back, {{ authStore.user?.name || 'Parent' }}!</h2>
                     <div class="text-subtitle-2 text-md-subtitle-1 text-medium-emphasis">
                       Parent Dashboard
                     </div>
@@ -171,8 +171,8 @@
         <v-card class="h-100">
           <!-- Child Header -->
           <v-card-title class="d-flex align-center">
-            <v-avatar :color="child.avatarColor" class="me-3">
-              <span class="text-white font-weight-bold">{{ child.initials }}</span>
+            <v-avatar color="primary" class="me-3">
+              <span class="text-white font-weight-bold">{{ getChildInitials(child.name) }}</span>
             </v-avatar>
             <div>
               <div class="font-weight-bold">{{ child.name }}</div>
@@ -227,7 +227,7 @@
             </v-list>
 
             <!-- Current Goals -->
-            <div v-if="child.currentGoals.length > 0" class="mt-3">
+            <div v-if="child.currentGoals && child.currentGoals.length > 0" class="mt-3">
               <div class="text-subtitle-2 font-weight-medium mb-2">Current Goals</div>
               <v-card
                 v-for="goal in child.currentGoals"
@@ -238,12 +238,12 @@
                 <v-card-text class="py-2">
                   <div class="d-flex align-center mb-1">
                     <v-icon :color="goal.color" size="small" class="me-1">{{ goal.icon }}</v-icon>
-                    <span class="text-body-2 font-weight-medium">{{ goal.name }}</span>
+                    <span class="text-body-2 font-weight-medium">{{ goal.title }}</span>
                     <v-spacer />
-                    <span class="text-caption">{{ goal.saved }}/{{ goal.target }}</span>
+                    <span class="text-caption">{{ goal.current_amount }}/{{ goal.target_amount }}</span>
                   </div>
                   <v-progress-linear
-                    :model-value="(goal.saved / goal.target) * 100"
+                    :model-value="(goal.current_amount / goal.target_amount) * 100"
                     :color="goal.color"
                     height="4"
                     rounded
@@ -259,7 +259,7 @@
               size="small"
               variant="tonal"
               prepend-icon="mdi-message"
-              @click="sendMessage(child)"
+              @click="sendMessage(child as Child)"
             >
               Message
             </v-btn>
@@ -317,14 +317,13 @@
           <th>Name</th>
           <th>Age</th>
           <th>Email</th>
-          <th>Username</th>
           <th>Password</th>
         </tr>
       </thead>
       <tbody>
         <template v-if="children.length === 0">
           <tr>
-            <td colspan="6" class="text-center py-4 text-medium-emphasis">
+            <td colspan="5" class="text-center py-4 text-medium-emphasis">
               <v-icon class="mb-2">mdi-account-child-outline</v-icon><br>
               No children added yet. Click "Add Child" to start!
             </td>
@@ -334,10 +333,9 @@
           <tr v-for="(child, index) in children" :key="child.id">
             <td>{{ index + 1 }}</td>
             <td>{{ child.name }}</td>
-            <td>{{ child.age }}</td>
+            <td>{{ child.age || '—' }}</td>
             <td>{{ child.email || '—' }}</td>
-            <td>{{ child.username || `${child.name.toLowerCase().replace(/\s+/g, '')}${child.age}` }}</td>
-            <td>{{ child.password || '******' }}</td>
+            <td>{{ child.password || '—' }}</td>
           </tr>
         </template>
       </tbody>
@@ -405,11 +403,15 @@
     </v-row>
 
     <!-- Add Child Dialog -->
-    <v-dialog v-model="showAddChildDialog" max-width="500">
+    <v-dialog v-model="showAddChildDialog" max-width="600">
       <v-card>
-        <v-card-title>Add New Child</v-card-title>
+        <v-card-title class="d-flex align-center">
+          <v-icon class="me-2" color="primary">mdi-account-plus</v-icon>
+          Add New Child
+        </v-card-title>
         <v-card-text>
           <v-form ref="childForm" v-model="childFormValid">
+            <!-- Child Name Input -->
             <v-text-field
               v-model="newChild.name"
               label="Child's Name"
@@ -417,8 +419,10 @@
               prepend-inner-icon="mdi-account"
               variant="outlined"
               class="mb-3"
+              @input="updateGeneratedCredentials"
             />
             
+            <!-- Age Input -->
             <v-text-field
               v-model.number="newChild.age"
               label="Age"
@@ -431,15 +435,40 @@
               class="mb-3"
             />
             
-            <v-text-field
-              v-model="newChild.email"
-              label="Email (Optional)"
-              type="email"
-              prepend-inner-icon="mdi-email"
-              variant="outlined"
-              class="mb-3"
-            />
+            <!-- Generated Credentials Preview -->
+            <v-card v-if="newChild.name" variant="outlined" class="mb-3 pa-3">
+              <v-card-subtitle class="text-subtitle-2 font-weight-medium mb-2">
+                <v-icon class="me-1" size="small">mdi-auto-fix</v-icon>
+                Auto-Generated Credentials
+              </v-card-subtitle>
+              
+              <v-row>
+                <v-col cols="12">
+                  <div class="d-flex align-center mb-2">
+                    <v-icon class="me-2" size="small" color="primary">mdi-email</v-icon>
+                    <span class="text-body-2 font-weight-medium">Email:</span>
+                    <v-spacer />
+                    <span class="text-body-2 text-primary">{{ generatedEmail }}</span>
+                  </div>
+                  <div class="d-flex align-center">
+                    <v-icon class="me-2" size="small" color="primary">mdi-key</v-icon>
+                    <span class="text-body-2 font-weight-medium">Password:</span>
+                    <v-spacer />
+                    <span class="text-body-2 text-primary font-mono">{{ generatedPassword }}</span>
+                    <v-btn 
+                      icon="mdi-refresh" 
+                      size="x-small" 
+                      variant="text"
+                      @click="regeneratePassword"
+                      class="ml-2"
+                    >
+                    </v-btn>
+                  </div>
+                </v-col>
+              </v-row>
+            </v-card>
             
+            <!-- Avatar Color Selection -->
             <v-select
               v-model="newChild.avatarColor"
               label="Avatar Color"
@@ -447,6 +476,19 @@
               prepend-inner-icon="mdi-palette"
               variant="outlined"
             />
+            
+            <!-- Info Alert -->
+            <v-alert 
+              type="info" 
+              variant="tonal" 
+              density="compact"
+              class="mt-3"
+            >
+              <template #prepend>
+                <v-icon>mdi-information</v-icon>
+              </template>
+              Email and password are automatically generated. You can regenerate the password by clicking the refresh button.
+            </v-alert>
           </v-form>
         </v-card-text>
         <v-card-actions>
@@ -455,8 +497,10 @@
           <v-btn
             color="primary"
             @click="addChild"
-            :disabled="!childFormValid"
+            :disabled="!childFormValid || !newChild.name"
+            :loading="loading"
           >
+            <v-icon class="me-1">mdi-plus</v-icon>
             Add Child
           </v-btn>
         </v-card-actions>
@@ -502,7 +546,7 @@ import { ref, reactive, computed, onMounted, defineAsyncComponent, watch } from 
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useParentStore } from '@/stores/parent'
-import type { Parent, Child } from '@/types'
+import type { Child } from '@/types'
 
 
 
@@ -513,11 +557,14 @@ const authStore = useAuthStore()
 const parentStore = useParentStore()
 
 // Reactive data
-const loading = ref(false)
+const localLoading = ref(false)
 const showAddChildDialog = ref(false)
 const showSuccessSnackbar = ref(false)
 const successMessage = ref('')
 const childFormValid = ref(false)
+
+// Combine store and local loading states
+const loading = computed(() => parentStore.isLoading || localLoading.value)
 
 
 const activeNav = ref('dashboard');
@@ -566,16 +613,7 @@ const asyncViews: Record<Exclude<ParentViewKey, 'dashboard'>, any> = {
 };
 
 
-// Parent data
-const parent = ref<Parent>({
-  id: '1',
-  name: 'Parent',
-  email: 'parent@example.com',
-  role: 'parent',
-  children: [],
-  createdAt: new Date(),
-  updatedAt: new Date()
-});
+// Parent data now comes from authStore.user instead of hardcoded object
 
 // Use store data (defined below with onMounted)
 // // Family stats
@@ -682,49 +720,100 @@ const parent = ref<Parent>({
 //   }
 // ])
 
-// Alerts and notifications
-const alerts = ref([
-  {
-    id: '1',
-    type: 'info',
-    title: 'New Achievement',
-    message: 'Luna earned a 7-day activity streak!'
-  },
-  {
-    id: '2',
-    type: 'warning',
-    title: 'Goal Almost Reached',
-    message: 'Harry is 25 coins away from his headphones goal'
-  },
-  {
-    id: '3',
-    type: 'success',
-    title: 'Task Completed',
-    message: 'All homework tasks completed this week'
-  }
-])
+// Alerts and notifications - computed from real data
+const alerts = computed(() => {
+  const alertsList: Array<{
+    id: string;
+    type: 'info' | 'success' | 'warning' | 'error';
+    title: string;
+    message: string;
+  }> = []
 
-const pendingApprovals = ref([
-  {
-    id: '1',
-    title: 'Redeem 30 coins for toy',
-    child: 'Luna',
-    type: 'redemption'
-  },
-  {
-    id: '2',
-    title: 'Mark task as complete',
-    child: 'Harry',
-    type: 'task'
+  // Add alerts for pending tasks needing approval
+  const completedTasks = parentStore.tasks.filter(task => task.status === 'completed')
+  if (completedTasks.length > 0) {
+    alertsList.push({
+      id: 'pending-tasks',
+      type: 'info',
+      title: 'Tasks Need Approval',
+      message: `${completedTasks.length} completed task${completedTasks.length > 1 ? 's' : ''} waiting for approval`
+    })
   }
-])
 
-// New child form
+  // Add alerts for pending redemptions
+  const pendingRedemptionsCount = parentStore.pendingRedemptions.length
+  if (pendingRedemptionsCount > 0) {
+    alertsList.push({
+      id: 'pending-redemptions',
+      type: 'warning',
+      title: 'Redemption Requests',
+      message: `${pendingRedemptionsCount} redemption request${pendingRedemptionsCount > 1 ? 's' : ''} need your approval`
+    })
+  }
+
+  // Add success alert for new children
+  if (parentStore.children.length > 0) {
+    alertsList.push({
+      id: 'children-active',
+      type: 'success',
+      title: 'Family Active',
+      message: `${parentStore.children.length} child${parentStore.children.length > 1 ? 'ren' : ''} actively earning coins`
+    })
+  }
+
+  return alertsList
+})
+
+const pendingApprovals = computed(() => {
+  const approvals: Array<{
+    id: string;
+    title: string;
+    child: string;
+    type: string;
+  }> = []
+
+  // Add completed tasks needing approval
+  parentStore.tasks
+    .filter(task => task.status === 'completed')
+    .forEach(task => {
+      const childName = parentStore.getChildName(task.assigned_to)
+      approvals.push({
+        id: task.id,
+        title: `Task: ${task.title}`,
+        child: childName,
+        type: 'task'
+      })
+    })
+
+  // Add pending redemption requests
+  parentStore.pendingRedemptions.forEach(redemption => {
+    const childName = parentStore.getChildName(redemption.user_id)
+    approvals.push({
+      id: redemption.id,
+      title: `Redeem ${redemption.coins_amount} coins`,
+      child: childName,
+      type: 'redemption'
+    })
+  })
+
+  return approvals
+})
+
+// New child form with auto-generated credentials
 const newChild = reactive({
   name: '',
   age: 8,
   email: '',
   avatarColor: 'blue'
+})
+
+// Auto-generated credentials for preview
+const generatedPassword = ref('')
+const generatedEmail = computed(() => {
+  if (!newChild.name) return ''
+  const parentName = (authStore.user?.name || 'parent').toLowerCase().replace(/\s+/g, '')
+  const childName = newChild.name.toLowerCase().replace(/\s+/g, '')
+  return `${parentName}.${childName}@cc.com`
 })
 
 // Static data
@@ -737,6 +826,14 @@ const rules = {
 }
 
 // Methods
+const updateGeneratedCredentials = () => {
+  generatedPassword.value = generateRandomPassword()
+}
+
+const regeneratePassword = () => {
+  generatedPassword.value = generateRandomPassword()
+}
+
 const formatRelativeTime = (date: Date | string | undefined) => {
   if (!date) return 'Unknown'
   
@@ -763,8 +860,14 @@ const sendMessage = (child: Child) => {
   successMessage.value = `Message sent to ${child.name}`
 }
 
+// Helper function to get child initials from name
+const getChildInitials = (name: string) => {
+  if (!name) return '?'
+  return name.split(' ').map(n => n.charAt(0)).join('').toUpperCase().slice(0, 2)
+}
+
 const approveItem = async (item: any) => {
-  loading.value = true
+  localLoading.value = true
   try {
     await new Promise(resolve => setTimeout(resolve, 500))
     
@@ -778,12 +881,12 @@ const approveItem = async (item: any) => {
   } catch (error) {
     console.error('Failed to approve item:', error)
   } finally {
-    loading.value = false
+    localLoading.value = false
   }
 }
 
 const rejectItem = async (item: any) => {
-  loading.value = true
+  localLoading.value = true
   try {
     await new Promise(resolve => setTimeout(resolve, 500))
     
@@ -797,49 +900,57 @@ const rejectItem = async (item: any) => {
   } catch (error) {
     console.error('Failed to reject item:', error)
   } finally {
-    loading.value = false
+    localLoading.value = false
   }
 }
 
 const addChild = async () => {
   if (!childFormValid.value) return
   
-  loading.value = true
   try {
+    // Generate password
+    const password = generateRandomPassword()
+    
+    // Generate email using parent name + child name + @cc.com
+    const parentName = (authStore.user?.name || 'parent').toLowerCase().replace(/\s+/g, '')
+    const childName = newChild.name.toLowerCase().replace(/\s+/g, '')
+    const generatedEmail = `${parentName}.${childName}@cc.com`
+    
     const childData = {
       name: newChild.name,
+      email: newChild.email || generatedEmail,
+      password,
       age: newChild.age,
-      email: newChild.email || undefined,
-      avatarColor: newChild.avatarColor
+      role: newChild.age < 13 ? 'younger_child' as const : 'older_child' as const
     }
     
     console.log('👶 [DASHBOARD] Adding child with data:', childData)
-    const result = await parentStore.addChildAPI(childData)
+    const result = await parentStore.createChild(childData)
     
-    console.log('✅ [DASHBOARD] Child added successfully:', result)
-    
-    showAddChildDialog.value = false
-    showSuccessSnackbar.value = true
-    successMessage.value = `${newChild.name} added successfully! Username: ${result.username}, Password: ${result.password}`
-    
-    // Force reload dashboard to update child list
-    console.log('🔄 [DASHBOARD] Reloading dashboard...')
-    await parentStore.loadDashboard()
-    console.log('✅ [DASHBOARD] Dashboard reloaded, children count:', parentStore.children.length)
-    
-    // Reset form
-    Object.assign(newChild, {
-      name: '',
-      age: 8,
-      email: '',
-      avatarColor: 'blue'
-    })
+    if (result) {
+      console.log('✅ [DASHBOARD] Child added successfully:', result)
+      
+      showAddChildDialog.value = false
+      showSuccessSnackbar.value = true
+      successMessage.value = `${newChild.name} added successfully! Password: ${password}`
+      
+      // Force reload all data to update child list and other data
+      console.log('🔄 [DASHBOARD] Reloading all data...')
+      await reloadDashboard()
+      console.log('✅ [DASHBOARD] All data reloaded, children count:', parentStore.children.length)
+      
+      // Reset form
+      Object.assign(newChild, {
+        name: '',
+        age: 8,
+        email: '',
+        avatarColor: 'blue'
+      })
+    }
   } catch (error) {
     console.error('❌ [DASHBOARD] Failed to add child:', error)
     showSuccessSnackbar.value = true
     successMessage.value = `Failed to add child: ${error instanceof Error ? error.message : 'Unknown error'}`
-  } finally {
-    loading.value = false
   }
 }
 
@@ -867,23 +978,34 @@ const handleLogout = async () => {
 
 const reloadDashboard = async () => {
   try {
-    loading.value = true
+    localLoading.value = true
     console.log('🔄 [DASHBOARD] Manually reloading dashboard...')
     
     // Force disable demo mode to ensure we get real API data
     localStorage.removeItem('coincraft_demo_mode')
     console.log('🔄 [DASHBOARD] Disabled demo mode to ensure real data')
     
-    await parentStore.loadDashboard()
-    console.log('✅ [DASHBOARD] Dashboard reloaded successfully. Children count:', parentStore.children.length)
+    // Reload all parent data
+    await Promise.all([
+      parentStore.loadDashboard(),
+      parentStore.loadTasks(),
+      parentStore.loadRedemptions()
+    ])
+    
+    console.log('✅ [DASHBOARD] All data reloaded successfully:', {
+      children: parentStore.children.length,
+      tasks: parentStore.tasks.length,
+      redemptions: parentStore.redemptionRequests.length
+    })
+    
     showSuccessSnackbar.value = true
-    successMessage.value = `Dashboard reloaded! Found ${parentStore.children.length} children.`
+    successMessage.value = `Dashboard reloaded! Found ${parentStore.children.length} children, ${parentStore.tasks.length} tasks, ${parentStore.redemptionRequests.length} redemptions.`
   } catch (error) {
     console.error('❌ [DASHBOARD] Failed to reload:', error)
     showSuccessSnackbar.value = true
     successMessage.value = `Failed to reload dashboard: ${error instanceof Error ? error.message : 'Unknown error'}`
   } finally {
-    loading.value = false
+    localLoading.value = false
   }
 }
 
@@ -949,8 +1071,18 @@ onMounted(async () => {
       localStorage.removeItem('coincraft_demo_mode')
     }
     
-    await parentStore.loadDashboard()
-    console.log('✅ [DASHBOARD] Dashboard loaded on mount, children count:', parentStore.children.length)
+    // Load all parent-related data
+    await Promise.all([
+      parentStore.loadDashboard(),
+      parentStore.loadTasks(),
+      parentStore.loadRedemptions()
+    ])
+    
+    console.log('✅ [DASHBOARD] All data loaded on mount:', {
+      children: parentStore.children.length,
+      tasks: parentStore.tasks.length,
+      redemptions: parentStore.redemptionRequests.length
+    })
     
     // Force reload if children array is empty but API returned data
     if (parentStore.children.length === 0) {

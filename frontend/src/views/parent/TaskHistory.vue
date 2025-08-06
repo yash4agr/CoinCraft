@@ -2,11 +2,28 @@
   <section class="task-history-display">
     <h2 class="section-title">📋 Reports</h2>
 
-    <!-- Responsive table wrapper -->
-    <div class="table-container">
+    <!-- Loading state -->
+    <div v-if="parentStore.isLoading" class="loading-container">
+      <p>Loading task history...</p>
+    </div>
+
+    <!-- Error state -->
+    <div v-else-if="parentStore.error" class="error-container">
+      <p>Error loading task history: {{ parentStore.error.message }}</p>
+      <button @click="loadData" class="retry-btn">Retry</button>
+    </div>
+
+    <!-- Empty state -->
+    <div v-else-if="taskHistory.length === 0" class="empty-container">
+      <p>No tasks assigned yet. Start by creating some tasks for your children!</p>
+    </div>
+
+    <!-- Task history table -->
+    <div v-else class="table-container">
       <table class="data-table">
         <thead>
           <tr>
+            <th>Task</th>
             <th>Child</th>
             <th>Status</th>
             <th>Coins</th>
@@ -16,14 +33,15 @@
         </thead>
         <tbody>
           <tr v-for="item in taskHistory" :key="item.id">
-            <td>{{ item.child }}</td>
+            <td class="task-title">{{ item.title || 'Untitled Task' }}</td>
+            <td>{{ item.child || 'Unknown Child' }}</td>
             <td>
               <span class="chip" :class="getStatusClass(item.status)">
-                {{ item.status }}
+                {{ item.status || 'Unknown' }}
               </span>
             </td>
-            <td>⭐ {{ item.coins }}</td>
-            <td>{{ formatDate(item.assignedDate) }}</td>
+            <td>⭐ {{ item.coins || 0 }}</td>
+            <td>{{ item.assignedDate ? formatDate(item.assignedDate) : '-' }}</td>
             <td>{{ item.completedDate ? formatDate(item.completedDate) : '-' }}</td>
           </tr>
         </tbody>
@@ -33,46 +51,83 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useParentStore } from '@/stores/parent'
 
-const taskHistory = ref([
-  {
-    id: '1',
-    child: 'Luna',
-    status: 'Completed',
-    coins: 15,
-    assignedDate: new Date(Date.now() - 2 * 86400000),
-    completedDate: new Date(Date.now() - 1 * 86400000)
-  },
-  {
-    id: '2',
-    child: 'Harry',
-    status: 'In Progress',
-    coins: 20,
-    assignedDate: new Date(Date.now() - 1 * 86400000),
-    completedDate: null
-  },
-  {
-    id: '3',
-    child: 'Luna',
-    status: 'Overdue',
-    coins: 10,
-    assignedDate: new Date(Date.now() - 3 * 86400000),
-    completedDate: null
+const parentStore = useParentStore()
+
+const taskHistory = computed(() => {
+  if (!parentStore.tasks || parentStore.tasks.length === 0) {
+    return []
   }
-])
+  
+  return parentStore.tasks.map(task => {
+    const status = getStatusDisplay(task.status)
+    console.log(task)
+    return {
+      id: task.id || `task-${Math.random()}`,
+      title: task.title || 'Untitled Task',
+      child: task.childName || 'Unknown Child',
+      status,
+      coins: task.coins_reward || 0,
+      assignedDate: task.created_at ? new Date(task.created_at) : new Date(),
+      completedDate: task.completed_at ? new Date(task.completed_at) : null
+    }
+  }).sort((a, b) => b.assignedDate.getTime() - a.assignedDate.getTime()) // Sort by newest first
+})
 
-function formatDate(date: Date | string): string {
-  return new Date(date).toLocaleDateString('en-IN')
+const getStatusDisplay = (status: string | undefined): string => {
+  if (!status) return 'Unknown'
+  
+  const statusMap: Record<string, string> = {
+    'pending': 'Pending',
+    'in_progress': 'In Progress',
+    'completed': 'Completed',
+    'approved': 'Completed',
+    'overdue': 'Overdue'
+  }
+  return statusMap[status] || status
 }
 
-function getStatusClass(status: string): string {
+function formatDate(date: Date | string | null | undefined): string {
+  if (!date) return '-'
+  
+  try {
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric', month: 'short', day: 'numeric'
+    })
+  } catch (error) {
+    console.warn('Invalid date format:', date)
+    return '-'
+  }
+}
+
+function getStatusClass(status: string | undefined): string {
+  if (!status) return 'gray'
+  
   const s = status.toLowerCase()
   if (s === 'completed') return 'green'
-  if (s === 'in progress') return 'yellow'
+  if (s === 'in progress' || s === 'pending') return 'yellow'
   if (s === 'overdue') return 'red'
   return 'gray'
 }
+
+// Load data function
+const loadData = async () => {
+  try {
+    await Promise.all([
+      parentStore.loadDashboard(),
+      parentStore.loadTasks()
+    ])
+  } catch (error) {
+    console.error('Failed to load task history:', error)
+  }
+}
+
+// Load data on mount
+onMounted(() => {
+  loadData()
+})
 </script>
 
 <style scoped>
@@ -88,6 +143,42 @@ function getStatusClass(status: string): string {
 .section-title {
   font-size: 1.5rem;
   margin-bottom: 1rem;
+}
+
+/* Loading, error, and empty states */
+.loading-container,
+.error-container,
+.empty-container {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+}
+
+.error-container {
+  color: #721c24;
+  background-color: #f8d7da;
+  border-radius: 4px;
+  border: 1px solid #f5c6cb;
+}
+
+.retry-btn {
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.retry-btn:hover {
+  background-color: #0056b3;
+}
+
+.task-title {
+  font-weight: 500;
+  max-width: 200px;
+  word-wrap: break-word;
 }
 
 /* Responsive table container */

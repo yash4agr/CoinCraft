@@ -1,32 +1,15 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { apiService, type DashboardData as ApiDashboardData } from '../services/api'
+import { apiService } from '../services/api'
+import { 
+  mapBackendGoals, mapBackendTransactions, mapBackendModules
+} from '../utils/typeMappers'
+import type { 
+  DashboardData, 
+  Activity, Achievement, Transaction, Module, UserRole
+} from '../types'
 
-export interface Activity {
-  id: string
-  title: string
-  description: string
-  type: 'game' | 'quiz' | 'module' | 'challenge'
-  difficulty: 'easy' | 'medium' | 'hard'
-  coins: number
-  duration: number
-  completed: boolean
-  icon: string
-  category: string
-  ageGroup: 'younger_child' | 'older_child' | 'both'
-}
-
-export interface Achievement {
-  id: string
-  title: string
-  description: string
-  icon: string
-  badge: string
-  coins: number
-  date: string
-  colorScheme: 'green' | 'orange' | 'blue' | 'purple'
-}
-
+// Legacy interfaces kept for backward compatibility during transition
 export interface ProgressGoal {
   id: string
   title: string
@@ -50,13 +33,20 @@ export interface LearningModule {
   skills: string[]
 }
 
+// Dashboard Error interface
+interface DashboardError {
+  message: string
+  code?: string
+  timestamp: Date
+}
+
 export const useDashboardStore = defineStore('dashboard', () => {
   const activities = ref<Activity[]>([])
   const achievements = ref<Achievement[]>([])
   const todaysGoals = ref<ProgressGoal[]>([])
   const learningModules = ref<LearningModule[]>([])
   const isLoading = ref(false)
-  const error = ref<string | null>(null)
+  const error = ref<DashboardError | null>(null)
 
   const availableActivities = computed(() => 
     activities.value.filter(activity => !activity.completed)
@@ -80,7 +70,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
       .reduce((total, module) => total + module.coins, 0)
   )
 
-  const loadDashboardData = async (userRole: string) => {
+  const loadDashboardData = async (userRole: UserRole) => {
     try {
       isLoading.value = true
       error.value = null
@@ -88,10 +78,8 @@ export const useDashboardStore = defineStore('dashboard', () => {
       // Check if user is authenticated (has valid token)
       if (!apiService.isAuthenticated()) {
         // Use mock data for demo/unauthenticated users
-        if (userRole === 'younger_child') {
-          await loadYoungerChildData()
-        } else if (userRole === 'older_child') {
-          await loadOlderChildData()
+        if (userRole === 'younger_child' || userRole === 'older_child') {
+          await loadChildMockData(userRole)
         }
         return
       }
@@ -107,41 +95,55 @@ export const useDashboardStore = defineStore('dashboard', () => {
         throw new Error('No dashboard data received')
       }
 
-      // Convert API data to local format
-      const apiData = response.data
+      // Map API response to frontend types using type mappers
+      await mapDashboardResponse(response.data, userRole)
+
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load dashboard data'
+      error.value = {
+        message: errorMessage,
+        code: 'DASHBOARD_LOAD_ERROR',
+        timestamp: new Date()
+      }
+      console.error('Dashboard data loading error:', err)
       
-      // Load activities from API
-      await loadActivitiesFromAPI(userRole)
+      // Fallback to mock data if API fails
+      if (userRole === 'younger_child' || userRole === 'older_child') {
+        await loadChildMockData(userRole)
+      }
+    } finally {
+      isLoading.value = false
+    }
+  }
 
-      // Update achievements from API
-      achievements.value = apiData.achievements.map(achievement => ({
-        id: achievement.id,
-        title: achievement.title,
-        description: achievement.description,
-        icon: achievement.icon || 'ri-trophy-line',
-        badge: achievement.rarity || 'Common',
-        coins: achievement.points_reward || 0,
-        date: new Date(achievement.created_at || Date.now()).toLocaleDateString(),
-        colorScheme: 'green' as const
-      }))
+  const mapDashboardResponse = async (data: DashboardData, userRole: UserRole) => {
+    try {
+      // Map achievements - keep as proper Achievement type
+      if (data.achievements) {
+        achievements.value = data.achievements
+      }
 
-      // Update goals from API
-      todaysGoals.value = apiData.active_goals.map(goal => ({
-        id: goal.id,
-        title: goal.title,
-        current: goal.current_amount,
-        total: goal.target_amount,
-        icon: goal.icon || 'ri-target-line',
-        colorScheme: 'blue' as const
-      }))
+      // Map goals using type mapper  
+      if (data.active_goals) {
+        todaysGoals.value = mapBackendGoals(data.active_goals).map(goal => ({
+          id: goal.id,
+          title: goal.title,
+          current: goal.current_amount,
+          total: goal.target_amount,
+          icon: goal.icon || 'ri-target-line',
+          colorScheme: 'blue' as const
+        }))
+      }
 
-      // Update learning modules from API
-      learningModules.value = apiData.recent_transactions
-        .filter(t => t.reference_type === 'module')
-        .map(transaction => ({
+      // Map transactions to learning modules (check for activity type instead of module)
+      if (data.recent_transactions) {
+        const moduleTransactions = mapBackendTransactions(data.recent_transactions)
+          .filter((t: Transaction) => t.reference_type === 'activity')
+        
+        learningModules.value = moduleTransactions.map((transaction: Transaction) => ({
           id: transaction.reference_id || transaction.id,
           title: transaction.description,
-          description: `Completed module: ${transaction.description}`,
+          description: `Completed activity: ${transaction.description}`,
           emoji: '📚',
           difficulty: 'easy' as const,
           coins: transaction.amount,
@@ -151,45 +153,49 @@ export const useDashboardStore = defineStore('dashboard', () => {
           estimatedTime: 15,
           skills: ['Learning', 'Progress']
         }))
+      }
+
+      // Load activities from modules
+      await loadActivitiesFromAPI(userRole)
 
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to load dashboard data'
-      console.error('Dashboard data loading error:', err)
-      
-      // Fallback to mock data if API fails
-      if (userRole === 'younger_child') {
-        await loadYoungerChildData()
-      } else if (userRole === 'older_child') {
-        await loadOlderChildData()
-      }
-    } finally {
-      isLoading.value = false
+      console.error('Error mapping dashboard response:', err)
+      throw err
     }
   }
 
-  const loadActivitiesFromAPI = async (userRole: string) => {
+  const loadActivitiesFromAPI = async (userRole: UserRole) => {
     try {
       // Load modules as activities
       const modulesResponse = await apiService.getModules()
-      if (modulesResponse.data) {
-        activities.value = modulesResponse.data.map(module => ({
+      if (modulesResponse) {
+        const mappedModules = mapBackendModules(modulesResponse)
+        activities.value = mappedModules.map((module: Module) => ({
           id: module.id,
           title: module.title,
           description: module.description,
           type: 'module' as const,
           difficulty: module.difficulty,
           coins: module.points_reward,
-          duration: module.estimated_duration,
+          duration: module.estimated_duration || 15,
           completed: false, // TODO: Check user progress
           icon: '📚',
-          category: module.category,
-          ageGroup: userRole === 'younger_child' ? 'younger_child' : 'older_child'
+          category: module.category || 'learning',
+          age_group: userRole === 'younger_child' ? 'younger_child' : 'older_child'
         }))
       }
     } catch (error) {
       console.error('Failed to load activities:', error)
       // Fallback to empty array
       activities.value = []
+    }
+  }
+
+  const loadChildMockData = async (userRole: UserRole) => {
+    if (userRole === 'younger_child') {
+      await loadYoungerChildActivities()
+    } else if (userRole === 'older_child') {
+      await loadOlderChildActivities()
     }
   }
 
@@ -241,7 +247,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
         completed: false,
         icon: 'ri-bank-fill',
         category: 'saving',
-        ageGroup: 'younger_child'
+        age_group: 'younger_child'
       },
       {
         id: '2',
@@ -254,7 +260,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
         completed: true,
         icon: 'ri-question-line',
         category: 'spending',
-        ageGroup: 'younger_child'
+        age_group: 'younger_child'
       },
       {
         id: '3',
@@ -267,7 +273,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
         completed: false,
         icon: 'ri-coins-line',
         category: 'math',
-        ageGroup: 'younger_child'
+        age_group: 'younger_child'
       }
     ]
 
@@ -277,30 +283,27 @@ export const useDashboardStore = defineStore('dashboard', () => {
         title: 'First Steps',
         description: 'Completed your first lesson!',
         icon: 'ri-foot-print-line',
-        badge: 'Beginner',
-        coins: 10,
-        date: 'Today',
-        colorScheme: 'green'
+        rarity: 'Beginner',
+        points_reward: 10,
+        earned_at: new Date()
       },
       {
         id: '2',
         title: 'Coin Collector',
         description: 'Earned your first 50 coins.',
         icon: 'ri-coins-line',
-        badge: 'Collector',
-        coins: 20,
-        date: 'Yesterday',
-        colorScheme: 'orange'
+        rarity: 'Collector',
+        points_reward: 20,
+        earned_at: new Date(Date.now() - 86400000) // Yesterday
       },
       {
         id: '3',
         title: 'Smart Saver',
         description: 'Saved money for 3 days straight.',
         icon: 'ri-save-line',
-        badge: 'Saver',
-        coins: 25,
-        date: '2 days ago',
-        colorScheme: 'blue'
+        rarity: 'Saver',
+        points_reward: 25,
+        earned_at: new Date(Date.now() - 172800000) // 2 days ago
       }
     ]
 
@@ -395,7 +398,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
         completed: false,
         icon: 'ri-line-chart-line',
         category: 'investing',
-        ageGroup: 'older_child'
+        age_group: 'older_child'
       },
       {
         id: '2',
@@ -408,7 +411,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
         completed: true,
         icon: 'ri-calculator-line',
         category: 'budgeting',
-        ageGroup: 'older_child'
+        age_group: 'older_child'
       },
       {
         id: '3',
@@ -421,7 +424,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
         completed: false,
         icon: 'ri-bitcoin-line',
         category: 'investing',
-        ageGroup: 'older_child'
+        age_group: 'older_child'
       }
     ]
 
@@ -431,30 +434,27 @@ export const useDashboardStore = defineStore('dashboard', () => {
         title: 'Investment Pro',
         description: 'Completed your first investment simulation.',
         icon: 'ri-line-chart-line',
-        badge: 'Pro Investor',
-        coins: 50,
-        date: 'Today',
-        colorScheme: 'green'
+        rarity: 'Pro Investor',
+        points_reward: 50,
+        earned_at: new Date()
       },
       {
         id: '2',
         title: 'Budget Planner',
         description: 'Successfully created your first budget.',
         icon: 'ri-calculator-line',
-        badge: 'Budget Master',
-        coins: 30,
-        date: 'Yesterday',
-        colorScheme: 'blue'
+        rarity: 'Budget Master',
+        points_reward: 30,
+        earned_at: new Date(Date.now() - 86400000) // Yesterday
       },
       {
         id: '3',
         title: 'Crypto Scholar',
         description: 'Learned the basics of cryptocurrency.',
         icon: 'ri-bitcoin-line',
-        badge: 'Crypto Expert',
-        coins: 45,
-        date: '2 days ago',
-        colorScheme: 'orange'
+        rarity: 'Crypto Expert',
+        points_reward: 45,
+        earned_at: new Date(Date.now() - 172800000) // 2 days ago
       }
     ]
 
@@ -510,7 +510,12 @@ export const useDashboardStore = defineStore('dashboard', () => {
       }
       return 0
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to complete activity'
+      const errorMessage = err instanceof Error ? err.message : 'Failed to complete activity'
+      error.value = {
+        message: errorMessage,
+        code: 'ACTIVITY_COMPLETE_ERROR',
+        timestamp: new Date()
+      }
       return 0
     }
   }
@@ -524,7 +529,12 @@ export const useDashboardStore = defineStore('dashboard', () => {
       }
       return 0
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to complete module'
+      const errorMessage = err instanceof Error ? err.message : 'Failed to complete module'
+      error.value = {
+        message: errorMessage,
+        code: 'MODULE_COMPLETE_ERROR',
+        timestamp: new Date()
+      }
       return 0
     }
   }
@@ -538,7 +548,12 @@ export const useDashboardStore = defineStore('dashboard', () => {
       }
       return false
     } catch (err) {
-      error.value = err instanceof Error ? err.message : 'Failed to update goal progress'
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update goal progress'
+      error.value = {
+        message: errorMessage,
+        code: 'GOAL_UPDATE_ERROR',
+        timestamp: new Date()
+      }
       return false
     }
   }

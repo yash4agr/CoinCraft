@@ -235,8 +235,10 @@ router.beforeEach(async (to, from, next) => {
   
   console.log('Navigation attempt:', { to: to.path, from: from.path })
   
-  // Check authentication status
-  await authStore.checkAuth()
+  // Initialize authentication from localStorage if not already done
+  if (!authStore.user && !authStore.isLoading) {
+    authStore.initializeAuth()
+  }
   
   const isAuthenticated = authStore.isAuthenticated
   const userRole = authStore.user?.role
@@ -274,9 +276,9 @@ router.beforeEach(async (to, from, next) => {
     if (!userStore.profile) {
       userStore.setProfile({
         id: authStore.user.id,
-        fullName: authStore.user.fullName,
+        fullName: authStore.user.fullName || authStore.user.name,
         email: authStore.user.email,
-        username: authStore.user.username,
+        username: authStore.user.username || authStore.user.email,
         role: authStore.user.role,
         coins: authStore.user.coins || 0,
         avatar: authStore.user.avatar || '👤',
@@ -284,8 +286,7 @@ router.beforeEach(async (to, from, next) => {
         streak: 12,
         totalCoinsEarned: authStore.user.coins || 0,
         goalsCompleted: 3,
-        createdAt: authStore.user.createdAt,
-        preferences: {
+      createdAt: authStore.user.createdAt ? new Date(authStore.user.createdAt).toISOString() : new Date().toISOString(),        preferences: {
           soundEnabled: true,
           notificationsEnabled: true,
           theme: 'light'

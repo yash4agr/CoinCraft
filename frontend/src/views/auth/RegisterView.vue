@@ -49,7 +49,7 @@
               >
                 <!-- Full Name -->
                 <v-text-field
-                  v-model="formData.fullName"
+                  v-model="formData.name"
                   label="What's Your Name?"
                   prepend-inner-icon="mdi-account"
                   variant="outlined"
@@ -195,7 +195,7 @@ const authStore = useAuthStore()
 
 // Form data
 const formData = ref<RegisterData>({
-  fullName: '',
+  name: '',
   email: '',
   username: '',
   role: 'parent',

@@ -49,10 +49,10 @@
               >
                 <v-text-field
                   v-model="credentials.username"
-                  label="Username"
+                  label="email"
                   prepend-inner-icon="mdi-account"
                   variant="outlined"
-                  :rules="usernameRules"
+                  :rules="emailRules"
                   :disabled="authStore.isLoading"
                   class="mb-3"
                   color="primary"
@@ -175,7 +175,13 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import type { LoginCredentials, User } from '@/stores/auth'
+import type { User } from '@/types'
+import { de } from 'date-fns/locale'
+
+interface LoginCredentials {
+  username: string
+  password: string
+}
 
 const router = useRouter()
 const authStore = useAuthStore()
@@ -191,9 +197,9 @@ const showPassword = ref(false)
 const loginForm = ref()
 
 // Validation rules
-const usernameRules = [
-  (v: string) => !!v || 'Username is required',
-  (v: string) => v.length >= 3 || 'Username must be at least 3 characters'
+const emailRules = [
+  (v: string) => !!v || 'Email is required',
+  (v: string) => /.+@.+\..+/.test(v) || 'Email must be valid'
 ]
 
 const passwordRules = [
@@ -205,26 +211,74 @@ const passwordRules = [
 const handleLogin = async () => {
   if (!isFormValid.value) return
 
-  try {
-    await authStore.login(credentials.value)
-    
+  const success = await authStore.login(credentials.value)
+  
+  if (success && authStore.user) {
     // Redirect based on user role
-    const redirectPath = getRedirectPath(authStore.user?.role)
+    const redirectPath = getRedirectPath(authStore.user.role)
     router.push(redirectPath)
-  } catch (error) {
+  } else {
     // Error is handled by the store
-    console.error('Login failed:', error)
+    console.error('Login failed:')
   }
 }
 
 const handleDemoLogin = async (role: User['role']) => {
   try {
-    await authStore.demoLogin(role)
-    
+
+    const demoUsers: any[] = [
+    {
+      id: '1',
+      fullName: 'Luna Smith',
+      email: 'luna@demo.com',
+      username: 'luna_demo',
+      role: 'younger_child',
+      coins: 135,
+      avatar: '🦸‍♀️',
+      createdAt: new Date('2024-01-15')
+    },
+    {
+      id: '2',
+      fullName: 'Harry Johnson',
+      email: 'harry@demo.com',
+      username: 'harry_demo',
+      role: 'older_child',
+      coins: 245,
+      avatar: '🧙‍♂️',
+      createdAt: '2024-01-10'
+    },
+    {
+      id: '3',
+      fullName: 'Sarah Parent',
+      email: 'sarah@demo.com',
+      username: 'parent_demo',
+      role: 'parent',
+      avatar: '👩‍💼',
+      createdAt: '2024-01-05'
+    },
+    {
+      id: '4',
+      fullName: 'Mrs. Johnson',
+      email: 'teacher@demo.com',
+      username: 'teacher_demo',
+      role: 'teacher',
+      avatar: '👩‍🏫',
+      createdAt: '2024-01-01'
+    }
+  ]
+
+  const demoUser = demoUsers.find(u => u.role === role)
+
+  if (demoUser) {
+    credentials.value.username = demoUser.email
+    credentials.value.password = "demo123"
+    await handleLogin()
+  
     // Redirect based on user role
-    const redirectPath = getRedirectPath(role)
+    const redirectPath = getRedirectPath(demoUser.role)
     router.push(redirectPath)
-  } catch (error) {
+  }
+    } catch (error) {
     console.error('Demo login failed:', error)
   }
 }
