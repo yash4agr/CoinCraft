@@ -27,12 +27,13 @@ class UserRead(schemas.BaseUser[str]):
     is_superuser: bool
     is_verified: bool
 
+
 # Extended user schema with profile data (for endpoints that explicitly load profiles)
 class UserWithProfilesRead(UserRead):
     # Role-specific profile data
-    child_profile: Optional['ChildProfileRead'] = None
-    parent_profile: Optional['ParentProfileRead'] = None
-    teacher_profile: Optional['TeacherProfileRead'] = None
+    child_profile: Optional["ChildProfileRead"] = None
+    parent_profile: Optional["ParentProfileRead"] = None
+    teacher_profile: Optional["TeacherProfileRead"] = None
 
 
 class UserCreate(schemas.BaseUserCreate):
@@ -155,7 +156,9 @@ class TransactionBase(BaseModel):
     category: Optional[str] = None
     source: Optional[str] = None
     reference_id: Optional[str] = None
-    reference_type: Optional[str] = Field(None, pattern="^(goal|task|activity|shop|redemption)$")
+    reference_type: Optional[str] = Field(
+        None, pattern="^(goal|task|activity|shop|redemption)$"
+    )
 
 
 class TransactionCreate(TransactionBase):
@@ -211,7 +214,9 @@ class TaskUpdate(BaseModel):
     coins_reward: Optional[int] = Field(None, gt=0)
     due_date: Optional[datetime] = None
     requires_approval: Optional[bool] = None
-    status: Optional[str] = Field(None, pattern="^(pending|in_progress|completed|approved|rejected)$")
+    status: Optional[str] = Field(
+        None, pattern="^(pending|in_progress|completed|approved|rejected)$"
+    )
 
 
 class TaskRead(TaskBase):
@@ -258,6 +263,31 @@ class ModuleRead(ModuleBase):
     created_at: datetime
     updated_at: datetime
     user_progress: Optional[Dict[str, Any]] = None
+
+    class Config:
+        from_attributes = True
+
+
+class ClassResponse(BaseModel):
+    id: str
+    name: str
+    teacher_id: str
+    student_count: int
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+
+class ModuleResponse(BaseModel):
+    id: str
+    title: str
+    description: str
+    category: str
+    difficulty: str
+    points_reward: int
+    is_published: bool
+    created_at: datetime
 
     class Config:
         from_attributes = True
@@ -327,7 +357,7 @@ class RedemptionRequestRead(RedemptionRequestBase):
     approved_by: Optional[str] = None
     approved_at: Optional[datetime] = None
     created_at: datetime
-    
+
     # Child info for parent view
     child: Optional[Dict[str, Any]] = None
 
@@ -393,6 +423,49 @@ class ShopItemRead(BaseModel):
 
 
 # Dashboard Schemas
+class DashboardStats(BaseModel):
+    total_coins: int
+    level: int
+    streak_days: int
+    goals_count: int
+    completed_tasks: int
+
+
+class ParentDashboardResponse(BaseModel):
+    user: UserRead
+    stats: DashboardStats
+    children: List[UserRead]
+    recent_transactions: List[TransactionRead]
+    pending_redemptions: List[RedemptionRequestRead]
+
+    class Config:
+        from_attributes = True
+
+
+class TeacherDashboardResponse(BaseModel):
+    user: UserRead
+    stats: Dict[str, Any]
+    classes: List[Dict[str, Any]]
+    recent_modules: List[Dict[str, Any]]
+    student_progress: List[Dict[str, Any]]
+
+    class Config:
+        from_attributes = True
+
+
+class ChildDashboardResponse(BaseModel):
+    user: UserRead
+    stats: DashboardStats
+    active_goals: List[GoalRead]
+    pending_tasks: List[TaskRead]
+    recent_transactions: List[TransactionRead]
+    achievements: List[AchievementRead]
+
+    class Config:
+        from_attributes = True
+
+
+# Legacy Dashboard Schema (keeping for backward compatibility)
 class DashboardData(BaseModel):
     user_stats: Dict[str, Any]
     recent_transactions: List[TransactionRead]
@@ -430,9 +503,22 @@ class ActivityRead(BaseModel):
 # Auth Response Schema
 class AuthResponse(BaseModel):
     access_token: str
+    token_type: str = "bearer"
+    user: UserRead
+
+    class Config:
+        from_attributes = True
+
+
+# Legacy AuthResponse with refresh_token (keeping for compatibility)
+class AuthResponseWithRefresh(BaseModel):
+    access_token: str
     refresh_token: str
     token_type: str = "bearer"
     user: UserRead
+
+    class Config:
+        from_attributes = True
 
 
 # Error Schemas
@@ -446,8 +532,57 @@ class ValidationErrorResponse(BaseModel):
     detail: List[Dict[str, Any]]
 
 
+# Parent-specific response models
+class ChildCreateResponse(BaseModel):
+    success: bool
+    message: str
+    child: UserRead
+
+    class Config:
+        from_attributes = True
+
+
+class TaskCreateResponse(BaseModel):
+    success: bool
+    task: TaskRead
+    message: str
+
+    class Config:
+        from_attributes = True
+
+
+class TaskApprovalResponse(BaseModel):
+    success: bool
+    task: TaskRead
+    coins_awarded: int
+    message: str
+
+    class Config:
+        from_attributes = True
+
+
+class ChildProgressResponse(BaseModel):
+    child: UserRead
+    stats: DashboardStats
+    goals: List[GoalRead]
+    recent_activities: List[ActivityRead]
+    achievements: List[AchievementRead]
+
+    class Config:
+        from_attributes = True
+
+
+class ParentSettingsResponse(BaseModel):
+    success: bool
+    message: str
+    settings: Dict[str, Any]
+
+    class Config:
+        from_attributes = True
+
+
 # Update forward references
 UserRead.model_rebuild()
 ChildProfileRead.model_rebuild()
 ParentProfileRead.model_rebuild()
-TeacherProfileRead.model_rebuild() 
+TeacherProfileRead.model_rebuild()

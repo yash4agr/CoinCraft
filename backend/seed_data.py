@@ -31,7 +31,7 @@ async def seed_data():
             # 1. Parent user
             try:
                 parent_user = await user_manager.create(UserCreate(
-                    email="parent@demo.com",
+                    email="sarah@demo.com",
                     password="demo123",
                     name="Sarah Johnson",
                     role="parent",

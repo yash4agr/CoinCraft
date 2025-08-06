@@ -2241,7 +2241,7 @@ paths:
       description: |
         **User Story:** As a teacher, I want to view performance analytics for my class to understand areas where students are struggling or excelling.
       operationId: get_performance_analytics
-      operationId: get_performance_analytics_api_teacher_analytics_performance_get
+      # operationId: get_performance_analytics_api_teacher_analytics_performance_get
       security:
       - OAuth2PasswordBearer: []
       parameters:

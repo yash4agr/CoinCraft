@@ -3,6 +3,7 @@
 import os
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from fastapi import FastAPI, status
@@ -26,10 +27,12 @@ from routers.parent import router as parent_router
 from routers.teacher import router as teacher_router
 from routers.child import router as child_router
 from routers.teen import router as teen_router
+from routers.shop import router as shop_router
 
 
 class HealthCheck(BaseModel):
     """Response model for health check."""
+
     status: str = "OK"
 
 
@@ -69,20 +72,44 @@ origins = [
 
 # Add environment-specific origins
 if os.getenv("ENVIRONMENT") == "production":
-    origins.extend([
-        "https://coincraft.com",
-        "https://www.coincraft.com",
-        "https://api.coincraft.com",
-    ])
+    origins.extend(
+        [
+            "https://coincraft.com",
+            "https://www.coincraft.com",
+            "https://api.coincraft.com",
+        ]
+    )
 
 # For development, allow all origins to fix CORS issues
+import traceback
+from fastapi import Request, HTTPException
+from fastapi.responses import JSONResponse
+@app.middleware("http")
+async def catch_exceptions_middleware(request: Request, call_next):
+    try:
+        response = await call_next(request)
+        return response
+    except Exception as e:
+        print(f"❌ Exception caught: {str(e)}")
+        print(f"❌ Traceback: {traceback.format_exc()}")
+        return JSONResponse(
+            status_code=500,
+            content={"detail": f"Internal server error: {str(e)}"},
+            headers={
+                "Access-Control-Allow-Origin": "http://localhost:5173",
+                "Access-Control-Allow-Credentials": "true",
+            }
+        )
+
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins for development
-    allow_credentials=False,  # Must be False when allow_origins=["*"]
-    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allow_origins=["http://localhost:5173", "http://localhost:3000"],  # Specific origins
+    allow_credentials=True,  # Now this is valid
+    allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # Health check endpoint
 @app.get(
@@ -109,20 +136,25 @@ def test_api():
     """Simple test endpoint to verify API is working."""
     return {"message": "API is working", "timestamp": "2025-01-01T00:00:00Z"}
 
+
 @app.get("/api/status", tags=["test"])
 def get_status():
     """Get backend status and environment configuration."""
     return {
         "status": "OK",
         "environment": os.getenv("ENVIRONMENT", "unknown"),
-        "database_type": "SQLite" if "sqlite" in os.getenv("DATABASE_URL", "") else "Other",
+        "database_type": "SQLite"
+        if "sqlite" in os.getenv("DATABASE_URL", "")
+        else "Other",
         "secret_key_configured": bool(os.getenv("SECRET_KEY")),
-        "algorithm": os.getenv("ALGORITHM", "HS256")
+        "algorithm": os.getenv("ALGORITHM", "HS256"),
     }
+
 
 @app.get("/openapi.yaml", include_in_schema=False)
 async def get_openapi_yaml():
     return FileResponse("swagger.yaml", media_type="application/x-yaml")
+
 
 @app.get("/docs", include_in_schema=False)
 async def custom_swagger_ui_html():
@@ -145,6 +177,7 @@ async def custom_swagger_ui_html():
     </body>
     </html>
     """)
+
 
 # Authentication routes
 app.include_router(
@@ -183,8 +216,10 @@ app.include_router(parent_router, prefix="/api/parent", tags=["Parent"])
 app.include_router(teacher_router, prefix="/api/teacher", tags=["Teacher"])
 app.include_router(child_router, prefix="/api/child", tags=["Child"])
 app.include_router(teen_router, prefix="/api/teen", tags=["Teen"])
+app.include_router(shop_router, prefix="/api", tags=["Shop"])
 
 
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
