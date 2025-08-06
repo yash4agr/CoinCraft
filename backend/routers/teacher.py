@@ -7,9 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_, desc
 from sqlalchemy.orm import selectinload
 
-from database import get_async_session
-from auth import current_active_user, get_user_manager, UserManager
-from models import (
+from backend.database import get_async_session
+from backend.auth import current_active_user, get_user_manager, UserManager
+from backend.models import import (
     User,
     TeacherProfile,
     Class,
@@ -24,7 +24,7 @@ from models import (
     Achievement,
     UserAchievement,
 )
-from schemas import UserRead, TeacherDashboardResponse
+from backend.schemas import UserRead, TeacherDashboardResponse
 
 router = APIRouter()
 

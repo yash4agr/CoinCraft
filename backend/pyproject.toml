@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "CoinCraft Backend API - Financial literacy learning platform"
 readme = "README.md"
 requires-python = ">=3.12"
+
 dependencies = [
     "fastapi>=0.115.12",
     "fastapi-users[sqlalchemy]>=13.0.0",
@@ -17,4 +18,7 @@ dependencies = [
     "bcrypt>=4.1.2",
     "python-jose[cryptography]>=3.3.0",
     "passlib[bcrypt]>=1.7.4",
+    "pytest>=7.0.0",           # Added pytest
+    "httpx>=0.24.0",           # Added httpx
+    "pytest-asyncio>=0.21.0"   # Added pytest-asyncio
 ]

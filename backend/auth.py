@@ -13,9 +13,9 @@ from fastapi_users.authentication import (
 from fastapi_users.db import SQLAlchemyUserDatabase
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from models import User
-from schemas import UserCreate
-from database import get_async_session
+from backend.models import User
+from backend.schemas import UserCreate
+from backend.database import get_async_session
 
 # JWT Secret - use environment variable in production
 SECRET = os.getenv("JWT_SECRET", "your-secret-key-change-this-in-production")

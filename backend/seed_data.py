@@ -3,13 +3,13 @@
 import asyncio
 from datetime import datetime, timedelta
 
-from database import create_db_and_tables, get_async_session
-from models import (
+from backend.database import create_db_and_tables, get_async_session
+from backend.models import (
     User, ChildProfile, ParentProfile, TeacherProfile, Goal, Transaction,
     Achievement, Module, ShopItem
 )
-from auth import get_user_db, get_user_manager
-from schemas import UserCreate
+from backend.auth import get_user_db, get_user_manager
+from backend.schemas import UserCreate
 from fastapi_users import exceptions
 
 

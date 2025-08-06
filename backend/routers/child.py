@@ -7,9 +7,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_, desc
 from sqlalchemy.orm import selectinload
 
-from database import get_async_session
-from auth import current_active_user, get_user_manager, UserManager
-from models import (
+from backend.database import get_async_session
+from backend.auth import current_active_user, get_user_manager, UserManager
+from backend.models import (
     User,
     ChildProfile,
     Goal,
@@ -20,7 +20,7 @@ from models import (
     UserAchievement,
     RedemptionRequest,
 )
-from schemas import UserRead
+from backend.schemas import UserRead
 
 router = APIRouter()
 

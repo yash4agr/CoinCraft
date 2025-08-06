@@ -6,10 +6,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from database import get_async_session
-from auth import current_active_user
-from models import User, ChildProfile, ParentProfile, TeacherProfile
-from schemas import (
+from backend.database import get_async_session
+from backend.auth import current_active_user
+from backend.models import User, ChildProfile, ParentProfile, TeacherProfile
+from backend.schemas import (
     UserRead, UserUpdate, ChildProfileRead, ChildProfileCreate, ChildProfileUpdate,
     ParentProfileUpdate, TeacherProfileUpdate
 )

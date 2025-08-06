@@ -6,9 +6,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func, desc
 
-from database import get_async_session
-from auth import current_active_user
-from models import (
+from backend.database import get_async_session
+from backend.auth import current_active_user
+from backend.models import (
     User,
     ChildProfile,
     Goal,
@@ -20,7 +20,7 @@ from models import (
     Task,
     RedemptionRequest,
 )
-from schemas import (
+from backend.schemas import (
     ProgressGoal,
     TransactionRead,
     GoalRead,
@@ -298,11 +298,9 @@ async def get_teacher_dashboard_data(
 ) -> TeacherDashboardResponse:
     """Get dashboard data for teacher users."""
     # Get teacher profile and classes
-    from models import TeacherProfile, Class, ClassStudent
-
-    teacher_stmt = select(TeacherProfile).where(
-        TeacherProfile.user_id == current_user.id
-    )
+    from backend.models import TeacherProfile, Class, ClassStudent
+    
+    teacher_stmt = select(TeacherProfile).where(TeacherProfile.user_id == current_user.id)
     teacher_result = await session.execute(teacher_stmt)
     teacher_profile = teacher_result.scalar_one_or_none()
 
