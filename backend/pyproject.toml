@@ -1,11 +1,20 @@
 [project]
 name = "backend"
 version = "0.1.0"
-description = "Add your description here"
+description = "CoinCraft Backend API - Financial literacy learning platform"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.115.12",
+    "fastapi-users[sqlalchemy]>=13.0.0",
+    "sqlalchemy>=2.0.23",
+    "alembic>=1.13.1",
+    "aiosqlite>=0.19.0",
     "python-dotenv>=1.1.0",
-    "uvicorn>=0.34.2",
+    "uvicorn[standard]>=0.34.2",
+    "python-multipart>=0.0.9",
+    "pydantic[email]>=2.5.0",
+    "bcrypt>=4.1.2",
+    "python-jose[cryptography]>=3.3.0",
+    "passlib[bcrypt]>=1.7.4",
 ]

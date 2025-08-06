@@ -9,12 +9,15 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@cerebras/cerebras_cloud_sdk": "^1.35.0",
     "@vueuse/core": "^13.4.0",
+    "axios": "^1.11.0",
     "bootstrap": "^5.3.7",
     "chart.js": "^4.5.0",
     "date-fns": "^4.1.0",
     "path": "^0.12.7",
     "pinia": "^3.0.3",
+    "qs": "^6.14.0",
     "remixicon": "^4.6.0",
     "vue": "^3.5.13",
     "vue-chartjs": "^5.3.2",
@@ -23,6 +26,7 @@
   },
   "devDependencies": {
     "@mdi/font": "^7.4.47",
+    "@types/axios": "^0.9.36",
     "@types/node": "^24.0.4",
     "@vitejs/plugin-vue": "^5.2.3",
     "@vue/tsconfig": "^0.7.0",

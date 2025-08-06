@@ -46,7 +46,7 @@
           </v-card-title>
           <v-card-text>
             <v-text-field
-              v-model.number="settings.exchangeRate"
+              v-model.number="settings.exchange_rate"
               label="1 Coin equals (in currency)"
               type="number"
               step="0.01"
@@ -67,7 +67,7 @@
             />
             
             <v-alert type="info" variant="tonal" density="compact">
-              Current rate: 1 coin = {{ formatCurrency(settings.exchangeRate) }}
+              Current rate: 1 coin = {{ formatCurrency(settings.exchange_rate) }}
             </v-alert>
           </v-card-text>
         </v-card>
@@ -82,16 +82,16 @@
           </v-card-title>
           <v-card-text>
             <v-switch
-              v-model="settings.requireApproval"
+              v-model="settings.require_approval"
               label="Require approval for all redemptions"
               color="primary"
               class="mb-3"
             />
             
             <v-expand-transition>
-              <div v-if="!settings.requireApproval">
+              <div v-if="!settings.require_approval">
                 <v-text-field
-                  v-model.number="settings.autoApprovalLimit"
+                  v-model.number="settings.auto_approval_limit"
                   label="Auto-approve up to this amount (coins)"
                   type="number"
                   min="1"
@@ -105,14 +105,14 @@
             </v-expand-transition>
             
             <v-switch
-              v-model="settings.notifyOnRequest"
+              v-model="settings.notify_on_request"
               label="Notify me of redemption requests"
               color="primary"
               class="mb-3"
             />
             
             <v-select
-              v-model="settings.processingTime"
+              v-model="settings.processing_time"
               label="Expected processing time"
               :items="processingTimes"
               prepend-inner-icon="mdi-clock"
@@ -135,7 +135,7 @@
             <v-row>
               <v-col cols="12" md="4">
                 <v-text-field
-                  v-model.number="settings.dailyLimit"
+                  v-model.number="settings.daily_limit"
                   label="Daily limit (coins)"
                   type="number"
                   min="0"
@@ -147,7 +147,7 @@
               </v-col>
               <v-col cols="12" md="4">
                 <v-text-field
-                  v-model.number="settings.weeklyLimit"
+                  v-model.number="settings.weekly_limit"
                   label="Weekly limit (coins)"
                   type="number"
                   min="0"
@@ -159,7 +159,7 @@
               </v-col>
               <v-col cols="12" md="4">
                 <v-text-field
-                  v-model.number="settings.monthlyLimit"
+                  v-model.number="settings.monthly_limit"
                   label="Monthly limit (coins)"
                   type="number"
                   min="0"
@@ -174,14 +174,14 @@
             <v-divider class="my-4" />
             
             <v-switch
-              v-model="settings.allowSavingsOverride"
+              v-model="settings.allow_savings_override"
               label="Allow exceeding limits for savings goals"
               color="primary"
               class="mb-2"
             />
             
             <v-switch
-              v-model="settings.trackSpendingCategories"
+              v-model="settings.track_spending_categories"
               label="Track spending by categories"
               color="primary"
             />
@@ -209,7 +209,7 @@
           </v-card-title>
           <v-card-text>
             <v-data-table
-              :headers="redemptionHeaders"
+              :headers="redemptionHeaders as any"
               :items="recentRedemptions"
               item-value="id"
               class="elevation-0"
@@ -232,7 +232,7 @@
                   <v-icon color="warning" size="small" class="me-1">mdi-star</v-icon>
                   <span class="font-weight-medium">{{ item.coins }}</span>
                   <span class="text-medium-emphasis ms-1">
-                    ({{ formatCurrency(item.coins * settings.exchangeRate) }})
+                    ({{ formatCurrency(item.coins * settings.exchange_rate) }})
                   </span>
                 </div>
               </template>
@@ -395,11 +395,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import type { RedemptionSettings, RedemptionRequest } from '@/types'
+import { useParentStore } from '@/stores/parent'
+import type { RedemptionSettings } from '@/types'
 
 const router = useRouter()
+const parentStore = useParentStore()
 
 // Reactive data
 const saving = ref(false)
@@ -408,80 +410,70 @@ const successMessage = ref('')
 
 // Settings data
 const settings = reactive<RedemptionSettings>({
-  exchangeRate: 0.10,
+  exchange_rate: 0.10,
   currency: 'USD',
-  requireApproval: false,
-  autoApprovalLimit: 50,
-  notifyOnRequest: true,
-  processingTime: 'Within 24 hours',
-  dailyLimit: 100,
-  weeklyLimit: 300,
-  monthlyLimit: 1000,
-  allowSavingsOverride: true,
-  trackSpendingCategories: true
+  require_approval: false,
+  auto_approval_limit: 50,
+  notify_on_request: true,
+  processing_time: 'Within 24 hours',
+  daily_limit: 100,
+  weekly_limit: 300,
+  monthly_limit: 1000,
+  allow_savings_override: true,
+  track_spending_categories: true
 })
 
-// Mock data
-const recentRedemptions = ref([
-  {
-    id: '1',
-    child: 'Luna',
-    childInitials: 'L',
-    childColor: 'purple',
-    childAge: 9,
-    coins: 25,
-    description: 'Art supplies',
-    status: 'Pending',
-    requestDate: new Date(Date.now() - 2 * 60 * 60 * 1000),
-    category: 'Toys & Games'
-  },
-  {
-    id: '2',
-    child: 'Harry',
-    childInitials: 'H',
-    childColor: 'blue',
-    childAge: 12,
-    coins: 50,
-    description: 'Video game',
-    status: 'Approved',
-    requestDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    category: 'Entertainment'
-  },
-  {
-    id: '3',
-    child: 'Luna',
-    childInitials: 'L',
-    childColor: 'purple',
-    childAge: 9,
-    coins: 15,
-    description: 'Book series',
-    status: 'Completed',
-    requestDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    category: 'Books'
-  },
-  {
-    id: '4',
-    child: 'Harry',
-    childInitials: 'H',
-    childColor: 'blue',
-    childAge: 12,
-    coins: 30,
-    description: 'Sports equipment',
-    status: 'Rejected',
-    requestDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-    category: 'Sports'
-  }
-])
+// Helper function to get child color consistently
+const getChildColor = (childId: string): string => {
+  const colors = ['purple', 'blue', 'green', 'orange', 'red', 'teal']
+  const index = Math.abs(childId.split('').reduce((a, b) => a + b.charCodeAt(0), 0)) % colors.length
+  return colors[index] || 'grey'
+}
 
-const analytics = ref({
-  totalRedeemed: 125.50,
-  redemptionCount: 12,
-  topCategories: [
-    { name: 'Toys & Games', amount: 45.00 },
-    { name: 'Books', amount: 32.50 },
-    { name: 'Art Supplies', amount: 28.00 },
-    { name: 'Sports', amount: 20.00 }
-  ]
+// Real data from parent store
+const recentRedemptions = computed(() => 
+  parentStore.redemptionRequests.map(request => {
+    const child = parentStore.children.find(c => c.id === request.user_id)
+    return {
+      id: request.id,
+      child: child?.name || 'Unknown Child',
+      childInitials: child?.name?.charAt(0).toUpperCase() || 'U',
+      childColor: getChildColor(request.user_id),
+      childAge: child?.age || 0,
+      coins: request.coins_amount || 0,
+      description: request.description || 'Redemption request',
+      status: request.status === 'pending' ? 'Pending' : 
+              request.status === 'approved' ? 'Approved' :
+              request.status === 'completed' ? 'Completed' : 'Rejected',
+      requestDate: new Date(request.created_at),
+      category: request.description?.split(' ')[0] || 'General'
+    }
+  })
+)
+
+// Analytics computed from real data
+const analytics = computed(() => {
+  const completedRedemptions = parentStore.redemptionRequests.filter(r => r.status === 'completed')
+  const totalRedeemed = completedRedemptions.reduce((sum, r) => sum + (r.coins_amount || 0), 0) * settings.exchange_rate
+  
+  // Group by category for top categories
+  const categoryTotals: Record<string, number> = {}
+  completedRedemptions.forEach(r => {
+    const category = r.description?.split(' ')[0] || 'General'
+    const amount = (r.coins_amount || 0) * settings.exchange_rate
+    categoryTotals[category] = (categoryTotals[category] || 0) + amount
+  })
+  
+  const topCategories = Object.entries(categoryTotals)
+    .map(([name, amount]) => ({ name, amount }))
+    .sort((a, b) => b.amount - a.amount)
+    .slice(0, 4)
+  
+  return {
+    totalRedeemed,
+    redemptionCount: completedRedemptions.length,
+    topCategories
+  }
 })
 
 const paymentMethods = ref([
@@ -520,7 +512,7 @@ const paymentMethods = ref([
 ])
 
 // Static data
-const currencies = ['USD', 'EUR', 'GBP', 'CAD', 'AUD']
+const currencies = ['INR', 'USD', 'EUR', 'GBP', 'CAD', 'AUD']
 const processingTimes = [
   'Immediately',
   'Within 1 hour',
@@ -573,27 +565,33 @@ const getStatusColor = (status: string) => {
 
 const approveRedemption = async (item: any) => {
   try {
-    // Simulate approval
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    item.status = 'Approved'
-    showSuccessSnackbar.value = true
-    successMessage.value = `Redemption for ${item.child} approved!`
-  } catch (error) {
+    const success = await parentStore.approveRedemption(item.id)
+    if (success) {
+      showSuccessSnackbar.value = true
+      successMessage.value = `Redemption for ${item.child} approved!`
+    } else {
+      throw new Error('Failed to approve redemption')
+    }
+  } catch (error: any) {
     console.error('Failed to approve redemption:', error)
+    showSuccessSnackbar.value = true
+    successMessage.value = `Error: ${error.message || 'Failed to approve redemption'}`
   }
 }
 
 const rejectRedemption = async (item: any) => {
   try {
-    // Simulate rejection
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    item.status = 'Rejected'
-    showSuccessSnackbar.value = true
-    successMessage.value = `Redemption for ${item.child} rejected.`
-  } catch (error) {
+    const success = await parentStore.rejectRedemption(item.id)
+    if (success) {
+      showSuccessSnackbar.value = true
+      successMessage.value = `Redemption for ${item.child} rejected.`
+    } else {
+      throw new Error('Failed to reject redemption')
+    }
+  } catch (error: any) {
     console.error('Failed to reject redemption:', error)
+    showSuccessSnackbar.value = true
+    successMessage.value = `Error: ${error.message || 'Failed to reject redemption'}`
   }
 }
 
@@ -626,8 +624,18 @@ const viewAnalytics = () => {
 }
 
 // Lifecycle
-onMounted(() => {
+onMounted(async () => {
   // Load redemption settings and data
+  try {
+    await Promise.all([
+      parentStore.loadDashboard(),
+      parentStore.loadRedemptions()
+    ])
+  } catch (error) {
+    console.error('Failed to load data:', error)
+    showSuccessSnackbar.value = true
+    successMessage.value = 'Failed to load data. Please refresh the page.'
+  }
 })
 </script>
 

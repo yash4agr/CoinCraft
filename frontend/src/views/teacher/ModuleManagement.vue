@@ -174,6 +174,33 @@
             </div>
           </div>
 
+          <!-- Enhanced Content Indicators -->
+          <div v-if="hasEnhancedContent(module)" class="mb-4">
+            <div class="text-xs text-gray-500 mb-2">Enhanced Content Available:</div>
+            <div class="flex flex-wrap gap-2">
+              <span v-if="module.sections && module.sections.length > 0" 
+                class="inline-flex items-center px-2 py-1 bg-blue-50 text-blue-700 rounded text-xs">
+                <i class="ri-book-open-line mr-1"></i>
+                {{ module.sections.length }} Section{{ module.sections.length !== 1 ? 's' : '' }}
+              </span>
+              <span v-if="module.activities && module.activities.length > 0" 
+                class="inline-flex items-center px-2 py-1 bg-orange-50 text-orange-700 rounded text-xs">
+                <i class="ri-lightbulb-line mr-1"></i>
+                {{ module.activities.length }} Activit{{ module.activities.length !== 1 ? 'ies' : 'y' }}
+              </span>
+              <span v-if="module.quiz && module.quiz.length > 0" 
+                class="inline-flex items-center px-2 py-1 bg-green-50 text-green-700 rounded text-xs">
+                <i class="ri-question-line mr-1"></i>
+                {{ module.quiz.length }} Quiz Question{{ module.quiz.length !== 1 ? 's' : '' }}
+              </span>
+              <span v-if="module.learningObjectives && module.learningObjectives.length > 0" 
+                class="inline-flex items-center px-2 py-1 bg-purple-50 text-purple-700 rounded text-xs">
+                <i class="ri-target-line mr-1"></i>
+                {{ module.learningObjectives.length }} Objective{{ module.learningObjectives.length !== 1 ? 's' : '' }}
+              </span>
+            </div>
+          </div>
+
           <!-- Action Buttons -->
           <div class="flex gap-2 mt-4">
             <button 
@@ -181,6 +208,12 @@
               class="flex-1 py-2 px-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm"
             >
               <i class="ri-eye-line mr-1"></i> Preview
+            </button>
+            <button 
+              @click="tryModule(module.id)"
+              class="flex-1 py-2 px-3 bg-yellow-500 hover:bg-yellow-600 text-white rounded-lg transition-colors text-sm"
+            >
+              <i class="ri-play-circle-line mr-1"></i> Try Mode
             </button>
             <button 
               @click="editModule(module.id)"
@@ -245,6 +278,19 @@
         </div>
       </div>
     </div>
+
+    <!-- Try Mode Modal -->
+    <ModuleTryMode
+      v-model="showTryModeModal"
+      :module="selectedModule"
+      @module-completed="handleModuleCompleted"
+    />
+
+    <!-- AI Assist Modal -->
+    <AIAssistComponent
+      v-model="showAIAssistModal"
+      @module-saved="handleAIModuleSaved"
+    />
   </div>
 </template>
 
@@ -252,6 +298,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTeacherStore } from '@/stores/teacher'
+import ModuleTryMode from '@/components/teacher/ModuleTryMode.vue'
+import AIAssistComponent from '@/components/teacher/AIAssistComponent.vue'
 
 const router = useRouter()
 const teacherStore = useTeacherStore()
@@ -265,6 +313,7 @@ const filterAgeGroup = ref('')
 const showCreateModuleModal = ref(false)
 const showAIAssistModal = ref(false)
 const showPreviewModal = ref(false)
+const showTryModeModal = ref(false)
 const selectedModule = ref(null)
 
 // Computed properties
@@ -348,6 +397,33 @@ const editModule = (moduleId: string) => {
 const openAssignModal = (moduleId: string) => {
   // Implementation for assign modal
   console.log('Assign module:', moduleId)
+}
+
+const tryModule = (moduleId: string) => {
+  selectedModule.value = teacherStore.getModuleById(moduleId)
+  showTryModeModal.value = true
+}
+
+const handleModuleCompleted = (module: any, score: number) => {
+  console.log(`Module "${module.title}" completed with score: ${score}%`)
+  // You can add additional logic here like saving progress, showing achievements, etc.
+}
+
+const handleAIModuleSaved = async (module: any) => {
+  console.log('🤖 [MODULE MANAGEMENT] AI module saved:', module.title)
+  // Refresh the modules list to show the new AI-generated module
+  await teacherStore.loadModules()
+  // Show success message or notification
+  console.log('✅ [MODULE MANAGEMENT] Modules refreshed after AI module creation')
+}
+
+const hasEnhancedContent = (module: any) => {
+  return (
+    (module.sections && module.sections.length > 0) ||
+    (module.activities && module.activities.length > 0) ||
+    (module.quiz && module.quiz.length > 0) ||
+    (module.learningObjectives && module.learningObjectives.length > 0)
+  )
 }
 
 // Lifecycle

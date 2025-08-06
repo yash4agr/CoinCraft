@@ -62,7 +62,7 @@
                 </v-col>
                 <v-col cols="12" md="6">
                   <v-select
-                    v-select="task.assignedTo"
+                    v-model="task.assigned_to"
                     label="Assign to"
                     :items="children"
                     item-title="name"
@@ -70,7 +70,6 @@
                     :rules="[rules.required]"
                     prepend-inner-icon="mdi-account"
                     variant="outlined"
-                    multiple
                     chips
                   />
                 </v-col>
@@ -90,7 +89,7 @@
               <v-row>
                 <v-col cols="12" md="6">
                   <v-text-field
-                    v-model.number="task.coinReward"
+                    v-model.number="task.coins_reward"
                     label="Coin Reward"
                     type="number"
                     :rules="[rules.required, rules.positive]"
@@ -124,7 +123,7 @@
                 </v-col>
                 <v-col cols="12" md="6">
                   <v-text-field
-                    v-model="task.dueTime"
+                    v-model="task.due_date"
                     label="Due Time (Optional)"
                     type="time"
                     prepend-inner-icon="mdi-clock"
@@ -138,7 +137,7 @@
               <v-row>
                 <v-col cols="12" md="6">
                   <v-checkbox
-                    v-model="task.requiresApproval"
+                    v-model="task.requires_approval"
                     label="Requires parent approval"
                     density="compact"
                   />
@@ -148,24 +147,24 @@
                     density="compact"
                   />
                   <v-checkbox
-                    v-model="task.allowPartialCompletion"
+                    v-model="task.allow_partial_completion"
                     label="Allow partial completion"
                     density="compact"
                   />
                 </v-col>
                 <v-col cols="12" md="6">
                   <v-checkbox
-                    v-model="task.notifyOnDue"
+                    v-model="task.notify_on_due"
                     label="Send reminder notifications"
                     density="compact"
                   />
                   <v-checkbox
-                    v-model="task.photoRequired"
+                    v-model="task.photo_required"
                     label="Photo proof required"
                     density="compact"
                   />
                   <v-checkbox
-                    v-model="task.bonusAvailable"
+                    v-model="task.bonus_available"
                     label="Bonus coins for early completion"
                     density="compact"
                   />
@@ -180,7 +179,7 @@
                   <v-row>
                     <v-col cols="12" md="6">
                       <v-select
-                        v-model="task.recurringFrequency"
+                        v-model="task.recurring_frequency"
                         label="Frequency"
                         :items="frequencies"
                         variant="outlined"
@@ -188,7 +187,7 @@
                     </v-col>
                     <v-col cols="12" md="6">
                       <v-text-field
-                        v-model="task.recurringEnd"
+                        v-model="task.recurring_end"
                         label="End Date (Optional)"
                         type="date"
                         variant="outlined"
@@ -291,7 +290,7 @@
             <v-alert
               v-for="tip in taskTips"
               :key="tip.id"
-              :type="tip.type"
+              :type="tip.type as any"
               variant="tonal"
               density="compact"
               class="mb-2"
@@ -378,8 +377,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import type { Task, Child } from '@/types'
+import { ref, reactive, onMounted, computed } from 'vue'
+import { useParentStore } from '@/stores/parent'
+import type { Task } from '@/types'
+
+// Store
+const parentStore = useParentStore()
 
 // Reactive data
 const assigning = ref(false)
@@ -393,76 +396,69 @@ const task = reactive<Partial<Task>>({
   type: 'chore',
   title: '',
   description: '',
-  assignedTo: [],
-  coinReward: 10,
+  assigned_to: 'select child',
+  coins_reward: 10,
   priority: 'Medium',
-  dueDate: '',
-  dueTime: '',
-  requiresApproval: true,
+  due_date: '',
+  requires_approval: true,
   recurring: false,
-  allowPartialCompletion: false,
-  notifyOnDue: true,
-  photoRequired: false,
-  bonusAvailable: false,
-  recurringFrequency: 'Daily',
-  recurringEnd: '',
-  bonusCoins: 5,
-  bonusHours: 24
+  allow_partial_completion: false,
+  notify_on_due: true,
+  photo_required: false,
+  bonus_available: false,
+  recurring_frequency: 'Daily',
+  recurring_end: '',
 })
 
-// Mock data
-const children = ref([
-  {
-    id: '1',
-    name: 'Luna',
-    initials: 'L',
-    color: 'purple',
-    activeTasks: 3
-  },
-  {
-    id: '2',
-    name: 'Harry',
-    initials: 'H',
-    color: 'blue',
-    activeTasks: 2
-  }
-])
+// Computed properties from store
+const children = computed(() => 
+  parentStore.children.map(child => ({
+    id: child.id,
+    name: child.name,
+    initials: child.name?.charAt(0).toUpperCase() || 'U',
+    color: getChildColor(child.id),
+    activeTasks: getActiveTasksCount(child.id)
+  }))
+)
 
-const taskHistory = ref([
-  {
-    id: '1',
-    title: 'Clean bedroom',
-    child: 'Luna',
-    childInitials: 'L',
-    childColor: 'purple',
-    status: 'Completed',
-    coins: 15,
-    assignedDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-    completedDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000)
-  },
-  {
-    id: '2',
-    title: 'Finish homework',
-    child: 'Harry',
-    childInitials: 'H',
-    childColor: 'blue',
-    status: 'In Progress',
-    coins: 20,
-    assignedDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-    completedDate: null
-  },
-  {
-    id: '3',
-    title: 'Take out trash',
-    child: 'Luna',
-    childInitials: 'L',
-    childColor: 'purple',
-    status: 'Overdue',
-    coins: 10,
-    assignedDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
-    completedDate: null
+const taskHistory = computed(() => 
+  parentStore.tasks.map(task => ({
+    id: task.id,
+    title: task.title,
+    child: parentStore.getChildName(task.assigned_to),
+    childInitials: parentStore.getChildName(task.assigned_to)?.charAt(0).toUpperCase() || 'U',
+    childColor: getChildColor(task.assigned_to),
+    status: getTaskStatusDisplay(task.status),
+    coins: task.coins_reward,
+    assignedDate: new Date(task.created_at),
+    completedDate: task.completed_at ? new Date(task.completed_at) : null
+  }))
+)
+
+// Helper functions
+const getChildColor = (childId: string): string => {
+  const colors = ['purple', 'blue', 'green', 'orange', 'red', 'teal']
+  const index = Math.abs(childId.split('').reduce((a, b) => a + b.charCodeAt(0), 0)) % colors.length
+  return colors[index] || 'grey'
+}
+
+const getActiveTasksCount = (childId: string): number => {
+  return parentStore.tasks.filter(task => 
+    task.assigned_to === childId && 
+    ['pending', 'in_progress'].includes(task.status)
+  ).length
+}
+
+const getTaskStatusDisplay = (status: string): string => {
+  const statusMap: Record<string, string> = {
+    'pending': 'Pending',
+    'in_progress': 'In Progress',
+    'completed': 'Completed',
+    'approved': 'Completed',
+    'overdue': 'Overdue'
   }
-])
+  return statusMap[status] || status
+}
 
 // Static data
 const taskTypes = [
@@ -576,7 +572,7 @@ const applyTemplate = (template: any) => {
   task.title = template.title
   task.description = template.description
   task.type = template.type
-  task.coinReward = template.reward
+  task.coins_reward = template.reward
   
   showSuccessSnackbar.value = true
   successMessage.value = `Template "${template.title}" applied!`
@@ -587,15 +583,31 @@ const assignTask = async () => {
   
   assigning.value = true
   try {
-    // Simulate task assignment
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    // Map form data to API format
+    const taskData = {
+      title: task.title || '',
+      description: task.description || '',
+      coins_reward: task.coins_reward || 10,
+      assigned_to: task.assigned_to || '',
+      due_date: task.due_date ? 
+        `${task.due_date}` : 
+        undefined,
+      requires_approval: task.requires_approval || false
+    }
+
+    const newTask = await parentStore.createTask(taskData)
     
-    showSuccessSnackbar.value = true
-    successMessage.value = `Task "${task.title}" assigned successfully!`
-    
-    resetForm()
-  } catch (error) {
+    if (newTask) {
+      showSuccessSnackbar.value = true
+      successMessage.value = `Task "${task.title}" assigned successfully!`
+      resetForm()
+    } else {
+      throw new Error('Failed to create task')
+    }
+  } catch (error: any) {
     console.error('Failed to assign task:', error)
+    showSuccessSnackbar.value = true
+    successMessage.value = `Error: ${error.message || 'Failed to assign task'}`
   } finally {
     assigning.value = false
   }
@@ -662,8 +674,18 @@ const formatDate = (date: Date) => {
 }
 
 // Lifecycle
-onMounted(() => {
-  // Load children and task data
+onMounted(async () => {
+  // Load children and task data from the parent store
+  try {
+    await Promise.all([
+      parentStore.loadDashboard(),
+      parentStore.loadTasks()
+    ])
+  } catch (error) {
+    console.error('Failed to load data:', error)
+    showSuccessSnackbar.value = true
+    successMessage.value = 'Failed to load data. Please refresh the page.'
+  }
 })
 </script>
 

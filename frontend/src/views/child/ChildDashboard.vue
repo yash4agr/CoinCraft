@@ -11,7 +11,7 @@
           :current="goal.current"
           :total="goal.total"
           :icon="goal.icon"
-          :color-scheme="goal.colorScheme"
+          :color-scheme="(goal.colorScheme as 'blue' | 'green' | 'purple' | 'orange') || 'blue'"
           @click="handleGoalClick(goal.id)"
           class="cursor-pointer hover:scale-105 transition-transform focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 rounded-lg"
           role="button"
@@ -152,7 +152,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDashboardStore } from '@/stores/dashboard'
-import { useUserStore } from '@/stores/user'
+import { useChildStore } from '@/stores/child'
 import AdventureCard from '@/components/shared/AdventureCard.vue'
 import ProgressCard from '@/components/shared/ProgressCard.vue'
 import AchievementCard from '@/components/shared/AchievementCard.vue'
@@ -161,7 +161,7 @@ import JourneyCard from '@/components/shared/JourneyCard.vue'
 // Stores and router
 const router = useRouter()
 const dashboardStore = useDashboardStore()
-const userStore = useUserStore()
+const childStore = useChildStore()
 
 // Reactive state
 const isLoading = ref(false)
@@ -173,12 +173,40 @@ const successMessage = ref('')
 const allowReplay = ref(true)
 
 // Auto-dismiss timers
-let errorTimer: NodeJS.Timeout | null = null
-let successTimer: NodeJS.Timeout | null = null
+// Timer type for cleanup
+let errorTimer: ReturnType<typeof setTimeout> | null = null
+let successTimer: ReturnType<typeof setTimeout> | null = null
 
 // Use dashboard store data
-const todaysGoals = computed(() => dashboardStore.todaysGoals)
-const achievements = computed(() => dashboardStore.recentAchievements)
+const todaysGoals = computed(() => {
+  // Combine old dashboard store and new child store goals
+  const dashboardGoals = dashboardStore.todaysGoals || []
+  const childGoals = childStore.goals.filter(goal => !goal.is_completed).slice(0, 4).map(goal => ({
+    id: goal.id,
+    title: goal.title,
+    current: goal.current_amount,
+    total: goal.target_amount,
+    icon: goal.icon || '🎯',
+    colorScheme: goal.color || 'orange'
+  })) || []
+  
+  return childGoals.length > 0 ? childGoals : dashboardGoals
+})
+
+const achievements = computed(() => {
+  // Use child store achievements if available, otherwise dashboard store
+  const childAchievements = childStore.achievements.map(achievement => ({
+    ...achievement,
+    badge: achievement.rarity,
+    coins: achievement.points_reward,
+    date: achievement.earned_at?.toLocaleDateString(),
+    colorScheme: achievement.rarity === 'legendary' ? 'gold' : 
+                 achievement.rarity === 'epic' ? 'purple' : 
+                 achievement.rarity === 'rare' ? 'blue' : 'green'
+  })) || []
+  
+  return childAchievements.length > 0 ? childAchievements : dashboardStore.recentAchievements
+})
 
 // Adventures Data - converted to use activities from store
 const adventures = ref([
@@ -352,8 +380,7 @@ const handleAdventureClick = async (adventure: any) => {
     await dashboardStore.completeActivity(adventure.id)
     
     await router.push({
-      path: '/child/games',
-      params: { adventureId: adventure.id }
+      path: `/child/games/${adventure.id}`
     })
     
     showSuccess(`${adventure.title} started successfully!`)
@@ -363,7 +390,7 @@ const handleAdventureClick = async (adventure: any) => {
   }
 }
 
-const handleAchievementClick = async (achievementId: string) => {
+const handleAchievementClick = async (_achievementId: string) => {
   try {
     // For now, just show success - could open modal or navigate
     showSuccess('Achievement details loaded!')
@@ -397,11 +424,6 @@ const handleJourneyClick = async (journey: any) => {
 }
 
 // Utility functions
-const setLoading = (loading: boolean, message = '') => {
-  isLoading.value = loading
-  loadingMessage.value = message
-}
-
 const showError = (message: string) => {
   errorMessage.value = message
   showErrorToast.value = true
@@ -458,10 +480,18 @@ const handleKeyboardNavigation = (event: KeyboardEvent) => {
 }
 
 // Lifecycle hooks
-onMounted(() => {
+onMounted(async () => {
   document.addEventListener('keydown', handleKeyboardNavigation)
   
-  // Load initial data if needed
+  // Load child dashboard data
+  try {
+    await childStore.loadDashboard()
+    console.log('✅ [CHILD] Dashboard loaded successfully')
+  } catch (error) {
+    console.error('❌ [CHILD] Failed to load dashboard:', error)
+  }
+  
+  // Also load dashboard store data for backwards compatibility
   if (!dashboardStore.todaysGoals.length) {
     dashboardStore.loadDashboardData('younger_child')
   }
