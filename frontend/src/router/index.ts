@@ -292,8 +292,6 @@ router.beforeEach(async (to, from, next) => {
           theme: 'light'
         }
       })
-      
-      // Load user-specific data
       await userStore.loadUserData(authStore.user.id)
     }
     

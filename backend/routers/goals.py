@@ -6,10 +6,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 
-from backend.database import get_async_session
-from backend.auth import current_active_user
-from backend.models import User, Goal, Transaction, ChildProfile
-from backend.schemas import GoalRead, GoalCreate, GoalUpdate, GoalContribution, TransactionRead
+from database import get_async_session
+from auth import current_active_user
+from models import User, Goal, Transaction, ChildProfile
+from schemas import GoalRead, GoalCreate, GoalUpdate, GoalContribution, TransactionRead
 
 router = APIRouter()
 
@@ -255,3 +255,55 @@ async def update_goal_progress(
     await session.refresh(goal)
 
     return goal
+
+@router.post('/goals/{goal_id}/amount', response_model=GoalRead)
+# write a async function to add the coin amounts to the current_amount of goal
+async def add_goal_amount(
+    goal_id: str,
+    contribution: GoalContribution,
+    session: AsyncSession = Depends(get_async_session),
+    current_user: User = Depends(current_active_user),
+):
+    # Fetch goal
+    stmt = select(Goal).where(Goal.id == goal_id, Goal.user_id == current_user.id)
+    result = await session.execute(stmt)
+    goal = result.scalar_one_or_none()
+
+    if not goal:
+        raise HTTPException(status_code=404, detail="Goal not found")
+
+    # Update current amount
+    goal.current_amount = contribution.amount
+    goal.updated_at = datetime.utcnow()
+
+    await session.commit()
+    await session.refresh(goal)
+
+    return goal
+
+@router.post("/goals/{goal_id}", response_model=GoalRead)
+async def update_goal_partial(
+    goal_id: str,
+    goal_update: GoalUpdate,
+    session: AsyncSession = Depends(get_async_session),
+    current_user: User = Depends(current_active_user),
+):
+    """Partially update a goal's details."""
+    # Fetch goal
+    stmt = select(Goal).where(Goal.id == goal_id, Goal.user_id == current_user.id)
+    result = await session.execute(stmt)
+    goal = result.scalar_one_or_none()
+
+    if not goal:
+        raise HTTPException(status_code=404, detail="Goal not found")
+
+    # Only update fields provided in the request
+    update_data = goal_update.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(goal, field, value)
+    goal.updated_at = datetime.utcnow()
+
+    await session.commit()
+    await session.refresh(goal)
+
+    return GoalRead.model_validate(goal)

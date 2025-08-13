@@ -398,7 +398,7 @@ const profileData = ref({
   totalCoinsEarned: userStore.profile?.totalCoinsEarned || 0,
   goalsCompleted: userStore.profile?.goalsCompleted || 0
 })
-
+console.log("This is from UserProfile.vue", profileData.value)
 const isEditingBio = ref(false)
 const editedBio = ref('')
 const isSavingBio = ref(false)

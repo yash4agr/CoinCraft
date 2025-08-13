@@ -30,7 +30,7 @@
             <div class="text-right">
               <div class="text-2xl font-bold text-green-500 flex items-center gap-1">
                 <img src="/coin.svg" class="coin-icon" alt="coin">
-                <span>{{ goal.currentAmount }} / {{ goal.targetAmount }}</span>
+                <span>{{ goal.current_amount }} / {{ goal.target_amount }}</span>
               </div>
               <div class="text-sm text-gray-500">{{ getProgressPercentage(goal) }}% complete</div>
             </div>
@@ -132,7 +132,7 @@
           </div>
           <div class="flex justify-between text-sm text-gray-600 mb-4">
             <span>Goal progress:</span>
-            <span class="font-medium">{{ selectedGoal?.currentAmount }}/{{ selectedGoal?.targetAmount }}</span>
+            <span class="font-medium">{{ selectedGoal?.current_amount }}/{{ selectedGoal?.target_amount }}</span>
           </div>
 
           <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -142,7 +142,7 @@
             v-model.number="coinsToAdd"
             type="number" 
             :min="1" 
-            :max="Math.min(userStore.totalCoins, (selectedGoal?.targetAmount || 0) - (selectedGoal?.currentAmount || 0))"
+            :max="Math.min(userStore.totalCoins, (selectedGoal?.target_amount || 0) - (selectedGoal?.current_amount || 0))"
             class="w-full p-3 border border-gray-300 rounded-lg text-center text-lg font-semibold"
             placeholder="0"
           />
@@ -341,6 +341,7 @@
 import { ref, computed } from 'vue'
 import { useUserStore } from '@/stores/user'
 import type { Goal } from '@/stores/user'
+import { profile } from 'node:console'
 
 const userStore = useUserStore()
 
@@ -393,13 +394,13 @@ const getGoalEmoji = (iconClass: string) => {
 }
 
 const getProgressPercentage = (goal: Goal) => {
-  return Math.min(Math.round((goal.currentAmount / goal.targetAmount) * 100), 100)
+  return Math.min(Math.round((goal.current_amount / goal.target_amount) * 100), 100)
 }
 
 const getQuickAmounts = () => {
   if (!selectedGoal.value) return [1, 5, 10, 20]
-  
-  const remaining = selectedGoal.value.targetAmount - selectedGoal.value.currentAmount
+
+  const remaining = selectedGoal.value.target_amount - selectedGoal.value.current_amount
   const maxCoins = userStore.totalCoins
   
   const amounts = [1, 5, 10, 20].filter(amount => amount <= Math.min(maxCoins, remaining))
@@ -430,7 +431,7 @@ const showEditGoalModal = (goal: Goal) => {
   editGoalForm.value = {
     title: goal.title,
     description: goal.description,
-    targetAmount: goal.targetAmount,
+    targetAmount: goal.target_amount,
     icon: goal.icon
   }
   showEditGoalModalFlag.value = true
@@ -478,7 +479,7 @@ const addCoinsToGoal = async () => {
     successMessage.value = `Added ${coinsToAdd.value} coins to ${selectedGoal.value.title}! 🎉`
     
     // Check if goal is completed
-    if (selectedGoal.value.currentAmount >= selectedGoal.value.targetAmount) {
+    if (selectedGoal.value.current_amount >= selectedGoal.value.target_amount) {
       setTimeout(() => {
         successMessage.value = `🎉 Goal completed! You saved enough for ${selectedGoal.value?.title}!`
       }, 2000)
@@ -498,7 +499,7 @@ const updateGoal = async () => {
   const success = await userStore.updateGoal(selectedGoal.value.id, {
     title: editGoalForm.value.title,
     description: editGoalForm.value.description,
-    targetAmount: editGoalForm.value.targetAmount,
+    target_amount: editGoalForm.value.targetAmount,
     icon: editGoalForm.value.icon
   })
   
@@ -518,7 +519,8 @@ const createNewGoal = async () => {
   const newGoal = await userStore.createGoal({
     title: createGoalForm.value.title,
     description: createGoalForm.value.description,
-    targetAmount: createGoalForm.value.targetAmount,
+    target_amount: createGoalForm.value.targetAmount,
+    current_amount: 0,
     icon: createGoalForm.value.icon,
     category: 'wants' // Default category for child goals
   })

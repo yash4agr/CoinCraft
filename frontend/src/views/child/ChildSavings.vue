@@ -111,7 +111,7 @@
               </div>
               <div>
                 <div class="font-medium text-gray-800">{{ transaction.description }}</div>
-                <div class="text-sm text-gray-500">{{ formatDate(transaction.timestamp) }}</div>
+                <div class="text-sm text-gray-500">{{ formatDate(transaction.created_at) }}</div>
               </div>
             </div>
             <div 
@@ -333,10 +333,9 @@ const weeklyEarnings = computed(() => {
   // Calculate earnings from the last 7 days
   const oneWeekAgo = new Date()
   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
-  
   return userStore.recentTransactions
     .filter(transaction => {
-      const transactionDate = new Date(transaction.timestamp)
+      const transactionDate = new Date(transaction.created_at)
       return transactionDate >= oneWeekAgo && transaction.type === 'earn'
     })
     .reduce((total, transaction) => total + transaction.amount, 0)
@@ -345,7 +344,7 @@ const weeklyEarnings = computed(() => {
 const goalProgress = computed(() => {
   const activeGoal = userStore.activeGoals[0]
   if (!activeGoal) return 0
-  return Math.round((activeGoal.currentAmount / activeGoal.targetAmount) * 100)
+  return Math.round((activeGoal.current_amount / activeGoal.target_amount) * 100)
 })
 
 const activeGoalName = computed(() => {
@@ -354,6 +353,7 @@ const activeGoalName = computed(() => {
 })
 
 const savingsStreak = computed(() => {
+  
   // Simple calculation - could be enhanced with actual streak tracking
   return userStore.profile?.streak || 0
 })

@@ -6,10 +6,10 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func
 
-from backend.database import get_async_session
-from backend.auth import current_active_user
-from backend.models import User, Transaction, ChildProfile
-from backend.schemas import TransactionRead, TransactionCreate, TransactionList
+from database import get_async_session
+from auth import current_active_user
+from models import User, Transaction, ChildProfile
+from schemas import TransactionRead, TransactionCreate, TransactionList
 
 router = APIRouter()
 
@@ -175,6 +175,13 @@ async def create_transaction(
     await session.refresh(child_profile)
     
     return {
-        "id": transaction.id,
+        "transaction":{
+            "id": transaction.id,
+            "type": transaction.type,
+            "amount": transaction.amount,
+            "description": transaction.description,
+            "category": transaction.category,
+            "created_at": transaction.created_at
+        },
         "new_coin_balance": child_profile.coins
     } 

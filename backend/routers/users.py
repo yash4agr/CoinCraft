@@ -6,12 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from backend.database import get_async_session
-from backend.auth import current_active_user
-from backend.models import User, ChildProfile, ParentProfile, TeacherProfile
-from backend.schemas import (
+from database import get_async_session
+from auth import current_active_user
+from models import User, ChildProfile, ParentProfile, TeacherProfile, Transaction, Goal
+from schemas import (
     UserRead, UserUpdate, ChildProfileRead, ChildProfileCreate, ChildProfileUpdate,
-    ParentProfileUpdate, TeacherProfileUpdate
+    ParentProfileUpdate, TeacherProfileUpdate,TransactionCreate, TransactionRead , TransactionList,
+    GoalRead, GoalCreate
 )
 
 router = APIRouter()
@@ -226,3 +227,88 @@ async def update_child_info(
     user = result.scalar_one()
     
     return UserRead.model_validate(user) 
+
+
+@router.get("/{user_id}/coins", response_model=int)
+async def get_coins(user_id: str, current_user: User = Depends(current_active_user),
+                    session: AsyncSession = Depends(get_async_session)):
+    if current_user.role not in ['younger_child', 'older_child']:
+        return 0
+    else:
+        stmt = select(ChildProfile).where(ChildProfile.user_id == user_id)
+        result = await session.execute(stmt)
+        child_profile = result.scalar_one_or_none()
+        if child_profile:
+            return child_profile.coins
+        else:
+            return 0
+        
+
+@router.post("/{user_id}/coins", response_model=int)
+async def update_coins(user_id: str, response: dict, current_user: User = Depends(current_active_user),
+                       session: AsyncSession = Depends(get_async_session)):
+    coins=response.get("coins")
+    print("I have received the request")
+    if current_user.role not in ['younger_child', 'older_child']:
+        return 0
+    else:
+        stmt = select(ChildProfile).where(ChildProfile.user_id == user_id)
+        result = await session.execute(stmt)
+        child_profile = result.scalar_one_or_none()
+        if child_profile:
+            child_profile.coins = coins
+            session.add(child_profile)
+            await session.commit()
+            return child_profile.coins
+        else:
+            return 0
+        
+@router.get("/{user_id}/transactions", response_model=List[TransactionRead])
+async def get_transactions(user_id: str, current_user: User = Depends(current_active_user),
+                           session: AsyncSession = Depends(get_async_session)):
+    if current_user.role not in ['younger_child', 'older_child']:
+        return []
+    else:
+        stmt = select(Transaction).where(Transaction.user_id == user_id)
+        result = await session.execute(stmt)
+        transactions = result.scalars().all()
+
+        if transactions:
+            return [TransactionRead.model_validate(transaction) for transaction in transactions]
+        else:
+            return []
+        
+@router.get("/{user_id}/goals", response_model=List[GoalRead])
+async def get_goals(user_id: str, current_user: User = Depends(current_active_user),
+                    session: AsyncSession = Depends(get_async_session)):
+    if current_user.role not in ['younger_child', 'older_child']:
+        return []
+    else:
+        stmt = select(Goal).where(Goal.user_id == user_id)
+        result = await session.execute(stmt)
+        goals = result.scalars().all()
+
+        if goals:
+            return [GoalRead.model_validate(goal) for goal in goals]
+        else:
+            return []
+
+
+@router.post("/{user_id}/goals", response_model= GoalRead)
+async def create_goal(user_id: str, goal_data: GoalCreate, current_user: User = Depends(current_active_user),
+                      session: AsyncSession = Depends(get_async_session)):
+    if user_id == "me":
+        user_id = current_user.id
+    elif user_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Can only create goals for yourself",
+        )
+
+    goal = Goal(user_id=user_id, **goal_data.model_dump())
+    session.add(goal)
+    await session.commit()
+    await session.refresh(goal)
+
+    return GoalRead.model_validate(goal)
+    

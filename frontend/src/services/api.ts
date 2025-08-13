@@ -201,6 +201,7 @@ class ApiService {
    * Create a new goal
    */
   async createGoal(userId: string, goalData: GoalCreateRequest): Promise<ApiResponse<Goal>> {
+    console.log(goalData, userId)
     try {
       const response = await httpClient.post(`/api/users/${userId}/goals`, goalData)
       return { data: mapBackendGoal(response.data) }
@@ -214,10 +215,19 @@ class ApiService {
    */
   async updateGoal(goalId: string, updates: Partial<Goal>): Promise<ApiResponse<Goal>> {
     try {
-      const response = await httpClient.put(`/api/goals/${goalId}`, updates)
+      const response = await httpClient.post(`/api/goals/${goalId}`, updates)
       return { data: mapBackendGoal(response.data) }
     } catch (error: any) {
       return { error: error.message || 'Failed to update goal' }
+    }
+  }
+
+  async updateGoalAmount(goalId: string, amount: number): Promise<ApiResponse<Goal>> {
+    try {
+      const response = await httpClient.post(`/api/goals/${goalId}/amount`, { amount })
+      return { data: mapBackendGoal(response.data) }
+    } catch (error: any) {
+      return { error: error.message || 'Failed to update goal amount' }
     }
   }
 
@@ -272,9 +282,9 @@ class ApiService {
   /**
    * Create a transaction
    */
-  async createTransaction(transactionData: Omit<Transaction, 'id' | 'created_at'>): Promise<ApiResponse<Transaction>> {
+  async createTransaction(userId: string, transactionData: Transaction): Promise<ApiResponse<Transaction>> {
     try {
-      const response = await httpClient.post('/api/transactions', transactionData)
+      const response = await httpClient.post(`/api/users/${userId}/transactions`, transactionData)
       return { data: response.data }
     } catch (error: any) {
       return { error: error.message || 'Failed to create transaction' }
@@ -410,11 +420,16 @@ class ApiService {
     return response.data
   }
 
+  async getOwnedItems(): Promise<any[]> {
+    const response = await httpClient.get('/api/shop/owned_items')
+    return response.data
+  }
   /**
    * Purchase an item from shop
    */
-  async purchaseItem(itemData: { item_id: string, quantity?: number }): Promise<any> {
-    const response = await httpClient.post('/api/shop/purchase', itemData)
+  async purchaseItem(userId: string, item_id: string): Promise<any> {
+    console.log("BIG CHECK", item_id)
+    const response = await httpClient.post(`/api/shop/${userId}/purchase`, { item_id } )
     return response.data
   }
 
@@ -796,6 +811,27 @@ class ApiService {
   async getActivityDetails(activityId: string): Promise<Activity> {
     const response = await httpClient.get(`/api/activities/${activityId}`)
     return response.data
+  }
+
+  async getCoins(userId: string): Promise<ApiResponse<number>> {
+    try {
+      const response = await httpClient.get(`/api/users/${userId}/coins`)
+      return { data: response.data }
+    } catch (error: any) {
+      console.error('❌ [API] Failed to get coins:', error)
+      return { error: error.response?.data?.detail || 'Failed to load coins' }
+    }
+  }
+
+  async updateUserCoins(userId: string, coins: number): Promise<ApiResponse<any>> {
+    try {
+      const response = await httpClient.post(`/api/users/${userId}/coins`, { coins })
+      console.log(response.data, "message was sent successfully")
+      return { data: response.data }
+    } catch (error: any) {
+      console.error('❌ [API] Failed to update coins:', error)
+      return { error: error.response?.data?.detail || 'Failed to update coins' }
+    }
   }
 
   /**

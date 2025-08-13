@@ -7,95 +7,54 @@ from sqlalchemy import select
 
 from database import get_async_session
 from auth import current_active_user
-from models import User, ShopItem, ChildProfile, Transaction
-from schemas import ShopItemRead
+from models import User, ShopItem, ChildProfile, Transaction, UserOwnedItem
+from schemas import ShopItemRead, ShopItemRequest
 
 router = APIRouter()
 
 
 @router.get("/shop/items", response_model=List[ShopItemRead])
 async def get_shop_items(session: AsyncSession = Depends(get_async_session)):
-    """Get available shop items."""
-    # Query shop items from database
-    stmt = select(ShopItem).where(ShopItem.available)
+    """Get all shop items."""
+    stmt = select(ShopItem)
     result = await session.execute(stmt)
     shop_items = result.scalars().all()
-
-    if not shop_items:
-        # Create default shop items if none exist
-        default_items = [
-            ShopItem(
-                id="1",
-                name="Small Toy",
-                description="A fun small toy",
-                price=100,
-                category="toys",
-                emoji="🧸",
-                available=True,
-            ),
-            ShopItem(
-                id="2",
-                name="Book",
-                description="An educational book",
-                price=200,
-                category="education",
-                emoji="📚",
-                available=True,
-            ),
-            ShopItem(
-                id="3",
-                name="Game Time",
-                description="30 minutes of extra game time",
-                price=150,
-                category="privileges",
-                emoji="🎮",
-                available=True,
-            ),
-            ShopItem(
-                id="4",
-                name="Movie Night",
-                description="Family movie night choice",
-                price=300,
-                category="privileges",
-                emoji="🎬",
-                available=True,
-            ),
-            ShopItem(
-                id="5",
-                name="Art Supplies",
-                description="Drawing and coloring supplies",
-                price=250,
-                category="creative",
-                emoji="🎨",
-                available=True,
-            ),
-        ]
-
-        for item in default_items:
-            session.add(item)
-        await session.commit()
-        shop_items = default_items
-
     return [ShopItemRead.model_validate(item) for item in shop_items]
 
 
-@router.post("/shop/purchase", response_model=dict)
+@router.post("/shop/{user_id}/purchase", response_model=dict)
 async def purchase_item(
-    item_id: str,
+    user_id: str,
+    request: ShopItemRequest,
     session: AsyncSession = Depends(get_async_session),
     current_user: User = Depends(current_active_user),
 ):
+    # This function now uses user_id and item_id, removes the deprecated 'available' clause, and checks ownership via UserOwnedItem.
+
     """Purchase an item from the shop."""
 
     # Get the shop item from database
-    stmt = select(ShopItem).where(ShopItem.id == item_id)
+    stmt = select(ShopItem).where(ShopItem.id == request.item_id)
     result = await session.execute(stmt)
     shop_item = result.scalar_one_or_none()
 
-    if not shop_item or not shop_item.available:
+    if not shop_item:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Item not found or not available",
+            detail="Item not found",
+        )
+
+    # Check if user already owns the item
+    owned_stmt = select(UserOwnedItem).where(
+        UserOwnedItem.user_id == current_user.id,
+        UserOwnedItem.shop_item_id == shop_item.id
+    )
+    owned_result = await session.execute(owned_stmt)
+    owned_item = owned_result.scalar_one_or_none()
+    if owned_item:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="User already owns this item"
         )
 
     # Get user's child profile to check coins
@@ -116,6 +75,14 @@ async def purchase_item(
 
     # Deduct coins from child profile
     child_profile.coins -= shop_item.price
+    session.add(child_profile)
+
+    # Add item to user's owned items
+    user_owned_item = UserOwnedItem(
+        user_id=current_user.id,
+        shop_item_id=shop_item.id
+    )
+    session.add(user_owned_item)
 
     # Create transaction record
     transaction = Transaction(
@@ -137,3 +104,13 @@ async def purchase_item(
         "item": {"id": shop_item.id, "name": shop_item.name, "price": shop_item.price},
         "remaining_coins": child_profile.coins,
     }
+
+@router.get('/shop/owned_items', response_model=List[ShopItemRead])
+async def get_owned_items(session: AsyncSession = Depends(get_async_session), current_user: User = Depends(current_active_user)):
+    """Get all owned items."""
+    print("I HAVE ENTERED THE FUNCTION")
+    stmt = select(ShopItem).join(UserOwnedItem, ShopItem.id == UserOwnedItem.shop_item_id).where(UserOwnedItem.user_id == current_user.id)
+    result = await session.execute(stmt)
+    owned_shop_items = result.scalars().all()
+    # Return the actual shop items owned by the user
+    return [ShopItemRead.model_validate(item) for item in owned_shop_items]

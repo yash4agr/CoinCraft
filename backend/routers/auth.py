@@ -5,10 +5,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.database import get_async_session
-from backend.auth import UserManager, get_user_manager, auth_backend, current_active_user
-from backend.models import User, ChildProfile, ParentProfile, TeacherProfile
-from backend.schemas import UserCreate, UserRead, AuthResponse
+from database import get_async_session
+from auth import UserManager, get_user_manager, auth_backend, current_active_user
+from models import User, ChildProfile, ParentProfile, TeacherProfile
+from schemas import UserCreate, UserRead, AuthResponse
 
 router = APIRouter()
 

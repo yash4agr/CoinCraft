@@ -345,6 +345,16 @@ class BudgetCategory(Base):
     
     user = relationship("User")
 
+class UserOwnedItem(Base):
+    __tablename__ = "user_owned_items"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    shop_item_id = Column(String, ForeignKey("shop_items.id", ondelete="CASCADE"), nullable=False)
+    acquired_at = Column(DateTime, default=datetime.utcnow)
+
+    # Relationship to ShopItem
+    shop_item = relationship("ShopItem", back_populates="owners")
 
 class ShopItem(Base):
     """Virtual shop items."""
@@ -357,5 +367,5 @@ class ShopItem(Base):
     price = Column(Integer, nullable=False)
     category = Column(String(100), nullable=True)
     emoji = Column(String(10), nullable=True)
-    available = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow) 
+    owners = relationship("UserOwnedItem", back_populates="shop_item", cascade="all, delete")

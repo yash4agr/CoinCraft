@@ -277,31 +277,6 @@ const categories = [
   { id: 'books', name: 'Cool Books', icon: 'ri-book-line' }
 ]
 
-// Shop Items - Kid-friendly options
-const shopItems = ref<ShopItem[]>([
-  // Stickers
-  { id: '1', name: 'Star Stickers', description: 'Shiny gold stars!', price: 5, emoji: '⭐', category: 'stickers', bgColor: 'from-yellow-400 to-yellow-500', owned: false },
-  { id: '2', name: 'Animal Stickers', description: 'Cute animal friends', price: 8, emoji: '🐱', category: 'stickers', bgColor: 'from-orange-400 to-orange-500', owned: false },
-  { id: '3', name: 'Rainbow Stickers', description: 'Colorful rainbows', price: 10, emoji: '🌈', category: 'stickers', bgColor: 'from-purple-400 to-pink-500', owned: false },
-  { id: '4', name: 'Heart Stickers', description: 'Pretty pink hearts', price: 6, emoji: '💖', category: 'stickers', bgColor: 'from-pink-400 to-red-400', owned: false },
-  
-  // Toys
-  { id: '5', name: 'Magic Wand', description: 'Cast magical spells!', price: 25, emoji: '🪄', category: 'toys', bgColor: 'from-purple-400 to-blue-500', owned: false },
-  { id: '6', name: 'Toy Car', description: 'Zoom zoom race car', price: 20, emoji: '🚗', category: 'toys', bgColor: 'from-red-400 to-orange-500', owned: false },
-  { id: '7', name: 'Teddy Bear', description: 'Soft cuddly friend', price: 30, emoji: '🧸', category: 'toys', bgColor: 'from-brown-400 to-yellow-600', owned: false },
-  { id: '8', name: 'Bouncy Ball', description: 'Super bouncy fun!', price: 15, emoji: '⚽', category: 'toys', bgColor: 'from-green-400 to-blue-500', owned: false },
-  
-  // Art Supplies
-  { id: '9', name: 'Crayons', description: 'Colorful drawing fun', price: 12, emoji: '🖍️', category: 'art', bgColor: 'from-red-400 to-yellow-500', owned: false },
-  { id: '10', name: 'Paint Set', description: 'Make beautiful art', price: 18, emoji: '🎨', category: 'art', bgColor: 'from-blue-400 to-purple-500', owned: false },
-  { id: '11', name: 'Sticker Book', description: 'Fill with stickers!', price: 14, emoji: '📖', category: 'art', bgColor: 'from-green-400 to-teal-500', owned: false },
-  
-  // Books
-  { id: '12', name: 'Adventure Book', description: 'Exciting stories!', price: 22, emoji: '📚', category: 'books', bgColor: 'from-indigo-400 to-purple-500', owned: false },
-  { id: '13', name: 'Puzzle Book', description: 'Fun brain games', price: 16, emoji: '🧩', category: 'books', bgColor: 'from-teal-400 to-blue-500', owned: false },
-  { id: '14', name: 'Comic Book', description: 'Funny superhero stories', price: 18, emoji: '📖', category: 'books', bgColor: 'from-yellow-400 to-orange-500', owned: false }
-])
-
 // Special rewards - smaller amounts for kids
 const specialRewards: SpecialReward[] = [
   { coins: 20, dollars: 2 },
@@ -312,45 +287,39 @@ const specialRewards: SpecialReward[] = [
 
 // Computed
 const filteredItems = computed(() => 
-  shopItems.value.filter(item => item.category === selectedCategory.value)
+  userStore.shopItems.map((item: any) => ({
+    ...item,
+    owned: userStore.ownedItems.includes(item.id)
+  })).filter((item: any) => item.category === selectedCategory.value)
 )
 
 // Methods
 const handlePurchase = (item: ShopItem) => {
   if (item.owned || userStore.totalCoins < item.price) return
-  
   selectedItem.value = item
   showPurchaseModal.value = true
 }
 
 const confirmPurchase = async () => {
   if (!selectedItem.value) return
-  
-  const success = await userStore.spendCoins(
-    selectedItem.value.price, 
-    `Bought: ${selectedItem.value.name}`,
-    'shop'
-  )
-  
+  // Use new purchaseShopItem function
+  console.log("BIG2", selectedItem.value, selectedItem.value.id)
+  const success = await userStore.purchaseShopItem(selectedItem.value.id)
   if (success) {
     selectedItem.value.owned = true
     myTreasures.value.push({ ...selectedItem.value })
-    
     showSuccessMessage.value = true
     successMessage.value = `You got ${selectedItem.value.name}! 🎉`
-    
     setTimeout(() => {
       showSuccessMessage.value = false
     }, 3000)
   }
-  
   showPurchaseModal.value = false
   selectedItem.value = null
 }
 
 const requestSpecialReward = (reward: SpecialReward) => {
   if (userStore.totalCoins < reward.coins) return
-  
   selectedReward.value = reward
   rewardReason.value = ''
   showRewardModal.value = true
@@ -358,31 +327,29 @@ const requestSpecialReward = (reward: SpecialReward) => {
 
 const submitRewardRequest = async () => {
   if (!selectedReward.value || !rewardReason.value.trim()) return
-  
   const success = await userStore.requestMoneyConversion(
     selectedReward.value.coins,
     selectedReward.value.dollars,
     rewardReason.value
   )
-  
   if (success) {
     showSuccessMessage.value = true
     successMessage.value = 'Request sent to your parent! 📨'
-    
     setTimeout(() => {
       showSuccessMessage.value = false
     }, 3000)
   }
-  
   showRewardModal.value = false
   selectedReward.value = null
   rewardReason.value = ''
 }
 
-// Load owned items on mount
-onMounted(() => {
-  // TODO: Load from API
-  // For now, use demo data
-  myTreasures.value = shopItems.value.filter(item => item.owned)
+// Load owned items and shop items on mount
+onMounted(async () => {
+  await userStore.getShopItems()
+  await userStore.getOwnedItems()
+  myTreasures.value = userStore.shopItems
+    .filter((item: any) => userStore.ownedItems.includes(item.id))
+    .map((item: any) => ({ ...item, owned: true }))
 })
 </script>

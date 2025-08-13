@@ -11,23 +11,23 @@ from fastapi.responses import FileResponse, HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
-from backend.database import create_db_and_tables
-from backend.auth import auth_backend, fastapi_users
-from backend.schemas import UserCreate, UserRead, UserUpdate
-from backend.routers.auth import router as auth_router
-from backend.routers.users import router as users_router
-from backend.routers.goals import router as goals_router
-from backend.routers.transactions import router as transactions_router
-from backend.routers.tasks import router as tasks_router
-from backend.routers.modules import router as modules_router
-from backend.routers.classes import router as classes_router
-from backend.routers.redemptions import router as redemptions_router
-from backend.routers.dashboard import router as dashboard_router
-from backend.routers.parent import router as parent_router
-from backend.routers.teacher import router as teacher_router
-from backend.routers.child import router as child_router
-from backend.routers.teen import router as teen_router
-
+from database import create_db_and_tables
+from auth import auth_backend, fastapi_users
+from schemas import UserCreate, UserRead, UserUpdate
+from routers.auth import router as auth_router
+from routers.users import router as users_router
+from routers.goals import router as goals_router
+from routers.transactions import router as transactions_router
+from routers.tasks import router as tasks_router
+from routers.modules import router as modules_router
+from routers.classes import router as classes_router
+from routers.redemptions import router as redemptions_router
+from routers.dashboard import router as dashboard_router
+from routers.parent import router as parent_router
+from routers.teacher import router as teacher_router
+from routers.child import router as child_router
+from routers.teen import router as teen_router
+from routers.shop import router as shop_router
 
 class HealthCheck(BaseModel):
     """Response model for health check."""
@@ -105,7 +105,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=["http://localhost:5173", "http://localhost:3000"],  # Specific origins
     allow_credentials=True,  # Now this is valid
-    allow_methods=["*"],
+    allow_methods=["*","GET","POST","PUT","DELETE","OPTIONS"],
     allow_headers=["*"],
 )
 

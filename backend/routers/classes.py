@@ -9,9 +9,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
 from sqlalchemy.orm import selectinload
 
-from backend.database import get_async_session
-from backend.auth import current_active_user
-from backend.models import (
+from database import get_async_session
+from auth import current_active_user
+from models import (
     User,
     Class,
     ClassStudent,
@@ -19,7 +19,7 @@ from backend.models import (
     ChildProfile,
     UserModuleProgress,
 )
-from backend.schemas import ClassRead, ClassCreate, ClassUpdate, StudentRead, ClassResponse
+from schemas import ClassRead, ClassCreate, ClassUpdate, StudentRead, ClassResponse
 
 
 router = APIRouter()

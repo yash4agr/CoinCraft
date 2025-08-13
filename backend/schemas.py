@@ -421,6 +421,8 @@ class ShopItemRead(BaseModel):
     class Config:
         from_attributes = True
 
+class ShopItemRequest(BaseModel):
+    item_id: str
 
 # Dashboard Schemas
 class DashboardStats(BaseModel):

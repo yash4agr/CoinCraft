@@ -3,13 +3,14 @@
 import asyncio
 from datetime import datetime, timedelta
 
-from backend.database import create_db_and_tables, get_async_session
-from backend.models import (
+from database import create_db_and_tables, get_async_session
+from models import (
     User, ChildProfile, ParentProfile, TeacherProfile, Goal, Transaction,
-    Achievement, Module, ShopItem
+    Achievement, Module, ShopItem, UserOwnedItem
 )
-from backend.auth import get_user_db, get_user_manager
-from backend.schemas import UserCreate
+from sqlalchemy import delete
+from auth import get_user_db, get_user_manager
+from schemas import UserCreate
 from fastapi_users import exceptions
 
 
@@ -40,7 +41,7 @@ async def seed_data():
                 print("Created parent user")
             except exceptions.UserAlreadyExists:
                 print("Parent user already exists, skipping...")
-                parent_user = await user_manager.get_by_email("parent@demo.com")
+                parent_user = await user_manager.get_by_email("sarah@demo.com")
             
             # Create parent profile if it doesn't exist
             from sqlalchemy import select
@@ -159,6 +160,7 @@ async def seed_data():
             else:
                 print("Child2 profile (Harry) already exists, skipping...")
             
+            await session.execute(delete(Goal))
             # Create some goals
             goals_data = [
                 {
@@ -194,6 +196,7 @@ async def seed_data():
                 goal = Goal(**goal_data)
                 session.add(goal)
             
+            await session.execute(delete(Achievement))
             # Create some achievements
             achievements_data = [
                 {
@@ -223,6 +226,7 @@ async def seed_data():
                 achievement = Achievement(**achievement_data)
                 session.add(achievement)
             
+            await session.execute(delete(Module))
             # Create some learning modules
             modules_data = [
                 {
@@ -271,6 +275,7 @@ async def seed_data():
                 module = Module(**module_data)
                 session.add(module)
             
+            await session.execute(delete(Transaction))
             # Create some transactions
             transactions_data = [
                 {
@@ -279,7 +284,8 @@ async def seed_data():
                     "amount": 15,
                     "description": "Completed Money Basics module",
                     "category": "learning",
-                    "source": "module_completion"
+                    "source": "module_completion",
+                    "created_at": datetime.fromisoformat("2025-08-01T10:00:00Z")
                 },
                 {
                     "user_id": child1_user.id,
@@ -287,7 +293,8 @@ async def seed_data():
                     "amount": 10,
                     "description": "Daily streak bonus",
                     "category": "bonus",
-                    "source": "streak"
+                    "source": "streak",
+                    "created_at": datetime.fromisoformat("2025-08-02T08:00:00Z")
                 },
                 {
                     "user_id": child1_user.id,
@@ -295,7 +302,8 @@ async def seed_data():
                     "amount": 20,
                     "description": "Added to bike fund",
                     "category": "goal",
-                    "source": "goal_contribution"
+                    "source": "goal_contribution",
+                    "created_at": datetime.fromisoformat("2025-08-03T12:00:00Z")
                 },
                 {
                     "user_id": child2_user.id,
@@ -303,7 +311,242 @@ async def seed_data():
                     "amount": 25,
                     "description": "Completed Investment Basics",
                     "category": "learning",
-                    "source": "module_completion"
+                    "source": "module_completion",
+                    "created_at": datetime.fromisoformat("2025-08-10T14:00:00Z")
+                },
+                {
+                    "user_id": child1_user.id,
+                    "type": "earn",
+                    "amount": 12,
+                    "description": "Completed Saving Goals module",
+                    "category": "learning",
+                    "source": "module_completion",
+                    "created_at": datetime.fromisoformat("2025-07-01T09:00:00Z")
+                },
+                {
+                    "user_id": child2_user.id,
+                    "type": "save",
+                    "amount": 30,
+                    "description": "Saved for laptop",
+                    "category": "goal",
+                    "source": "goal_contribution",
+                    "created_at": datetime.fromisoformat("2025-07-02T11:30:00Z")
+                },
+                {
+                    "user_id": child1_user.id,
+                    "type": "spend",
+                    "amount": 8,
+                    "description": "Bought Animal Stickers",
+                    "category": "shop",
+                    "source": "shop_purchase",
+                    "created_at": datetime.fromisoformat("2025-07-03T15:00:00Z")
+                },
+                {
+                    "user_id": child2_user.id,
+                    "type": "earn",
+                    "amount": 18,
+                    "description": "Daily streak bonus",
+                    "category": "bonus",
+                    "source": "streak",
+                    "created_at": datetime.fromisoformat("2025-07-04T08:00:00Z")
+                },
+                {
+                    "user_id": child1_user.id,
+                    "type": "earn",
+                    "amount": 20,
+                    "description": "Completed Smart Spending module",
+                    "category": "learning",
+                    "source": "module_completion",
+                    "created_at": datetime.fromisoformat("2025-07-06T13:00:00Z")
+                },
+                {
+                    "user_id": child2_user.id,
+                    "type": "spend",
+                    "amount": 20,
+                    "description": "Bought Toy Car",
+                    "category": "shop",
+                    "source": "shop_purchase",
+                    "created_at": datetime.fromisoformat("2025-07-07T16:00:00Z")
+                },
+                {
+                    "user_id": child1_user.id,
+                    "type": "save",
+                    "amount": 15,
+                    "description": "Added to bike fund",
+                    "category": "goal",
+                    "source": "goal_contribution",
+                    "created_at": datetime.fromisoformat("2025-07-09T12:00:00Z")
+                },
+                {
+                    "user_id": child2_user.id,
+                    "type": "earn",
+                    "amount": 22,
+                    "description": "Completed Money Basics module",
+                    "category": "learning",
+                    "source": "module_completion",
+                    "created_at": datetime.fromisoformat("2025-07-10T10:00:00Z")
+                },
+                {
+                    "user_id": child1_user.id,
+                    "type": "spend",
+                    "amount": 10,
+                    "description": "Bought Rainbow Stickers",
+                    "category": "shop",
+                    "source": "shop_purchase",
+                    "created_at": datetime.fromisoformat("2025-07-12T17:00:00Z")
+                },
+                {
+                    "user_id": child2_user.id,
+                    "type": "save",
+                    "amount": 40,
+                    "description": "Saved for laptop",
+                    "category": "goal",
+                    "source": "goal_contribution",
+                    "created_at": datetime.fromisoformat("2025-07-13T11:00:00Z")
+                },
+                {
+                    "user_id": child1_user.id,
+                    "type": "earn",
+                    "amount": 14,
+                    "description": "Daily streak bonus",
+                    "category": "bonus",
+                    "source": "streak",
+                    "created_at": datetime.fromisoformat("2025-07-15T08:00:00Z")
+                },
+                {
+                    "user_id": child2_user.id,
+                    "type": "spend",
+                    "amount": 30,
+                    "description": "Bought Teddy Bear",
+                    "category": "shop",
+                    "source": "shop_purchase",
+                    "created_at": datetime.fromisoformat("2025-07-16T18:00:00Z")
+                },
+                {
+                    "user_id": child1_user.id,
+                    "type": "save",
+                    "amount": 25,
+                    "description": "Added to bike fund",
+                    "category": "goal",
+                    "source": "goal_contribution",
+                    "created_at": datetime.fromisoformat("2025-07-18T12:00:00Z")
+                },
+                {
+                    "user_id": child2_user.id,
+                    "type": "earn",
+                    "amount": 16,
+                    "description": "Completed Smart Spending module",
+                    "category": "learning",
+                    "source": "module_completion",
+                    "created_at": datetime.fromisoformat("2025-07-19T13:00:00Z")
+                },
+                {
+                    "user_id": child1_user.id,
+                    "type": "spend",
+                    "amount": 6,
+                    "description": "Bought Heart Stickers",
+                    "category": "shop",
+                    "source": "shop_purchase",
+                    "created_at": datetime.fromisoformat("2025-07-21T15:00:00Z")
+                },
+                {
+                    "user_id": child2_user.id,
+                    "type": "save",
+                    "amount": 35,
+                    "description": "Saved for laptop",
+                    "category": "goal",
+                    "source": "goal_contribution",
+                    "created_at": datetime.fromisoformat("2025-07-22T11:00:00Z")
+                },
+                {
+                    "user_id": child1_user.id,
+                    "type": "earn",
+                    "amount": 18,
+                    "description": "Completed Investment Basics",
+                    "category": "learning",
+                    "source": "module_completion",
+                    "created_at": datetime.fromisoformat("2025-07-24T14:00:00Z")
+                },
+                {
+                    "user_id": child2_user.id,
+                    "type": "spend",
+                    "amount": 15,
+                    "description": "Bought Bouncy Ball",
+                    "category": "shop",
+                    "source": "shop_purchase",
+                    "created_at": datetime.fromisoformat("2025-07-25T16:00:00Z")
+                },
+                {
+                    "user_id": child1_user.id,
+                    "type": "save",
+                    "amount": 10,
+                    "description": "Added to bike fund",
+                    "category": "goal",
+                    "source": "goal_contribution",
+                    "created_at": datetime.fromisoformat("2025-07-27T12:00:00Z")
+                },
+                {
+                    "user_id": child2_user.id,
+                    "type": "earn",
+                    "amount": 20,
+                    "description": "Daily streak bonus",
+                    "category": "bonus",
+                    "source": "streak",
+                    "created_at": datetime.fromisoformat("2025-07-28T08:00:00Z")
+                },
+                {
+                    "user_id": child1_user.id,
+                    "type": "spend",
+                    "amount": 12,
+                    "description": "Bought Crayons",
+                    "category": "shop",
+                    "source": "shop_purchase",
+                    "created_at": datetime.fromisoformat("2025-07-30T17:00:00Z")
+                },
+                {
+                    "user_id": child2_user.id,
+                    "type": "save",
+                    "amount": 50,
+                    "description": "Saved for laptop",
+                    "category": "goal",
+                    "source": "goal_contribution",
+                    "created_at": datetime.fromisoformat("2025-08-04T11:00:00Z")
+                },
+                {
+                    "user_id": child1_user.id,
+                    "type": "earn",
+                    "amount": 16,
+                    "description": "Completed Saving Goals module",
+                    "category": "learning",
+                    "source": "module_completion",
+                    "created_at": datetime.fromisoformat("2025-08-05T09:00:00Z")
+                },
+                {
+                    "user_id": child2_user.id,
+                    "type": "spend",
+                    "amount": 18,
+                    "description": "Bought Comic Book",
+                    "category": "shop",
+                    "source": "shop_purchase",
+                    "created_at": datetime.fromisoformat("2025-08-07T18:00:00Z")
+                },
+                {
+                    "user_id": child1_user.id,
+                    "type": "save",
+                    "amount": 30,
+                    "description": "Added to bike fund",
+                    "category": "goal",
+                    "source": "goal_contribution",
+                    "created_at": datetime.fromisoformat("2025-08-09T12:00:00Z")
+                },
+                {
+                    "user_id": child2_user.id,
+                    "type": "earn",
+                    "amount": 24,
+                    "description": "Completed Investment Basics",
+                    "category": "learning",
+                    "source": "module_completion",
+                    "created_at": datetime.fromisoformat("2025-08-11T14:00:00Z")
                 }
             ]
             
@@ -311,47 +554,63 @@ async def seed_data():
                 transaction = Transaction(**transaction_data)
                 session.add(transaction)
             
-            # Create some shop items
+            await session.execute(delete(ShopItem))
+    
+    # Insert fresh catalog
             shop_items_data = [
-                {
-                    "name": "Star Sticker",
-                    "description": "Shiny gold star for your collection",
-                    "price": 5,
-                    "category": "stickers",
-                    "emoji": "⭐",
-                    "available": True
-                },
-                {
-                    "name": "Rainbow Badge",
-                    "description": "Beautiful rainbow achievement badge",
-                    "price": 15,
-                    "category": "badges",
-                    "emoji": "🌈",
-                    "available": True
-                },
-                {
-                    "name": "Virtual Pet",
-                    "description": "Adopt a cute virtual pet",
-                    "price": 50,
-                    "category": "pets",
-                    "emoji": "🐱",
-                    "available": True
-                },
-                {
-                    "name": "Magic Wand",
-                    "description": "Magical wand for special effects",
-                    "price": 30,
-                    "category": "tools",
-                    "emoji": "🪄",
-                    "available": True
-                }
+                # Stickers
+                {"name": "Star Stickers", "description": "Shiny gold stars!", "price": 5, "category": "stickers", "emoji": "⭐"},
+                {"name": "Animal Stickers", "description": "Cute animal friends", "price": 8, "category": "stickers", "emoji": "🐱"},
+                {"name": "Rainbow Stickers", "description": "Colorful rainbows", "price": 10, "category": "stickers", "emoji": "🌈"},
+                {"name": "Heart Stickers", "description": "Pretty pink hearts", "price": 6, "category": "stickers", "emoji": "💖"},
+
+                # Toys
+                {"name": "Magic Wand", "description": "Cast magical spells!", "price": 25, "category": "toys", "emoji": "🪄"},
+                {"name": "Toy Car", "description": "Zoom zoom race car", "price": 20, "category": "toys", "emoji": "🚗"},
+                {"name": "Teddy Bear", "description": "Soft cuddly friend", "price": 30, "category": "toys", "emoji": "🧸"},
+                {"name": "Bouncy Ball", "description": "Super bouncy fun!", "price": 15, "category": "toys", "emoji": "⚽"},
+
+                # Art Supplies
+                {"name": "Crayons", "description": "Colorful drawing fun", "price": 12, "category": "art", "emoji": "🖍️"},
+                {"name": "Paint Set", "description": "Make beautiful art", "price": 18, "category": "art", "emoji": "🎨"},
+                {"name": "Sticker Book", "description": "Fill with stickers!", "price": 14, "category": "art", "emoji": "📖"},
+
+                # Books
+                {"name": "Adventure Book", "description": "Exciting stories!", "price": 22, "category": "books", "emoji": "📚"},
+                {"name": "Puzzle Book", "description": "Fun brain games", "price": 16, "category": "books", "emoji": "🧩"},
+                {"name": "Comic Book", "description": "Funny superhero stories", "price": 18, "category": "books", "emoji": "📖"}
             ]
-            
             for item_data in shop_items_data:
                 shop_item = ShopItem(**item_data)
                 session.add(shop_item)
             
             await session.commit()
+
+            # Create some owned shop items for child_1 and child_2
+            await session.execute(delete(UserOwnedItem))
+            owned_items_data = [
+                # child_1 owns two items
+                {
+                    "user_id": child1_user.id,
+                    "shop_item_id": "1",  # Star Stickers
+                    "acquired_at": datetime.utcnow(),
+                },
+                {
+                    "user_id": child1_user.id,
+                    "shop_item_id": "5",  # Magic Wand
+                    "acquired_at": datetime.utcnow(),
+                },
+                # child_2 owns one item
+                {
+                    "user_id": child2_user.id,
+                    "shop_item_id": "2",  # Animal Stickers
+                    "acquired_at": datetime.utcnow(),
+                },
+            ]
+            for owned_item in owned_items_data:
+                session.add(UserOwnedItem(**owned_item))
+            await session.commit()
+            
             print("Data seeding completed successfully!")
             
             print("\n Demo Login Credentials:")
@@ -369,4 +628,4 @@ async def seed_data():
 
 
 if __name__ == "__main__":
-    asyncio.run(seed_data()) 
+    asyncio.run(seed_data())

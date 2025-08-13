@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { apiService } from '../services/api'
 import { validateUser } from '../utils/typeMappers'
 import type { User, UserRole } from '../types'
@@ -64,10 +64,20 @@ export const useAuthStore = defineStore('auth', () => {
 
         token.value = response.data.access_token
         user.value = response.data.user
-        
+        if (user.value.role === 'younger_child' || user.value.role === 'older_child') {
+          // Ensure age is set for child profiles
+          const coinsresponse = await apiService.getCoins(user.value.id)
+          if (coinsresponse.error) {
+            throw new Error(coinsresponse.error)
+          }
+          else{
+            user.value.coins = coinsresponse.data || 0
+            console.log('✅ [AUTH] Coins loaded for child:', user.value.name, 'Coins:', user.value.coins)
+          }
+        }
         // Persist to localStorage
         localStorage.setItem('auth_token', response.data.access_token)
-        localStorage.setItem('auth_user', JSON.stringify(response.data.user))
+        localStorage.setItem('auth_user', JSON.stringify(user.value))
         
         console.log('✅ [AUTH] Login successful for:', user.value.name)
         return true
@@ -143,6 +153,17 @@ export const useAuthStore = defineStore('auth', () => {
 
       if (response.data) {
         user.value = response.data
+        if (user.value.role === 'younger_child' || user.value.role === 'older_child') {
+          // Ensure age is set for child profiles
+          const coinsresponse = await apiService.getCoins(user.value.id)
+          if (coinsresponse.error) {
+            throw new Error(coinsresponse.error)
+          }
+          else{
+            user.value.coins = coinsresponse.data || 0
+            console.log('✅ [AUTH] Coins loaded for child:', user.value.name, 'Coins:', user.value.coins)
+          }
+        }
         console.log('✅ [AUTH] Token valid, user verified:', user.value.name)
         return true
       }
@@ -223,12 +244,29 @@ export const useAuthStore = defineStore('auth', () => {
         }
         
         user.value = response.data
-        localStorage.setItem('auth_user', JSON.stringify(response.data))
+        if (user.value.role === 'younger_child' || user.value.role === 'older_child') {
+          // Ensure age is set for child profiles
+          const coinsresponse = await apiService.getCoins(user.value.id)
+          if (coinsresponse.error) {
+            throw new Error(coinsresponse.error)
+          }
+          else{
+            user.value.coins = coinsresponse.data || 0
+            console.log('✅ [AUTH] Coins loaded for child:', user.value.name, 'Coins:', user.value.coins)
+          }
+        }
+        localStorage.setItem('auth_user', JSON.stringify(user.value))
       }
     } catch (err) {
       console.error('❌ [AUTH] Failed to refresh user data:', err)
     }
   }
+
+  watch(user, (newVal) => {
+    console.log('User state changed:', newVal)
+    localStorage.setItem('auth_user', JSON.stringify(newVal))
+  }, { deep: true })
+
 
   return {
     // State

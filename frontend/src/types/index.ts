@@ -92,7 +92,7 @@ export interface Teacher extends User {
 // Transaction Interface - aligned with backend TransactionRead schema
 export interface Transaction {
   id: string
-  user_id: string
+  user_id?: string
   type: 'earn' | 'spend' | 'save'    // Backend uses pattern validation
   amount: number                      // Must be > 0 in backend
   description: string                 // Required in backend
