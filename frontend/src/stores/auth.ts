@@ -3,6 +3,7 @@ import { ref, computed, watch } from 'vue'
 import { apiService } from '../services/api'
 import { validateUser } from '../utils/typeMappers'
 import type { User, UserRole } from '../types'
+import { resetAllStores } from '@/plugins/storeReset'
 
 // Updated interface to match FastAPI OAuth2 requirements (email as username)
 interface LoginCredentials {
@@ -195,7 +196,10 @@ export const useAuthStore = defineStore('auth', () => {
     // Clear localStorage
     localStorage.removeItem('auth_token')
     localStorage.removeItem('auth_user')
-    
+    localStorage.removeItem('user-profile')
+    localStorage.removeItem('coincraft_user')
+    localStorage.removeItem('recent-transactions')
+    resetAllStores()
     console.log('✅ [AUTH] Logout complete')
   }
 
@@ -260,6 +264,12 @@ export const useAuthStore = defineStore('auth', () => {
     } catch (err) {
       console.error('❌ [AUTH] Failed to refresh user data:', err)
     }
+  }
+
+  const $reset = () => {
+    user.value = null
+    token.value = null
+    error.value = null
   }
 
   watch(user, (newVal) => {
