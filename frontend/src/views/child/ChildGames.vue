@@ -23,6 +23,7 @@
           :completed="adventure.completed"
           :color-scheme="adventure.colorScheme"
           :button-text="adventure.buttonText"
+          @click="handleAdventureClick(adventure)"
         />
       </div>
 
@@ -52,12 +53,20 @@
         </div>
       </div>
     </div>
+
+    <!-- Piggy Bank Adventure Modal -->
+    <PiggyBankAdventure
+      v-model="showPiggyBankModal"
+      :coins="10"
+      @completed="handlePiggyBankCompleted"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import AdventureCard from '@/components/shared/AdventureCard.vue'
+import PiggyBankAdventure from '@/components/explore/PiggyBankAdventure.vue'
 
 // Adventures Data - Same as dashboard for consistency
 const adventures = ref([
@@ -107,25 +116,25 @@ const adventures = ref([
   },
   {
     id: 5,
-    title: 'Shopping Smart',
-    description: 'Learn smart shopping tips and compare prices.',
-    emoji: '🛒',
+    title: 'Investment Explorer',
+    description: 'Learn about different ways to grow your money!',
+    emoji: '📈',
     difficulty: 'hard' as const,
     coins: 30,
     completed: false,
     colorScheme: 'yellow' as const,
-    buttonText: 'Shop Smart'
+    buttonText: 'Explore'
   },
   {
     id: 6,
-    title: 'Goal Setting Quest',
-    description: 'Set and achieve your financial goals step by step.',
-    emoji: '🎯',
+    title: 'Entrepreneur Quest',
+    description: 'Start your own business and earn money!',
+    emoji: '💼',
     difficulty: 'hard' as const,
-    coins: 35,
+    coins: 40,
     completed: false,
     colorScheme: 'purple' as const,
-    buttonText: 'Set Goals'
+    buttonText: 'Start Quest'
   }
 ])
 
@@ -148,4 +157,48 @@ const nextReward = computed(() => {
   const nextGame = adventures.value.find(adventure => !adventure.completed)
   return nextGame ? nextGame.coins : 0
 })
+
+// Handle adventure button clicks
+const handleAdventureClick = (adventure: any) => {
+  console.log('🎮 [CHILD_GAMES] Adventure clicked:', adventure.title)
+  console.log('🎮 [CHILD_GAMES] Adventure data:', adventure)
+  console.log('🎮 [CHILD_GAMES] Event received at:', new Date().toISOString())
+  
+  if (adventure.title === 'Piggy Bank Adventure') {
+    // Open Piggy Bank Adventure modal/game
+    console.log('🐷 [CHILD_GAMES] Opening Piggy Bank Adventure...')
+    openPiggyBankAdventure()
+  } else if (adventure.title === 'Needs vs Wants Game') {
+    // Handle other games
+    console.log('🎮 [CHILD_GAMES] Game not implemented yet:', adventure.title)
+  } else {
+    // Handle other games
+    console.log('🎮 [CHILD_GAMES] Game not implemented yet:', adventure.title)
+  }
+}
+
+// Piggy Bank Adventure functionality
+const showPiggyBankModal = ref(false)
+
+const openPiggyBankAdventure = () => {
+  console.log('🐷 [CHILD_GAMES] Opening Piggy Bank Adventure...')
+  showPiggyBankModal.value = true
+}
+
+// Handle Piggy Bank Adventure completion
+const handlePiggyBankCompleted = async (coinsEarned: number) => {
+  console.log('🎉 [CHILD_GAMES] Piggy Bank Adventure completed! Coins earned:', coinsEarned)
+  
+  // Update the adventure status to completed
+  const piggyBankAdventure = adventures.value.find(a => a.id === 1)
+  if (piggyBankAdventure) {
+    piggyBankAdventure.completed = true
+  }
+  
+  // Close the modal
+  showPiggyBankModal.value = false
+  
+  // Show success message
+  alert(`🎉 Congratulations! You completed the Piggy Bank Adventure and earned ${coinsEarned} coins!`)
+}
 </script> 

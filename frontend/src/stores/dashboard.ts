@@ -77,13 +77,16 @@ export const useDashboardStore = defineStore('dashboard', () => {
       
       // Check if user is authenticated (has valid token)
       if (!apiService.isAuthenticated()) {
+        console.log('🔐 [DASHBOARD] User not authenticated, loading mock data...')
         // Use mock data for demo/unauthenticated users
         if (userRole === 'younger_child' || userRole === 'older_child') {
           await loadChildMockData(userRole)
+          return // Add this return statement
         }
         return
       }
       
+      console.log('🔐 [DASHBOARD] User authenticated, loading from API...')
       // Use real API data for authenticated users
       const response = await apiService.getDashboardData(userRole)
       
@@ -109,6 +112,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
       
       // Fallback to mock data if API fails
       if (userRole === 'younger_child' || userRole === 'older_child') {
+        console.log('🔄 [DASHBOARD] API failed, falling back to mock data...')
         await loadChildMockData(userRole)
       }
     } finally {

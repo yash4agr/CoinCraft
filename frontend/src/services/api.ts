@@ -193,8 +193,13 @@ class ApiService {
    * Get goals for a user
    */
   async getGoals(userId: string): Promise<Goal[]> {
-    const response = await httpClient.get(`/api/users/${userId}/goals`)
-    return mapBackendGoals(response.data)
+    try {
+      const response = await httpClient.get(`/api/users/${userId}/goals`)
+      return mapBackendGoals(response.data)
+    } catch (error: any) {
+      console.error('❌ [API] Failed to get goals:', error)
+      return [] // Return empty array on error instead of throwing
+    }
   }
 
   /**
@@ -213,9 +218,9 @@ class ApiService {
   /**
    * Update a goal
    */
-  async updateGoal(goalId: string, updates: Partial<Goal>): Promise<ApiResponse<Goal>> {
+  async updateGoal(userId: string, goalId: string, updates: Partial<Goal>): Promise<ApiResponse<Goal>> {
     try {
-      const response = await httpClient.post(`/api/goals/${goalId}`, updates)
+      const response = await httpClient.put(`/api/users/${userId}/goals/${goalId}`, updates)
       return { data: mapBackendGoal(response.data) }
     } catch (error: any) {
       return { error: error.message || 'Failed to update goal' }
@@ -424,6 +429,26 @@ class ApiService {
     const response = await httpClient.get('/api/shop/owned_items')
     return response.data
   }
+
+  async getPurchaseRequests(): Promise<any[]> {
+    const response = await httpClient.get('/api/shop/purchase_requests')
+    return response.data
+  }
+
+  async createPurchaseRequest(userId: string, item_id: string): Promise<any> {
+    const response = await httpClient.post(`/api/shop/${userId}/purchase`, { item_id })
+    return response.data
+  }
+
+  async approvePurchaseRequest(requestId: string): Promise<any> {
+    const response = await httpClient.put(`/api/shop/purchase_requests/${requestId}/approve`)
+    return response.data
+  }
+
+  async rejectPurchaseRequest(requestId: string): Promise<any> {
+    const response = await httpClient.put(`/api/shop/purchase_requests/${requestId}/reject`)
+    return response.data
+  }
   /**
    * Purchase an item from shop
    */
@@ -449,10 +474,13 @@ class ApiService {
   }): Promise<ApiResponse<User>> {
     try {
       const response = await httpClient.post('/api/parent/children', childData)
-      // Backend now returns ChildCreateResponse: { success, message, child: UserRead }
+      // Backend now returns ChildCreateResponse: { success, message, child: UserRead, password?, age? }
       const childCreateResponse = response.data
       if (childCreateResponse.success && childCreateResponse.child) {
         const user = mapBackendUser(childCreateResponse.child)
+        // Attach transient fields so caller can display
+        ;(user as any).password = childCreateResponse.password
+        ;(user as any).age = childCreateResponse.age
         return { data: user }
       } else {
         return { error: childCreateResponse.message || 'Failed to create child account' }
@@ -505,7 +533,8 @@ class ApiService {
       // Backend now returns TaskCreateResponse: { success, task: TaskRead, message }
       const taskCreateResponse = response.data
       if (taskCreateResponse.success && taskCreateResponse.task) {
-        const task = mapBackendTask(taskCreateResponse.task)
+        // Return raw backend task to keep field names (created_at) consistent
+        const task = taskCreateResponse.task
         return { data: task }
       } else {
         return { error: taskCreateResponse.message || 'Failed to create task' }
@@ -533,6 +562,19 @@ class ApiService {
     } catch (error: any) {
       console.error('❌ [API] Failed to approve task:', error)
       return { error: error.response?.data?.detail || 'Failed to approve task' }
+    }
+  }
+
+  /**
+   * Reject a task
+   */
+  async rejectTask(taskId: string): Promise<ApiResponse<Task>> {
+    try {
+      const response = await httpClient.put(`/api/tasks/${taskId}/reject`)
+      return { data: mapBackendTask(response.data) }
+    } catch (error: any) {
+      console.error('❌ [API] Failed to reject task:', error)
+      return { error: error.response?.data?.detail || 'Failed to reject task' }
     }
   }
 
@@ -862,6 +904,18 @@ class ApiService {
     })
     
     return response.data
+  }
+
+  /**
+   * Get all goals for all children of the current parent
+   */
+  async getAllChildrenGoals(): Promise<ApiResponse<any[]>> {
+    try {
+      const response = await httpClient.get('/api/parent/children/goals')
+      return { data: response.data }
+    } catch (error: any) {
+      return { error: error.message || 'Failed to get all children goals' }
+    }
   }
 
   // ===================

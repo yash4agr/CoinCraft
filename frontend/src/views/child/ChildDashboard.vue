@@ -23,6 +23,53 @@
       </div>
     </div>
 
+    <!-- Assigned Tasks Section -->
+    <div class="mb-8">
+      <h2 class="text-2xl font-bold text-gray-800 mb-6">Assigned Tasks ✅</h2>
+      <div v-if="assignedTasks.length === 0" class="text-gray-500">No tasks assigned yet.</div>
+      <div v-else class="space-y-3">
+        <div
+          v-for="task in assignedTasks"
+          :key="task.id"
+          class="bg-white rounded-lg p-4 shadow flex items-center justify-between"
+        >
+          <div class="flex items-center gap-3">
+            <input
+              type="checkbox"
+              :checked="task.status === 'completed' || task.status === 'approved'"
+              :disabled="task.status === 'completed' || task.status === 'approved'"
+              @change="() => markTaskCompleted(task.id)"
+              class="h-5 w-5"
+              :aria-label="`Mark ${task.title} as completed`"
+            />
+            <div>
+              <div class="font-semibold text-gray-800">{{ task.title }}</div>
+              <div class="text-sm text-gray-500">
+                {{ task.description || 'No description' }}
+              </div>
+              <div class="text-xs text-gray-400 mt-1">
+                Reward: {{ task.coins_reward }} coins
+                <span v-if="task.due_date"> • Due: {{ new Date(task.due_date).toLocaleDateString() }}</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <span
+              class="px-2 py-1 rounded text-xs"
+              :class="{
+                'bg-yellow-100 text-yellow-800': task.status === 'pending',
+                'bg-blue-100 text-blue-800': task.status === 'in_progress',
+                'bg-green-100 text-green-800': task.status === 'completed',
+                'bg-emerald-100 text-emerald-800': task.status === 'approved'
+              }"
+            >
+              {{ task.status === 'approved' ? 'Approved' : task.status === 'completed' ? 'Awaiting Approval' : task.status.replace('_', ' ') }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Choose Your Adventure Section -->
     <div class="mb-8">
       <h2 class="text-2xl font-bold text-gray-800 mb-6">Choose Your Adventure! 🚀</h2>
@@ -146,14 +193,28 @@
       </div>
     </div>
   </div>
+
+  <!-- Piggy Bank Adventure Modal -->
+  <PiggyBankAdventure
+    v-model="showPiggyBankModal"
+    :coins="10"
+    @completed="handlePiggyBankCompleted"
+  />
+  
+  <!-- Debug Modal State (remove this in production) -->
+  <div v-if="showPiggyBankModal" class="fixed top-4 right-4 bg-red-500 text-white p-2 rounded z-50">
+    Modal is OPEN! State: {{ showPiggyBankModal }}
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDashboardStore } from '@/stores/dashboard'
 import { useChildStore } from '@/stores/child'
+import { useUserStore } from '@/stores/user'
 import AdventureCard from '@/components/shared/AdventureCard.vue'
+import PiggyBankAdventure from '@/components/explore/PiggyBankAdventure.vue'
 import ProgressCard from '@/components/shared/ProgressCard.vue'
 import AchievementCard from '@/components/shared/AchievementCard.vue'
 import JourneyCard from '@/components/shared/JourneyCard.vue'
@@ -162,6 +223,7 @@ import JourneyCard from '@/components/shared/JourneyCard.vue'
 const router = useRouter()
 const dashboardStore = useDashboardStore()
 const childStore = useChildStore()
+const userStore = useUserStore()
 
 // Reactive state
 const isLoading = ref(false)
@@ -171,6 +233,26 @@ const showSuccessToast = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 const allowReplay = ref(true)
+
+// Piggy Bank Adventure Modal
+const showPiggyBankModal = ref(false)
+
+// Debug modal state changes
+watch(showPiggyBankModal, (newVal) => {
+  console.log('🐷 [CHILD] Modal state changed to:', newVal)
+})
+// Assigned tasks from child store
+const assignedTasks = computed(() => childStore.tasks)
+
+const markTaskCompleted = async (taskId: string) => {
+  try {
+    await childStore.completeTask(taskId)
+    showSuccess('Task marked as completed! Awaiting parent approval.')
+  } catch (e) {
+    showError('Failed to mark task completed')
+  }
+}
+
 
 // Auto-dismiss timers
 // Timer type for cleanup
@@ -371,11 +453,22 @@ const handleGoalClick = async (goalId: string) => {
 
 const handleAdventureClick = async (adventure: any) => {
   try {
+    console.log('🎮 [CHILD] Adventure clicked:', adventure)
+    
     if (adventure.completed && !allowReplay.value) {
       showError('This adventure is already completed!')
       return
     }
     
+    if (adventure.id === '1') {
+      console.log('🐷 [CHILD] Piggy Bank Adventure clicked, showing modal...')
+      // Show Piggy Bank Adventure modal
+      showPiggyBankModal.value = true
+      console.log('🐷 [CHILD] Modal state set to:', showPiggyBankModal.value)
+      return
+    }
+    
+    console.log('🎮 [CHILD] Other adventure clicked, navigating to games...')
     // Update adventure progress in store
     await dashboardStore.completeActivity(adventure.id)
     
@@ -385,7 +478,7 @@ const handleAdventureClick = async (adventure: any) => {
     
     showSuccess(`${adventure.title} started successfully!`)
   } catch (error) {
-    console.error('Adventure start failed:', error)
+    console.error('❌ [CHILD] Adventure start failed:', error)
     showError(`Unable to start ${adventure.title}. Please try again.`)
   }
 }
@@ -420,6 +513,29 @@ const handleJourneyClick = async (journey: any) => {
   } catch (error) {
     console.error('Journey navigation failed:', error)
     showError(`Unable to load ${journey.title}. Please try again.`)
+  }
+}
+
+const handlePiggyBankCompleted = async (coinsEarned: number) => {
+  try {
+    // Mark the adventure as completed
+    const piggyBankAdventure = adventures.value.find(a => a.id === '1')
+    if (piggyBankAdventure) {
+      piggyBankAdventure.completed = true
+    }
+    
+    // Show success message
+    showSuccess(`Congratulations! You earned ${coinsEarned} coins! 🎉`)
+    
+    // Close the modal
+    showPiggyBankModal.value = false
+    
+    // Refresh user coins to show updated balance
+    await userStore.refreshCoins()
+    
+  } catch (error) {
+    console.error('Failed to handle piggy bank completion:', error)
+    showError('Failed to complete the adventure. Please try again.')
   }
 }
 
@@ -485,10 +601,13 @@ onMounted(async () => {
   
   // Load child dashboard data
   try {
-    await childStore.loadDashboard()
-    console.log('✅ [CHILD] Dashboard loaded successfully')
+    await Promise.all([
+      childStore.loadDashboard(),
+      childStore.loadTasks()
+    ])
+    console.log('✅ [CHILD] Dashboard and tasks loaded successfully')
   } catch (error) {
-    console.error('❌ [CHILD] Failed to load dashboard:', error)
+    console.error('❌ [CHILD] Failed to load dashboard or tasks:', error)
   }
   
   // Also load dashboard store data for backwards compatibility

@@ -302,14 +302,10 @@ const handlePurchase = (item: ShopItem) => {
 
 const confirmPurchase = async () => {
   if (!selectedItem.value) return
-  // Use new purchaseShopItem function
-  console.log("BIG2", selectedItem.value, selectedItem.value.id)
   const success = await userStore.purchaseShopItem(selectedItem.value.id)
   if (success) {
-    selectedItem.value.owned = true
-    myTreasures.value.push({ ...selectedItem.value })
     showSuccessMessage.value = true
-    successMessage.value = `You got ${selectedItem.value.name}! 🎉`
+    successMessage.value = `Asked parent to buy ${selectedItem.value.name}! 📨`
     setTimeout(() => {
       showSuccessMessage.value = false
     }, 3000)

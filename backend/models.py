@@ -328,6 +328,24 @@ class RedemptionRequest(Base):
     approver = relationship("User", primaryjoin="RedemptionRequest.approved_by == User.id")
 
 
+class PurchaseRequest(Base):
+    """Requests by children to purchase shop items (requires parent approval)."""
+    
+    __tablename__ = "purchase_requests"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    shop_item_id = Column(String, ForeignKey("shop_items.id"), nullable=False)
+    price = Column(Integer, nullable=False)
+    status = Column(String(20), default="pending")  # pending, approved, rejected
+    approved_by = Column(String, ForeignKey("users.id"), nullable=True)
+    approved_at = Column(DateTime, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    user = relationship("User", primaryjoin="PurchaseRequest.user_id == User.id")
+    approver = relationship("User", primaryjoin="PurchaseRequest.approved_by == User.id")
+    item = relationship("ShopItem")
+
 class BudgetCategory(Base):
     """Budget categories for teen users."""
     

@@ -52,6 +52,8 @@ export const mapBackendUser = (backendUser: any): User => {
 export const mapBackendGoal = (backendGoal: any): Goal => {
   return {
     ...backendGoal,
+    // Map is_completed to completed for frontend compatibility
+    completed: backendGoal.is_completed,
     // Computed Date fields
     createdAt: parseISODate(backendGoal.created_at),
     updatedAt: parseISODate(backendGoal.updated_at),
