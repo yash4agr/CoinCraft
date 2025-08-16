@@ -24,6 +24,7 @@ from models import (
 )
 from schemas import (
     UserRead,
+    UserWithProfilesRead,
     ChildProfileRead,
     TaskRead,
     TaskCreate,
@@ -145,8 +146,12 @@ async def get_parent_dashboard(
         max_level = max(max_level, child_profile.level)
         max_streak = max(max_streak, child_profile.streak_days)
 
-        # Add child as UserRead object
-        children_list.append(UserRead.model_validate(user))
+        # Add child as UserWithProfilesRead object with profile data
+        child_with_profile = UserWithProfilesRead.model_validate({
+            **user.__dict__,
+            "child_profile": ChildProfileRead.model_validate(child_profile)
+        })
+        children_list.append(child_with_profile)
 
     # Get recent transactions for the family
     if children_data:
@@ -247,16 +252,14 @@ async def add_child(
         )
 
     # Create child profile
-    try:
-        child_profile = ChildProfile(
-            user_id=child_user.id,
-            age=child_data["age"],
-            coins=0,
-            level=1,
-            streak_days=0,
-            parent_id=current_user.id,
-        )
+    child_profile = ChildProfile(
+        user_id=child_user.id,
+        age=child_data["age"],
+        parent_id=current_user.id,
+        temporary_password=password  # Store the generated password
+    )
 
+    try:
         session.add(child_profile)
         await session.commit()
         print(f"[BACKEND] Child profile committed to database: {child_profile.user_id}")

@@ -717,6 +717,19 @@ class ApiService {
     }
   }
 
+  /**
+   * Search for students by name
+   */
+  async searchStudents(query: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await httpClient.get(`/api/teacher/search-students?query=${encodeURIComponent(query)}`)
+      return { data: response.data }
+    } catch (error: any) {
+      console.error('❌ [API] Failed to search students:', error)
+      return { error: error.response?.data?.detail || 'Failed to search students' }
+    }
+  }
+
   // ===================
   // TEEN-SPECIFIC METHODS
   // ===================

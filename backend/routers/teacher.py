@@ -34,7 +34,6 @@ class ClassSummary:
     def __init__(self, class_obj: Class, student_count: int, avg_performance: float):
         self.id = class_obj.id
         self.name = class_obj.name
-        self.grade = class_obj.grade
         self.description = class_obj.description
         self.student_count = student_count
         self.avg_performance = avg_performance
@@ -166,7 +165,6 @@ async def get_teacher_dashboard(
         class_summary = {
             "id": class_obj.id,
             "name": class_obj.name,
-            "grade": class_obj.grade,
             "description": class_obj.description,
             "student_count": student_count,
             "avg_performance": round(class_performance, 1),
@@ -178,22 +176,30 @@ async def get_teacher_dashboard(
     overall_avg_performance = total_performance / len(classes) if classes else 0
 
     return {
-        "teacher": {
+        "user": {
             "id": current_user.id,
             "name": current_user.name,
             "email": current_user.email,
-            "school": teacher_profile.school_name,
-            "grade_level": teacher_profile.grade_level,
-            "subject": teacher_profile.subject,
-            "avatar": current_user.avatar_url,
+            "role": current_user.role,
+            "is_active": current_user.is_active,
+            "is_superuser": current_user.is_superuser,
+            "is_verified": current_user.is_verified,
+            "avatar_url": current_user.avatar_url,
+            "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
+            "updated_at": current_user.updated_at.isoformat() if current_user.updated_at else None,
         },
-        "classes": classes,
-        "analytics": {
+        "stats": {
             "total_classes": len(classes),
             "total_students": total_students,
             "avg_performance": round(overall_avg_performance, 1),
             "students_needing_support": students_needing_support,
+            "school": teacher_profile.school_name,
+            "grade_level": teacher_profile.grade_level,
+            "subject": teacher_profile.subject,
         },
+        "classes": classes,
+        "recent_modules": [],  # TODO: Implement recent modules functionality
+        "student_progress": [],  # TODO: Implement student progress tracking
     }
 
 
@@ -252,7 +258,6 @@ async def create_class(
             "name": new_class.name,
             "description": new_class.description,
             "class_code": new_class.class_code,
-            "grade": new_class.grade,
             "created_at": new_class.created_at.isoformat(),
         },
     }
@@ -331,7 +336,6 @@ async def get_teacher_classes(
                 "name": class_obj.name,
                 "description": class_obj.description,
                 "class_code": class_obj.class_code,
-                "grade": class_obj.grade,
                 "student_count": student_count,
                 "avg_performance": avg_performance,
                 "is_active": class_obj.is_active,
@@ -412,7 +416,6 @@ async def get_class_details(
                 "id": user.id,
                 "name": user.name,
                 "avatar": user.avatar_url,
-                "grade": class_obj.grade,
                 "performance": round(performance, 1),
                 "needs_support": needs_support,
                 "last_activity": user.updated_at.isoformat(),
@@ -432,7 +435,6 @@ async def get_class_details(
         "name": class_obj.name,
         "description": class_obj.description,
         "class_code": class_obj.class_code,
-        "grade": class_obj.grade,
         "students": students,
         "avg_performance": sum(s["performance"] for s in students) / len(students)
         if students
@@ -885,3 +887,61 @@ async def get_performance_analytics(
         "total_students": total_students,
         "timeframe": timeframe,
     }
+
+
+@router.get("/search-students")
+async def search_students(
+    query: str,
+    current_user: User = Depends(current_active_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    """Search for students by name that can be added to classes."""
+    if current_user.role != "teacher":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="Only teachers can search for students"
+        )
+    
+    try:
+        # Search for students by name (case-insensitive)
+        search_query = f"%{query}%"
+        
+        # Get students that are not already in any of the teacher's classes
+        stmt = select(User).where(
+            and_(
+                User.is_active == True,
+                User.role == "student",
+                User.name.ilike(search_query),
+                User.id.notin_(
+                    select(ClassStudent.student_id).join(Class).where(
+                        Class.teacher_id == current_user.id
+                    )
+                )
+            )
+        ).limit(20)  # Limit results to prevent overwhelming
+        
+        result = await session.execute(stmt)
+        students = result.scalars().all()
+        
+        # Format student data
+        student_list = []
+        for student in students:
+            student_list.append({
+                "id": student.id,
+                "name": student.name,
+                "email": student.email,
+                "avatar": student.avatar_url,
+                "created_at": student.created_at.isoformat()
+            })
+        
+        return {
+            "students": student_list,
+            "total": len(student_list)
+        }
+        
+    except Exception as e:
+        print(f"BACKEND ERROR in search_students: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail="Failed to search students"
+        )

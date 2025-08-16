@@ -29,12 +29,16 @@ export interface TeacherStats {
 export const useTeacherStore = defineStore('teacher', () => {
   // State
   const classes = ref<TeacherClass[]>([])
+  const currentClass = ref<TeacherClass | null>(null)
+  const modules = ref<any[]>([])
+  const students = ref<User[]>([])
   const stats = ref<TeacherStats>({
     total_students: 0,
     total_classes: 0,
     average_performance: 0,
     total_modules: 0
   })
+  const profile = ref<any>(null) // Teacher profile data
   const isLoading = ref(false)
   const error = ref<string | null>(null)
 
@@ -55,13 +59,43 @@ export const useTeacherStore = defineStore('teacher', () => {
       const dashboardData = await apiService.getTeacherDashboard()
 
       if (dashboardData.data) {
-        // Update stats from dashboard data
-        stats.value = {
-          total_students: dashboardData.data.students_count || 0,
-          total_classes: dashboardData.data.classes_count || 0,
-          average_performance: dashboardData.data.average_performance || 0,
-          total_modules: dashboardData.data.modules_count || 0
+        const { user, stats: dashboardStats, classes: dashboardClasses } = dashboardData.data
+        
+        // Update profile information
+        if (user) {
+          profile.value = {
+            avatar: user.avatar_url,
+            school: (dashboardStats as any)?.school || '',
+            subject: (dashboardStats as any)?.subject || ''
+          }
         }
+        
+        // Update stats from dashboard data
+        if (dashboardStats) {
+          stats.value = {
+            total_students: (dashboardStats as any).total_students || 0,
+            total_classes: (dashboardStats as any).total_classes || 0,
+            average_performance: (dashboardStats as any).avg_performance || 0,
+            total_modules: (dashboardStats as any).total_modules || 0
+          }
+        }
+        
+        // Update classes if available
+        if (dashboardClasses) {
+          classes.value = dashboardClasses.map((cls: any) => ({
+            id: cls.id,
+            name: cls.name,
+            description: cls.description || '',
+            teacher_id: cls.teacher_id || user?.id || '',
+            class_code: cls.class_code || '',
+            is_active: cls.is_active !== false,
+            created_at: cls.created_at || new Date().toISOString(),
+            students_count: cls.student_count || 0,
+            average_performance: cls.avg_performance || 0,
+            grade: cls.grade || ''
+          }))
+        }
+        
       } else {
         error.value = dashboardData.error || 'Failed to fetch teacher dashboard'
       }
@@ -222,9 +256,153 @@ export const useTeacherStore = defineStore('teacher', () => {
     error.value = null
   }
 
+  const addStudentToClass = async (classId: string, studentData: { email: string }) => {
+    console.log('👥 [TEACHER] Adding student to class...')
+    
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const response = await apiService.addStudentToClass(classId, studentData)
+      
+      if (response.error) {
+        return { error: response.error }
+      }
+
+      // Update the class student count locally
+      const classIndex = classes.value.findIndex(cls => cls.id === classId)
+      if (classIndex !== -1) {
+        const existingClass = classes.value[classIndex]
+        if (existingClass) {
+          existingClass.students_count = (existingClass.students_count || 0) + 1
+        }
+      }
+
+      console.log('✅ [TEACHER] Student added successfully')
+      return { success: true, data: response.data }
+
+    } catch (err: any) {
+      console.error('❌ [TEACHER] Failed to add student:', err.message)
+      return { error: err.message }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const loadClassDetails = async (classId: string) => {
+    console.log('📋 [TEACHER] Loading class details...')
+    
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const response = await apiService.getClassDetails(classId)
+      
+      if (response.error) {
+        throw new Error(response.error)
+      }
+
+      if (response.data) {
+        // Store the current class details
+        currentClass.value = response.data as TeacherClass
+        
+        // Update students if included in response
+        if (response.data.students) {
+          students.value = response.data.students
+        }
+        
+        // Update the class in our local store with full details including students
+        const classIndex = classes.value.findIndex(cls => cls.id === classId)
+        if (classIndex !== -1) {
+          const existingClass = classes.value[classIndex]
+          if (existingClass) {
+            classes.value[classIndex] = {
+              ...existingClass,
+              students: response.data.students || existingClass.students,
+              students_count: response.data.students?.length || existingClass.students_count || 0,
+              average_performance: response.data.avg_performance || existingClass.average_performance || 0
+            }
+          }
+        }
+
+        console.log('✅ [TEACHER] Class details loaded successfully')
+        return response.data
+      }
+
+      return null
+
+    } catch (err: any) {
+      console.error('❌ [TEACHER] Failed to load class details:', err.message)
+      error.value = err.message
+      return null
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const loadTeacherProfile = async () => {
+    // For now, just set a basic profile since we don't have a separate profile endpoint
+    console.log('📋 [TEACHER] Loading teacher profile...')
+    profile.value = {
+      avatar: null,
+      school: 'Default School',
+      subject: 'Financial Literacy'
+    }
+    return Promise.resolve()
+  }
+
+  const loadModules = async () => {
+    console.log('📚 [TEACHER] Loading teacher modules...')
+    
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const response = await apiService.getTeacherModules()
+      
+      if (response.error) {
+        throw new Error(response.error)
+      }
+
+      // For now, we'll just log success since modules aren't fully implemented
+      console.log('✅ [TEACHER] Modules loaded successfully')
+      return response.data || []
+
+    } catch (err: any) {
+      console.error('❌ [TEACHER] Failed to load modules:', err.message)
+      error.value = err.message
+      return []
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Search for students by name
+  const searchStudents = async (query: string): Promise<any[]> => {
+    console.log('🔍 [TEACHER] Searching for students:', query)
+    
+    try {
+      const response = await apiService.searchStudents(query)
+      
+      if (response.data && response.data.students) {
+        return response.data.students
+      } else {
+        console.error('Invalid response format for student search:', response)
+        return []
+      }
+    } catch (error) {
+      console.error('Error searching students:', error)
+      throw error
+    }
+  }
+
   return {
     // State
     classes,
+    currentClass,
+    modules,
+    students,
+    profile,
     stats,
     isLoading,
     error,
@@ -240,6 +418,11 @@ export const useTeacherStore = defineStore('teacher', () => {
     updateClass,
     deleteClass,
     getClassById,
-    clearError
+    addStudentToClass,
+    loadClassDetails,
+    loadTeacherProfile,
+    loadModules,
+    clearError,
+    searchStudents
   }
 })

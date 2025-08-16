@@ -241,36 +241,83 @@
       </div>
     </div>
 
-    <!-- Create Class Modal (placeholder) -->
+    <!-- Create Class Modal -->
     <div v-if="showCreateClassModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
       <div class="bg-white rounded-2xl p-6 max-w-md w-full">
         <div class="flex items-center justify-between mb-6">
           <h3 class="text-xl font-bold text-gray-800">Create New Class</h3>
           <button 
-            @click="showCreateClassModal = false"
+            @click="closeCreateClassModal"
             class="text-gray-400 hover:text-gray-600 transition-colors"
           >
             <i class="ri-close-line text-2xl"></i>
           </button>
         </div>
         
-        <!-- Form would go here -->
-        <p class="text-center text-gray-600 mb-6">Class creation form would be implemented here</p>
-        
-        <div class="flex gap-3">
-          <button 
-            @click="showCreateClassModal = false"
-            class="flex-1 py-3 px-4 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-colors"
-          >
-            Cancel
-          </button>
-          <button 
-            @click="showCreateClassModal = false"
-            class="flex-1 py-3 px-4 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors"
-          >
-            Create Class
-          </button>
-        </div>
+        <!-- Class Creation Form -->
+        <form @submit.prevent="handleCreateClass" class="space-y-4">
+          <div>
+            <label for="className" class="block text-sm font-medium text-gray-700 mb-1">
+              Class Name *
+            </label>
+            <input
+              id="className"
+              v-model="classForm.name"
+              type="text"
+              required
+              placeholder="e.g., Financial Literacy 101"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              :disabled="isCreatingClass"
+            />
+          </div>
+
+          <div>
+            <label for="classDescription" class="block text-sm font-medium text-gray-700 mb-1">
+              Description
+            </label>
+            <textarea
+              id="classDescription"
+              v-model="classForm.description"
+              rows="3"
+              placeholder="Describe what this class will cover..."
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+              :disabled="isCreatingClass"
+            ></textarea>
+          </div>
+
+          <!-- Error Message -->
+          <div v-if="classError" class="p-3 bg-red-50 border border-red-200 rounded-lg">
+            <p class="text-sm text-red-600">{{ classError }}</p>
+          </div>
+
+          <!-- Success Message -->
+          <div v-if="classSuccess" class="p-3 bg-green-50 border border-green-200 rounded-lg">
+            <p class="text-sm text-green-600">{{ classSuccess }}</p>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex gap-3 pt-2">
+            <button 
+              type="button"
+              @click="closeCreateClassModal"
+              class="flex-1 py-3 px-4 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+              :disabled="isCreatingClass"
+            >
+              Cancel
+            </button>
+            <button 
+              type="submit"
+              class="flex-1 py-3 px-4 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              :disabled="isCreatingClass || !classForm.name.trim()"
+            >
+              <span v-if="isCreatingClass" class="flex items-center justify-center">
+                <i class="ri-loader-4-line animate-spin mr-2"></i>
+                Creating...
+              </span>
+              <span v-else>Create Class</span>
+            </button>
+          </div>
+        </form>
       </div>
     </div>
 
@@ -295,6 +342,15 @@ const teacherStore = useTeacherStore()
 // State
 const showCreateClassModal = ref(false)
 const showAIAssist = ref(false)
+const isCreatingClass = ref(false)
+const classError = ref('')
+const classSuccess = ref('')
+
+// Class form data
+const classForm = ref({
+  name: '',
+  description: ''
+})
 
 // Computed properties
 const totalStudents = computed(() => {
@@ -355,6 +411,45 @@ const navigateToClassManagement = (classId: string) => {
 const handleModuleSaved = (module: any) => {
   console.log('🎉 [TEACHER] AI-generated module saved:', module)
   // Optionally refresh modules list or show success message
+}
+
+const closeCreateClassModal = () => {
+  showCreateClassModal.value = false
+  classForm.value = { name: '', description: '' }
+  classError.value = ''
+  classSuccess.value = ''
+}
+
+const handleCreateClass = async () => {
+  if (!classForm.value.name.trim()) {
+    classError.value = 'Class name is required'
+    return
+  }
+
+  isCreatingClass.value = true
+  classError.value = ''
+  classSuccess.value = ''
+
+  try {
+    const newClass = await teacherStore.createClass({
+      name: classForm.value.name.trim(),
+      description: classForm.value.description.trim()
+    })
+
+    if (newClass) {
+      classSuccess.value = `Class "${newClass.name}" created successfully!`
+      // Close modal after a short delay to show success message
+      setTimeout(() => {
+        closeCreateClassModal()
+      }, 1500)
+    } else {
+      classError.value = 'Failed to create class. Please try again.'
+    }
+  } catch (error: any) {
+    classError.value = error.message || 'An error occurred while creating the class'
+  } finally {
+    isCreatingClass.value = false
+  }
 }
 
 // Lifecycle hooks

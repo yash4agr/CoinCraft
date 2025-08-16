@@ -64,6 +64,7 @@ class ChildProfile(Base):
     streak_days = Column(Integer, default=0)
     last_activity_date = Column(DateTime, nullable=True)
     parent_id = Column(String, ForeignKey("users.id"), nullable=True)
+    temporary_password = Column(String(100), nullable=True)  # Store password temporarily for parent visibility
     
     user = relationship("User", back_populates="child_profile", primaryjoin="ChildProfile.user_id == User.id")
     parent = relationship("User", primaryjoin="ChildProfile.parent_id == User.id")

@@ -88,7 +88,7 @@
             </span>
           </div>
           <p class="text-gray-600 text-sm">
-            Created {{ formatDate(classItem.createdAt) }}
+            Created {{ formatDate(new Date(classItem.created_at)) }}
           </p>
         </div>
 
@@ -96,12 +96,12 @@
         <div class="p-6">
           <div class="grid grid-cols-2 gap-4 mb-6">
             <div class="text-center">
-              <div class="text-2xl font-bold text-blue-600">{{ classItem.students.length }}</div>
+              <div class="text-2xl font-bold text-blue-600">{{ classItem.students_count || 0 }}</div>
               <p class="text-sm text-gray-600">Students</p>
             </div>
             <div class="text-center">
-              <div class="text-2xl font-bold" :class="getPerformanceColorClass(classItem.averagePerformance)">
-                {{ Math.round(classItem.averagePerformance) }}%
+              <div class="text-2xl font-bold" :class="getPerformanceColorClass(classItem.avg_performance || 0)">
+                {{ Math.round(classItem.avg_performance || 0) }}%
               </div>
               <p class="text-sm text-gray-600">Avg. Performance</p>
             </div>
@@ -139,7 +139,7 @@
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div>
             <h2 class="text-2xl font-bold text-gray-800">{{ selectedClass.name }}</h2>
-            <p class="text-gray-600">Grade {{ selectedClass.grade }} • {{ selectedClass.students.length }} students</p>
+            <p class="text-gray-600">{{ selectedClass.students_count || 0 }} students</p>
           </div>
           
           <div class="flex gap-2">
@@ -268,7 +268,7 @@
         </div>
         
         <!-- Empty State for Students -->
-        <div v-if="selectedClass.students.length === 0" class="p-8 text-center">
+        <div v-if="classStudents.length === 0" class="p-8 text-center">
           <i class="ri-user-line text-gray-300 text-4xl mb-2"></i>
           <h4 class="text-lg font-semibold text-gray-800 mb-2">No Students Yet</h4>
           <p class="text-gray-600 mb-4">Add students to this class to get started</p>
@@ -319,7 +319,7 @@
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="moduleId in selectedClass.modules" :key="moduleId">
+              <tr v-for="moduleId in classModules" :key="moduleId">
                 <td class="px-6 py-4 whitespace-nowrap">
                   <div class="font-medium text-gray-800">
                     {{ getModuleName(moduleId) }}
@@ -367,7 +367,7 @@
         </div>
         
         <!-- Empty State for Modules -->
-        <div v-if="selectedClass.modules.length === 0" class="p-8 text-center">
+        <div v-if="classModules.length === 0" class="p-8 text-center">
           <i class="ri-book-line text-gray-300 text-4xl mb-2"></i>
           <h4 class="text-lg font-semibold text-gray-800 mb-2">No Modules Assigned</h4>
           <p class="text-gray-600 mb-4">Assign modules to this class to get started</p>
@@ -418,36 +418,126 @@
       </div>
     </div>
 
-    <!-- Add Student Modal (placeholder) -->
+    <!-- Add Student Modal -->
     <div v-if="showAddStudentModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div class="bg-white rounded-2xl p-6 max-w-md w-full">
+      <div class="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div class="flex items-center justify-between mb-6">
-          <h3 class="text-xl font-bold text-gray-800">Add Student</h3>
+          <h3 class="text-xl font-bold text-gray-800">Add Students to Class</h3>
           <button 
-            @click="showAddStudentModal = false"
+            @click="closeAddStudentModal"
             class="text-gray-400 hover:text-gray-600 transition-colors"
           >
             <i class="ri-close-line text-2xl"></i>
           </button>
         </div>
         
-        <!-- Form would go here -->
-        <p class="text-center text-gray-600 mb-6">
-          Student addition form would be implemented here
-        </p>
-        
-        <div class="flex gap-3">
+        <!-- Student Search -->
+        <div class="mb-6">
+          <div class="relative">
+            <i class="ri-search-line absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+            <input
+              v-model="studentSearchQuery"
+              type="text"
+              placeholder="Search students by name..."
+              class="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              @input="searchStudents"
+              :disabled="isSearching"
+            />
+          </div>
+          <p class="text-xs text-gray-500 mt-2">
+            Search for students to add to your class. Students must already have CoinCraft accounts.
+          </p>
+        </div>
+
+        <!-- Search Results -->
+        <div v-if="isSearching" class="text-center py-8">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-4"></div>
+          <p class="text-gray-600">Searching for students...</p>
+        </div>
+
+        <!-- Student List -->
+        <div v-else-if="searchResults.length > 0" class="mb-6">
+          <h4 class="text-lg font-semibold text-gray-800 mb-4">Available Students</h4>
+          <div class="space-y-3 max-h-64 overflow-y-auto">
+            <div 
+              v-for="student in searchResults" 
+              :key="student.id"
+              class="flex items-center justify-between p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              <div class="flex items-center space-x-3">
+                <img 
+                  :src="student.avatar || '/default-avatar.png'" 
+                  :alt="`${student.name}'s avatar`"
+                  class="w-10 h-10 rounded-full"
+                  @error="$event.target.src = '/default-avatar.png'"
+                />
+                <div>
+                  <div class="font-medium text-gray-800">{{ student.name }}</div>
+                  <div class="text-sm text-gray-500">{{ student.email }}</div>
+                </div>
+              </div>
+              <button 
+                @click="addStudentToClass(student)"
+                class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm"
+                :disabled="isAddingStudent || selectedStudents.includes(student.id)"
+              >
+                <span v-if="isAddingStudent && selectedStudents.includes(student.id)">
+                  <i class="ri-loader-4-line animate-spin mr-1"></i>
+                  Adding...
+                </span>
+                <span v-else-if="selectedStudents.includes(student.id)">
+                  <i class="ri-check-line mr-1"></i>
+                  Added
+                </span>
+                <span v-else>
+                  <i class="ri-user-add-line mr-1"></i>
+                  Add
+                </span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- No Results -->
+        <div v-else-if="studentSearchQuery && !isSearching" class="text-center py-8">
+          <i class="ri-user-line text-gray-300 text-4xl mb-2"></i>
+          <h4 class="text-lg font-semibold text-gray-800 mb-2">No Students Found</h4>
+          <p class="text-gray-600">No students found matching "{{ studentSearchQuery }}"</p>
+        </div>
+
+        <!-- Search Instructions -->
+        <div v-else class="text-center py-8">
+          <i class="ri-search-line text-gray-300 text-4xl mb-2"></i>
+          <h4 class="text-lg font-semibold text-gray-800 mb-2">Search for Students</h4>
+          <p class="text-gray-600">Enter a student's name above to search and add them to your class</p>
+        </div>
+
+        <!-- Error Message -->
+        <div v-if="studentError" class="p-3 bg-red-50 border border-red-200 rounded-lg mb-4">
+          <p class="text-sm text-red-600">{{ studentError }}</p>
+        </div>
+
+        <!-- Success Message -->
+        <div v-if="studentSuccess" class="p-3 bg-green-50 border border-green-200 rounded-lg mb-4">
+          <p class="text-sm text-green-600">{{ studentSuccess }}</p>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-3 pt-4 border-t border-gray-200">
           <button 
-            @click="showAddStudentModal = false"
+            type="button"
+            @click="closeAddStudentModal"
             class="flex-1 py-3 px-4 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-colors"
           >
-            Cancel
+            Close
           </button>
           <button 
-            @click="addStudent"
-            class="flex-1 py-3 px-4 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors"
+            v-if="selectedStudents.length > 0"
+            @click="refreshClassDetails"
+            class="flex-1 py-3 px-4 bg-green-500 text-white rounded-lg font-medium hover:bg-green-600 transition-colors"
           >
-            Add Student
+            <i class="ri-refresh-line mr-1"></i>
+            Refresh Class ({{ selectedStudents.length }} added)
           </button>
         </div>
       </div>
@@ -592,7 +682,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTeacherStore } from '@/stores/teacher'
-import type { Student } from '@/stores/teacher'
+import type { Student } from '@/types'
 
 const route = useRoute()
 const router = useRouter()
@@ -617,15 +707,40 @@ const confirmMessage = ref('')
 const confirmButtonText = ref('')
 const confirmCallback = ref<() => void>(() => {})
 
+// Student search state
+const studentSearchQuery = ref('')
+const searchResults = ref<any[]>([])
+const isSearching = ref(false)
+const isAddingStudent = ref(false)
+const selectedStudents = ref<string[]>([])
+const studentError = ref('')
+const studentSuccess = ref('')
+
+// Student form data (keeping for backward compatibility)
+const studentForm = ref({
+  email: ''
+})
+
 // Computed properties
 const selectedClass = computed(() => {
   return teacherStore.getClassById(selectedClassId.value)
 })
 
+const classModules = computed(() => {
+  if (!selectedClass.value) return []
+  return selectedClass.value.modules || []
+})
+
+const classStudents = computed(() => {
+  if (!selectedClass.value) return []
+  return selectedClass.value.students || []
+})
+
 const filteredStudents = computed(() => {
   if (!selectedClass.value) return []
   
-  let students = [...selectedClass.value.students]
+  // Use the computed property that handles undefined cases
+  let students = [...classStudents.value]
   
   // Apply search filter
   if (searchQuery.value) {
@@ -640,9 +755,9 @@ const filteredStudents = computed(() => {
     if (sortBy.value === 'name') {
       return a.name.localeCompare(b.name)
     } else if (sortBy.value === 'performance') {
-      return b.performance - a.performance
+      return (b.performance_score || 0) - (a.performance_score || 0)
     } else if (sortBy.value === 'lastActivity') {
-      return new Date(b.lastActivity).getTime() - new Date(a.lastActivity).getTime()
+      return new Date(b.last_activity_date || 0).getTime() - new Date(a.last_activity_date || 0).getTime()
     }
     return 0
   })
@@ -738,7 +853,7 @@ const removeStudent = async () => {
     await new Promise(resolve => setTimeout(resolve, 1000))
     
     // Update the class with the student removed
-    const updatedStudents = selectedClass.value.students.filter(
+    const updatedStudents = classStudents.value.filter(
       student => student.id !== selectedStudentId.value
     )
     
@@ -760,22 +875,55 @@ const removeStudent = async () => {
 }
 
 const addStudent = async () => {
-  if (!selectedClass.value) return
+  if (!selectedClass.value || !studentForm.value.email.trim()) return
   
   try {
     isLoading.value = true
+    studentError.value = ''
     
-    // In a real app, this would add a new student
-    await new Promise(resolve => setTimeout(resolve, 1000))
+    // Call the API to add student to class
+    const result = await teacherStore.addStudentToClass(selectedClass.value.id, {
+      email: studentForm.value.email.trim()
+    })
     
-    showAddStudentModal.value = false
+    if (result.error) {
+      studentError.value = result.error
+      return
+    }
+    
+    // Refresh class details to get updated student list
+    await loadClassDetails(selectedClass.value.id)
+    
+    // Close modal and reset form
+    closeAddStudentModal()
     
     // Show success message
     alert('Student added successfully!')
     
   } catch (error) {
     console.error('Error adding student:', error)
-    alert('Failed to add student. Please try again.')
+    studentError.value = 'Failed to add student. Please try again.'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+const closeAddStudentModal = () => {
+  showAddStudentModal.value = false
+  studentForm.value.email = ''
+  studentSearchQuery.value = ''
+  searchResults.value = []
+  selectedStudents.value = []
+  studentError.value = ''
+  studentSuccess.value = ''
+}
+
+const loadClassDetails = async (classId: string) => {
+  try {
+    isLoading.value = true
+    await teacherStore.loadClassDetails(classId)
+  } catch (error) {
+    console.error('Error loading class details:', error)
   } finally {
     isLoading.value = false
   }
@@ -947,26 +1095,89 @@ const getModuleDifficultyClass = (moduleId: string) => {
 const getModuleCompletionRate = (moduleId: string) => {
   if (!selectedClass.value) return 0
   
-  const totalStudents = selectedClass.value.students.length
+  const totalStudents = selectedClass.value.students_count || 0
   if (totalStudents === 0) return 0
   
-  const completedCount = selectedClass.value.students.filter(
+  // Use the computed property that handles undefined cases
+  const students = classStudents.value
+  
+  const completedCount = students.filter(
     student => student.progress[moduleId]?.completed
   ).length
   
   return Math.round((completedCount / totalStudents) * 100)
 }
 
+// Methods for student search
+const searchStudents = async () => {
+  if (!studentSearchQuery.value) {
+    searchResults.value = []
+    return
+  }
+
+  isSearching.value = true
+  searchResults.value = []
+  try {
+    const results = await teacherStore.searchStudents(studentSearchQuery.value)
+    searchResults.value = results
+  } catch (error) {
+    console.error('Error searching students:', error)
+    studentError.value = 'Failed to search students. Please try again.'
+  } finally {
+    isSearching.value = false
+  }
+}
+
+const addStudentToClass = async (student: any) => {
+  if (selectedStudents.value.includes(student.id)) {
+    studentSuccess.value = `${student.name} is already added.`
+    return
+  }
+
+  isAddingStudent.value = true
+  try {
+    const result = await teacherStore.addStudentToClass(selectedClass.value!.id, {
+      email: student.email
+    })
+
+    if (result.error) {
+      studentError.value = result.error
+      return
+    }
+
+    selectedStudents.value.push(student.id)
+    studentSuccess.value = `${student.name} added to class!`
+  } catch (error) {
+    console.error('Error adding student to class:', error)
+    studentError.value = 'Failed to add student to class. Please try again.'
+  } finally {
+    isAddingStudent.value = false
+  }
+}
+
+const refreshClassDetails = async () => {
+  if (!selectedClass.value) return
+  await loadClassDetails(selectedClass.value.id)
+  studentSuccess.value = '' // Clear success message on refresh
+}
+
 // Lifecycle hooks
 onMounted(async () => {
-  if (!teacherStore.profile) {
-    await teacherStore.loadTeacherProfile()
-  }
-  
-  // Check if class ID is provided in the route
-  const classId = route.params.id as string
-  if (classId) {
-    selectedClassId.value = classId
+  try {
+    // Load classes first
+    await teacherStore.loadClasses()
+    
+    if (!teacherStore.profile) {
+      await teacherStore.loadTeacherProfile()
+    }
+    
+    // Check if class ID is provided in the route
+    const classId = route.params.id as string
+    if (classId) {
+      selectedClassId.value = classId
+    }
+  } catch (error) {
+    console.error('Failed to load initial data:', error)
   }
 })
 
@@ -974,6 +1185,17 @@ onMounted(async () => {
 watch(() => route.params.id, (newId) => {
   if (newId) {
     selectedClassId.value = newId as string
+  }
+})
+
+// Watch for changes in selectedClassId to load class details
+watch(selectedClassId, async (newClassId) => {
+  if (newClassId) {
+    try {
+      await teacherStore.loadClassDetails(newClassId)
+    } catch (error) {
+      console.error('Failed to load class details:', error)
+    }
   }
 })
 </script>

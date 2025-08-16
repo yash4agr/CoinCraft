@@ -49,14 +49,17 @@ class UserUpdate(schemas.BaseUserUpdate):
 
 # Profile Schemas
 class ChildProfileRead(BaseModel):
+    """Child profile data for reading."""
+    
     id: str
     user_id: str
     age: int
-    coins: int = 0
-    level: int = 1
-    streak_days: int = 0
+    coins: int
+    level: int
+    streak_days: int
     last_activity_date: Optional[datetime] = None
     parent_id: Optional[str] = None
+    temporary_password: Optional[str] = None  # Include password for parent visibility
 
     class Config:
         from_attributes = True
@@ -420,7 +423,6 @@ class ShopItemRead(BaseModel):
 
     class Config:
         from_attributes = True
-
 class ShopItemRequest(BaseModel):
     item_id: str
 
@@ -436,7 +438,7 @@ class DashboardStats(BaseModel):
 class ParentDashboardResponse(BaseModel):
     user: UserRead
     stats: DashboardStats
-    children: List[UserRead]
+    children: List[UserWithProfilesRead]
     recent_transactions: List[TransactionRead]
     pending_redemptions: List[RedemptionRequestRead]
 

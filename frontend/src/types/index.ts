@@ -44,6 +44,7 @@ export interface ChildProfile {
   streak_days: number            // Default 0 in backend
   last_activity_date?: string    // ISO string from backend (not Date)
   parent_id?: string
+  temporary_password?: string  // Add password field for parent visibility
 }
 
 export interface ParentProfile {
@@ -72,13 +73,32 @@ export interface TeacherProfile {
 
 // Legacy interfaces for backward compatibility (will be removed later)
 export interface Child extends User {
-  age: number
-  coins: number
-  level: number
-  parentId: string
-  classId?: string
-  avatarColor?: string
-  password?:string
+  // These fields come from child_profile in backend
+  child_profile?: {
+    id: string
+    user_id: string
+    age: number
+    coins: number
+    level: number
+    streak_days: number
+    last_activity_date?: Date
+    parent_id?: string
+    temporary_password?: string  // Add password field for parent visibility
+  }
+  
+  // Legacy fields for backward compatibility
+  age?: number
+  coins?: number
+  level?: number
+  streak_days?: number
+  password?: string
+  
+  // Computed fields for parent dashboard
+  goalsActive?: number
+  lastActivity?: Date
+  completedTasks?: number
+  recentActivity?: any[]
+  currentGoals?: Goal[]
 }
 
 export interface Parent extends User {
