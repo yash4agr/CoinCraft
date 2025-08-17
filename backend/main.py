@@ -81,21 +81,6 @@ origins.extend(
     )
 
 
-# Custom CORS middleware to ensure all responses have CORS headers
-@app.middleware("http")
-async def add_cors_headers(request: Request, call_next):
-    origin = request.headers.get('origin')
-    response = await call_next(request)
-    
-    # Add CORS headers to all responses
-    if origin in origins:
-        response.headers["access-control-allow-origin"] = origin
-        response.headers["access-control-allow-credentials"] = "true"
-        response.headers["access-control-allow-methods"] = "GET,POST,PUT,DELETE,OPTIONS"
-        response.headers["access-control-allow-headers"] = "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
-    
-    return response
-
 # Exception handling middleware
 @app.middleware("http")
 async def catch_exceptions_middleware(request: Request, call_next):
