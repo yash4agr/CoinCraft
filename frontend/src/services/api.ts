@@ -716,6 +716,29 @@ class ApiService {
   }
 
   /**
+   * Get teacher profile
+   */
+  async getTeacherProfile(): Promise<ApiResponse<any>> {
+    try {
+      const response = await httpClient.get('/api/teacher/profile')
+      return { data: response.data }
+    } catch (error: any) {
+      console.error('❌ [API] Failed to get teacher profile:', error)
+      return { error: error.response?.data?.detail || 'Failed to load teacher profile' }
+    }
+  }
+
+  async getAvailableStudents(): Promise<ApiResponse<any[]>> {
+    try {
+      const response = await httpClient.get('/api/teacher/students/available')
+      return { data: response.data }
+    } catch (error: any) {
+      console.error('❌ [API] Failed to get available students:', error)
+      return { error: error.response?.data?.detail || 'Failed to load available students' }
+    }
+  }
+
+  /**
    * Create a module
    */
   async createModule(moduleData: {
@@ -915,6 +938,48 @@ class ApiService {
       return { data: response.data }
     } catch (error: any) {
       return { error: error.message || 'Failed to get all children goals' }
+    }
+  }
+
+  /**
+   * Get students in a specific class
+   */
+  async getClassStudents(classId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await httpClient.get(`/api/teacher/classes/${classId}/students`)
+      return { data: response.data }
+    } catch (error: any) {
+      console.error('❌ [API] Failed to get class students:', error)
+      return { error: error.response?.data?.detail || 'Failed to load class students' }
+    }
+  }
+
+  /**
+   * Assign a module to a class
+   */
+  async assignModuleToClass(moduleId: string, assignmentData: {
+    class_id: string
+    due_date?: string
+  }): Promise<ApiResponse<any>> {
+    try {
+      const response = await httpClient.post(`/api/teacher/modules/${moduleId}/assign`, assignmentData)
+      return { data: response.data }
+    } catch (error: any) {
+      console.error('❌ [API] Failed to assign module to class:', error)
+      return { error: error.response?.data?.detail || 'Failed to assign module to class' }
+    }
+  }
+
+  /**
+   * Get assigned modules for child/teen user
+   */
+  async getAssignedModules(): Promise<ApiResponse<any>> {
+    try {
+      const response = await httpClient.get('/api/child/assigned-modules')
+      return { data: response.data }
+    } catch (error: any) {
+      console.error('❌ [API] Failed to get assigned modules:', error)
+      return { error: error.response?.data?.detail || 'Failed to load assigned modules' }
     }
   }
 

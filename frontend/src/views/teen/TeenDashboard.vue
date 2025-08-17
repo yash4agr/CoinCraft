@@ -107,6 +107,75 @@
       </div>
     </div>
 
+    <!-- Teacher-Assigned Modules Section -->
+    <div class="mb-8">
+      <h2 class="text-2xl font-bold text-gray-800 mb-6">📚 Teacher-Assigned Modules</h2>
+      <div v-if="assignedModules.length === 0" class="text-center py-8 bg-white rounded-xl shadow-sm">
+        <i class="ri-book-line text-4xl text-gray-300 mb-4"></i>
+        <p class="text-gray-500">No modules assigned by your teacher yet.</p>
+        <p class="text-sm text-gray-400 mt-1">Check back later for new assignments!</p>
+      </div>
+      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div
+          v-for="module in assignedModules"
+          :key="module.id"
+          class="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+          @click="startAssignedModule(module)"
+        >
+          <!-- Module Header -->
+          <div class="p-4 border-b border-gray-100">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="font-semibold text-gray-800 line-clamp-1">{{ module.title }}</h3>
+              <span 
+                class="px-2 py-1 rounded-full text-xs font-medium"
+                :class="getModuleDifficultyClass(module.difficulty)"
+              >
+                {{ module.difficulty }}
+              </span>
+            </div>
+            <p class="text-sm text-gray-600 line-clamp-2">{{ module.description }}</p>
+          </div>
+
+          <!-- Module Stats -->
+          <div class="p-4">
+            <div class="flex items-center justify-between text-sm text-gray-500 mb-3">
+              <span class="flex items-center gap-1">
+                <i class="ri-time-line"></i>
+                {{ module.duration }} min
+              </span>
+              <span class="flex items-center gap-1">
+                <i class="ri-calendar-line"></i>
+                {{ formatModuleDate(module.assigned_at) }}
+              </span>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="mb-3">
+              <div class="flex justify-between text-xs text-gray-500 mb-1">
+                <span>Progress</span>
+                <span>{{ module.progress || 0 }}%</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  class="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                  :style="{ width: `${module.progress || 0}%` }"
+                ></div>
+              </div>
+            </div>
+
+            <!-- Action Button -->
+            <button 
+              class="w-full py-2 px-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm font-medium"
+              @click.stop="startAssignedModule(module)"
+            >
+              <i class="ri-play-circle-line mr-1"></i>
+              {{ module.progress > 0 ? 'Continue' : 'Start' }} Module
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Quick Actions -->
     <div class="mb-8">
       <h2 class="text-2xl font-bold text-gray-800 mb-6">Quick Actions 🚀</h2>
@@ -329,63 +398,24 @@ import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useDashboardStore } from '@/stores/dashboard'
+import apiService from '@/services/api'
 
 // Stores and router
 const router = useRouter()
 const userStore = useUserStore()
 const dashboardStore = useDashboardStore()
 
-// Reactive state
+// State
 const isLoading = ref(false)
 const loadingMessage = ref('')
-const showErrorToast = ref(false)
-const showSuccessToast = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
-
-// Auto-dismiss timers
-let errorTimer: NodeJS.Timeout | null = null
-let successTimer: NodeJS.Timeout | null = null
-
-// Quick actions configuration
-const quickActions = ref([
-  {
-    id: 'budget',
-    title: 'My Budget',
-    description: 'Manage your money allocation',
-    icon: 'ri-pie-chart-fill',
-    iconColor: '#3b82f6',
-    iconBg: 'bg-blue-100',
-    route: '/teen/budget'
-  },
-  {
-    id: 'goals',
-    title: 'My Goals',
-    description: 'Track your savings goals',
-    icon: 'ri-flag-fill',
-    iconColor: '#10b981',
-    iconBg: 'bg-green-100',
-    route: '/teen/goals'
-  },
-  {
-    id: 'activities',
-    title: 'Activity Hub',
-    description: 'Learn through activities',
-    icon: 'ri-brain-fill',
-    iconColor: '#8b5cf6',
-    iconBg: 'bg-purple-100',
-    route: '/teen/activities'
-  },
-  {
-    id: 'explore',
-    title: 'Explore',
-    description: 'Discover new content',
-    icon: 'ri-compass-3-fill',
-    iconColor: '#f59e0b',
-    iconBg: 'bg-orange-100',
-    route: '/teen/explore'
-  }
-])
+const showErrorToast = ref(false)
+const showSuccessToast = ref(false)
+const errorTimer = ref<NodeJS.Timeout | null>(null)
+const successTimer = ref<NodeJS.Timeout | null>(null)
+const assignedModules = ref<any[]>([])
+const isLoadingModules = ref(false)
 
 // Computed properties
 const displayedGoals = computed(() => userStore.activeGoals.slice(0, 2))
@@ -487,6 +517,33 @@ const handleViewAllActivitiesClick = async () => {
   }
 }
 
+// Teacher module methods
+const startAssignedModule = (module: any) => {
+  console.log('🚀 [TEEN] Starting assigned module:', module.title)
+  // TODO: Implement module execution
+  alert(`Starting module: ${module.title}`)
+}
+
+const getModuleDifficultyClass = (difficulty: string) => {
+  switch (difficulty) {
+    case 'beginner': return 'bg-green-100 text-green-700'
+    case 'intermediate': return 'bg-yellow-100 text-yellow-700'
+    case 'advanced': return 'bg-red-100 text-red-700'
+    default: return 'bg-gray-100 text-gray-700'
+  }
+}
+
+const formatModuleDate = (date: Date) => {
+  if (!date) return 'Recently'
+  const now = new Date()
+  const diffTime = Math.abs(now.getTime() - date.getTime())
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  
+  if (diffDays === 1) return 'Yesterday'
+  if (diffDays < 7) return `${diffDays} days ago`
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
 // Utility functions
 const setLoading = (loading: boolean, message = '') => {
   isLoading.value = loading
@@ -497,11 +554,11 @@ const showError = (message: string) => {
   errorMessage.value = message
   showErrorToast.value = true
   
-  if (errorTimer) {
-    clearTimeout(errorTimer)
+  if (errorTimer.value) {
+    clearTimeout(errorTimer.value)
   }
   
-  errorTimer = setTimeout(() => {
+  errorTimer.value = setTimeout(() => {
     dismissError()
   }, 5000)
 }
@@ -510,28 +567,28 @@ const showSuccess = (message: string) => {
   successMessage.value = message
   showSuccessToast.value = true
   
-  if (successTimer) {
-    clearTimeout(successTimer)
+  if (successTimer.value) {
+    clearTimeout(successTimer.value)
   }
   
-  successTimer = setTimeout(() => {
+  successTimer.value = setTimeout(() => {
     dismissSuccess()
   }, 3000)
 }
 
 const dismissError = () => {
   showErrorToast.value = false
-  if (errorTimer) {
-    clearTimeout(errorTimer)
-    errorTimer = null
+  if (errorTimer.value) {
+    clearTimeout(errorTimer.value)
+    errorTimer.value = null
   }
 }
 
 const dismissSuccess = () => {
   showSuccessToast.value = false
-  if (successTimer) {
-    clearTimeout(successTimer)
-    successTimer = null
+  if (successTimer.value) {
+    clearTimeout(successTimer.value)
+    successTimer.value = null
   }
 }
 
@@ -544,6 +601,27 @@ const formatDate = (timestamp: string) => {
   if (diffInHours < 24) return `${diffInHours} hours ago`
   if (diffInHours < 48) return 'Yesterday'
   return `${Math.floor(diffInHours / 24)} days ago`
+}
+
+// Methods
+const loadAssignedModules = async () => {
+  try {
+    isLoadingModules.value = true
+    const response = await apiService.getAssignedModules()
+    
+    if (response.data) {
+      assignedModules.value = response.data
+      console.log('✅ [TEEN] Loaded assigned modules:', assignedModules.value.length)
+    } else {
+      console.error('❌ [TEEN] Failed to load assigned modules:', response.error)
+      assignedModules.value = []
+    }
+  } catch (error) {
+    console.error('❌ [TEEN] Error loading assigned modules:', error)
+    assignedModules.value = []
+  } finally {
+    isLoadingModules.value = false
+  }
 }
 
 // Keyboard navigation support
@@ -562,14 +640,15 @@ onMounted(() => {
   if (!userStore.activeGoals.length) {
     userStore.loadUserData(userStore.profile?.id || '')
   }
+  loadAssignedModules()
 })
 
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeyboardNavigation)
   
   // Clean up timers
-  if (errorTimer) clearTimeout(errorTimer)
-  if (successTimer) clearTimeout(successTimer)
+  if (errorTimer.value) clearTimeout(errorTimer.value)
+  if (successTimer.value) clearTimeout(successTimer.value)
 })
 </script>
 

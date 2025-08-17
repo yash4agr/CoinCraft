@@ -252,8 +252,15 @@ class UserModuleProgress(Base):
     started_at = Column(DateTime, default=datetime.utcnow)
     completed_at = Column(DateTime, nullable=True)
     
+    # New fields for module assignment
+    assigned_by = Column(String, ForeignKey("users.id"), nullable=True)  # Teacher who assigned
+    assigned_at = Column(DateTime, nullable=True)  # When assigned
+    due_date = Column(DateTime, nullable=True)  # Optional due date
+    status = Column(String(20), default="assigned")  # assigned, in_progress, completed
+    
     user = relationship("User")
     module = relationship("Module", back_populates="user_progress")
+    assigner = relationship("User", foreign_keys=[assigned_by])
 
 
 class Task(Base):
@@ -287,7 +294,7 @@ class Class(Base):
     name = Column(String(200), nullable=False)
     teacher_id = Column(String, ForeignKey("teacher_profiles.id"))
     description = Column(Text, nullable=True)
-    class_code = Column(String(20), unique=True)  # for students to join
+    class_code = Column(String(20))  # removed unique constraint
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     

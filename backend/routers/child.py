@@ -681,3 +681,47 @@ async def get_child_stats(
             "net_balance": total_earned - total_spent,
         },
     }
+
+
+@router.get("/assigned-modules", response_model=List[dict])
+async def get_assigned_modules(
+    current_user: User = Depends(current_active_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    """Get all modules assigned to the current child/teen user by teachers."""
+    
+    if current_user.role not in ["younger_child", "older_child"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only children/teens can access this endpoint",
+        )
+    
+    # Get all modules assigned to this user
+    stmt = select(UserModuleProgress).where(
+        and_(
+            UserModuleProgress.user_id == current_user.id,
+            UserModuleProgress.status == "assigned"
+        )
+    ).options(selectinload(UserModuleProgress.module))
+    
+    result = await session.execute(stmt)
+    assigned_modules = result.scalars().all()
+    
+    # Format module data for frontend
+    modules_data = []
+    for assignment in assigned_modules:
+        if assignment.module:
+            modules_data.append({
+                "id": assignment.module.id,
+                "title": assignment.module.title,
+                "description": assignment.module.description,
+                "difficulty": assignment.module.difficulty,
+                "duration": assignment.module.estimated_duration,
+                "category": assignment.module.category,
+                "assigned_at": assignment.assigned_at.isoformat() if assignment.assigned_at else None,
+                "due_date": assignment.due_date.isoformat() if assignment.due_date else None,
+                "status": assignment.status,
+                "assigned_by": assignment.assigned_by
+            })
+    
+    return modules_data
