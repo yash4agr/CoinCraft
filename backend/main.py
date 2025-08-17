@@ -104,8 +104,8 @@ async def catch_exceptions_middleware(request: Request, call_next):
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,  # Use the dynamic origins list instead of hardcoded
-    allow_credentials=True,
+    allow_origins=["*"],  # Allow all origins - TEMPORARY FIX
+    allow_credentials=False,
     allow_methods=["*","GET","POST","PUT","DELETE","OPTIONS"],
     allow_headers=["*"],
 )
