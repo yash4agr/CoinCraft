@@ -1,13 +1,14 @@
 """CoinCraft FastAPI Backend Application."""
 
 import os
+import traceback
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
 load_dotenv()
 
-from fastapi import FastAPI, status
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi import FastAPI, status, Request, HTTPException
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -95,10 +96,7 @@ async def add_cors_headers(request: Request, call_next):
     
     return response
 
-# For development, allow all origins to fix CORS issues
-import traceback
-from fastapi import Request, HTTPException
-from fastapi.responses import JSONResponse
+# Exception handling middleware
 @app.middleware("http")
 async def catch_exceptions_middleware(request: Request, call_next):
     try:
