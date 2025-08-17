@@ -9,9 +9,9 @@
         </h1>
         <p class="text-gray-600 text-lg">Learn about money while having fun! 🚀</p>
       </div>
-
+      <div v-if="isLoading" class="text-center py-8 text-lg text-gray-500">Loading activities...</div>
       <!-- Adventure Games Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <AdventureCard
           v-for="adventure in adventures"
           :key="adventure.id"
@@ -21,11 +21,11 @@
           :difficulty="adventure.difficulty"
           :coins="adventure.coins"
           :completed="adventure.completed"
-          :color-scheme="adventure.colorScheme"
-          :button-text="adventure.buttonText"
+          :color-scheme="adventure.color_scheme"
+          :button-text="adventure.completed ? 'Play Again' : adventure.button_text"
+          :path="adventure.path || `/child/games/${adventure.id}`"
         />
       </div>
-
       <!-- Quick Stats -->
       <div class="mt-12 bg-white rounded-2xl shadow-sm p-6">
         <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
@@ -56,96 +56,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import AdventureCard from '@/components/shared/AdventureCard.vue'
+import { useChildStore } from '@/stores/child'
 
-// Adventures Data - Same as dashboard for consistency
-const adventures = ref([
-  {
-    id: 1,
-    title: 'Piggy Bank Adventure',
-    description: 'Learn how to save money with your digital piggy bank!',
-    emoji: '🐷',
-    difficulty: 'easy' as const,
-    coins: 10,
-    completed: false,
-    colorScheme: 'pink' as const,
-    buttonText: 'Start Saving!'
-  },
-  {
-    id: 2,
-    title: 'Needs vs Wants Game',
-    description: 'Discover the difference between things you need and want.',
-    emoji: '🤔',
-    difficulty: 'easy' as const,
-    coins: 15,
-    completed: true,
-    colorScheme: 'teal' as const,
-    buttonText: 'Play Again'
-  },
-  {
-    id: 3,
-    title: 'Coin Counting Challenge',
-    description: 'Practice counting coins and making change!',
-    emoji: '🪙',
-    difficulty: 'medium' as const,
-    coins: 20,
-    completed: false,
-    colorScheme: 'blue' as const,
-    buttonText: 'Start Challenge'
-  },
-  {
-    id: 4,
-    title: 'Budget Builder',
-    description: 'Create your first budget and learn to plan ahead.',
-    emoji: '📊',
-    difficulty: 'medium' as const,
-    coins: 25,
-    completed: false,
-    colorScheme: 'green' as const,
-    buttonText: 'Build Budget'
-  },
-  {
-    id: 5,
-    title: 'Shopping Smart',
-    description: 'Learn smart shopping tips and compare prices.',
-    emoji: '🛒',
-    difficulty: 'hard' as const,
-    coins: 30,
-    completed: false,
-    colorScheme: 'yellow' as const,
-    buttonText: 'Shop Smart'
-  },
-  {
-    id: 6,
-    title: 'Goal Setting Quest',
-    description: 'Set and achieve your financial goals step by step.',
-    emoji: '🎯',
-    difficulty: 'hard' as const,
-    coins: 35,
-    completed: false,
-    colorScheme: 'purple' as const,
-    buttonText: 'Set Goals'
-  }
-])
+const childStore = useChildStore()
+const isLoading = ref(false)
 
-// Computed stats for progress section
-const completedCount = computed(() => {
-  return adventures.value.filter(adventure => adventure.completed).length
+onMounted(async () => {
+  isLoading.value = true
+  await childStore.loadActivities()
+  isLoading.value = false
 })
 
-const totalCoinsEarned = computed(() => {
-  return adventures.value
-    .filter(adventure => adventure.completed)
-    .reduce((total, adventure) => total + adventure.coins, 0)
-})
+const adventures = computed(() => childStore.activities)
 
-const availableGames = computed(() => {
-  return adventures.value.filter(adventure => !adventure.completed).length
-})
-
+const completedCount = computed(() => adventures.value.filter(adventure => adventure.completed).length)
+const totalCoinsEarned = computed(() => adventures.value.filter(adventure => adventure.completed).reduce((total, adventure) => total + adventure.coins, 0))
+const availableGames = computed(() => adventures.value.filter(adventure => !adventure.completed).length)
 const nextReward = computed(() => {
   const nextGame = adventures.value.find(adventure => !adventure.completed)
   return nextGame ? nextGame.coins : 0
 })
-</script> 
+</script>

@@ -20,6 +20,14 @@ import ChildGoals from '@/views/child/ChildGoals.vue'
 import ChildShop from '@/views/child/ChildShop.vue'
 import UserProfile from '@/views/UserProfile.vue'
 
+// Child games
+import NeedsVsWants from '@/views/child/games/NeedsVsWants.vue'
+import CoinCountingChallenge from '@/views/child/games/CoinCountingChallenge.vue'
+import BudgetBuilder from '@/views/child/games/BudgetBuilder.vue'
+import GoalSettingQuest from '@/views/child/games/GoalSettingQuest.vue'
+import PiggyBankAdventure from '@/views/child/games/PiggyBankAdventure.vue'
+import ShoppingSmart from '@/views/child/games/ShoppingSmart.vue'
+
 // Teen views
 import TeenDashboard from '@/views/teen/TeenDashboard.vue'
 import TeenBudget from '@/views/teen/TeenBudget.vue'
@@ -83,6 +91,36 @@ const routes = [
         path: 'savings',
         name: 'ChildSavings',
         component: ChildSavings
+      },
+      {
+        path: 'games/needs-vs-wants',
+        name: 'NeedsVsWants',
+        component: NeedsVsWants
+      },
+      {
+        path: 'games/coin-counting-challenge',
+        name: 'CoinCountingChallenge',
+        component: CoinCountingChallenge
+      },
+      {
+        path: 'games/budget-builder',
+        name: 'BudgetBuilder',
+        component: BudgetBuilder
+      },
+      {
+        path: 'games/goal-setting-quest',
+        name: 'GoalSettingQuest',
+        component: GoalSettingQuest
+      },
+      {
+        path: 'games/piggy-bank-adventure',
+        name: 'PiggyBankAdventure',
+        component: PiggyBankAdventure
+      },
+      {
+        path: 'games/shopping-smart',
+        name: 'ShoppingSmart',
+        component: ShoppingSmart
       },
       {
         path: 'goals',

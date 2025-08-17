@@ -443,17 +443,16 @@ export interface DashboardData {
 
 // Activity Interface - aligned with backend ActivityRead schema
 export interface Activity {
-  id: string
+  id: number
   title: string
   description: string
-  type: string
   difficulty: string
-  coins: number                       // Required in backend
-  duration: number                    // Required in backend
-  completed: boolean                  // Required in backend
-  icon: string
-  category: string
-  age_group: string                   // Required in backend
+  coins: number
+  color_scheme?: string | null
+  emoji?: string | null
+  button_text: string
+  path?: string | null
+  completed: boolean
 }
 
 // Auth Response Interface - aligned with backend AuthResponse schema

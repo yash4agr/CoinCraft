@@ -49,6 +49,7 @@ class User(SQLAlchemyBaseUserTable[str], Base):
     tasks_assigned = relationship("Task", foreign_keys="Task.assigned_to", back_populates="assignee")
     tasks_created = relationship("Task", foreign_keys="Task.assigned_by", back_populates="assigner")
     redemption_requests = relationship("RedemptionRequest", back_populates="user", primaryjoin="User.id == RedemptionRequest.user_id")
+    user_activities = relationship("UserActivity", back_populates="user")
 
 
 class ChildProfile(Base):
@@ -206,6 +207,23 @@ class ModuleSection(Base):
     
     module = relationship("Module", back_populates="sections")
     quiz_questions = relationship("QuizQuestion", back_populates="section")
+
+class Activity(Base):
+    """Represents a money learning adventure/game for children."""
+    __tablename__ = "activities"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    title = Column(String(100), nullable=False)
+    description = Column(Text, nullable=True)
+    emoji = Column(String(10), nullable=True)
+    difficulty = Column(String(10), nullable=False)  # 'easy', 'medium', 'hard'
+    coins = Column(Integer, nullable=False)
+    color_scheme = Column(String(20), nullable=True)
+    button_text = Column(String(50), nullable=True)
+    path = Column(String(100), nullable=True)  # Route/path for adventure
+
+    def __repr__(self):
+        return f"<Activity(id={self.id}, title='{self.title}', difficulty='{self.difficulty}', coins={self.coins})>"
 
 
 class QuizQuestion(Base):
@@ -371,3 +389,19 @@ class ShopItem(Base):
     emoji = Column(String(10), nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow) 
     owners = relationship("UserOwnedItem", back_populates="shop_item", cascade="all, delete")
+
+
+class UserActivity(Base):
+    """Links a user to a completed activity/adventure."""
+    __tablename__ = "user_activities"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(String, ForeignKey("users.id"), nullable=False)
+    activity_id = Column(Integer, ForeignKey("activities.id"), nullable=False)
+    completed_at = Column(DateTime, default=datetime.utcnow)
+
+    user = relationship("User", back_populates="user_activities")
+    activity = relationship("Activity")
+
+    def __repr__(self):
+        return f"<UserActivity(user_id={self.user_id}, activity_id={self.activity_id})>"

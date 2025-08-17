@@ -8,8 +8,8 @@ from sqlalchemy import select, and_
 
 from database import get_async_session
 from auth import current_active_user
-from models import User, Module, UserModuleProgress, ChildProfile, Transaction
-from schemas import ModuleRead, ModuleCreate, ModuleUpdate, ActivityRead, ModuleResponse
+from models import User, Activity, UserActivity, ChildProfile, Transaction
+from schemas import ActivityRead, ModuleRead, ModuleCreate, ModuleUpdate, ModuleResponse
 
 router = APIRouter()
 
@@ -17,198 +17,113 @@ router = APIRouter()
 @router.get("/activities", response_model=List[ActivityRead])
 async def get_activities(
     difficulty: Optional[str] = Query(None, pattern="^(easy|medium|hard)$"),
-    category: Optional[str] = None,
-    age_group: Optional[str] = Query(None, pattern="^(younger_child|older_child)$"),
-    completed: Optional[bool] = None,
+    color_scheme: Optional[str] = None,
     current_user: User = Depends(current_active_user),
     session: AsyncSession = Depends(get_async_session),
 ):
-    """Get learning activities and modules with filtering options."""
-
-    filters = [Module.is_published == True]
-
+    """Get all activities/adventures for children."""
+    filters = []
     if difficulty:
-        filters.append(Module.difficulty == difficulty)
-    if category:
-        filters.append(Module.category == category)
-
-    stmt = select(Module).where(and_(*filters)).order_by(Module.created_at.desc())
+        filters.append(Activity.difficulty == difficulty)
+    if color_scheme:
+        filters.append(Activity.color_scheme == color_scheme)
+    stmt = select(Activity).where(and_(*filters)) if filters else select(Activity)
     result = await session.execute(stmt)
-    modules = result.scalars().all()
-
-    activities = []
-    for module in modules:
-        if current_user.role in ["younger_child", "older_child"]:
-            progress_stmt = select(UserModuleProgress).where(
-                and_(
-                    UserModuleProgress.user_id == current_user.id,
-                    UserModuleProgress.module_id == module.id,
-                )
-            )
-            progress_result = await session.execute(progress_stmt)
-            progress = progress_result.scalar_one_or_none()
-            is_completed = progress.is_completed if progress else False
-        else:
-            is_completed = False
-
-        if completed is not None and is_completed != completed:
-            continue
-
-        module_age_group = (
-            "younger_child" if module.difficulty == "easy" else "older_child"
-        )
-        if age_group and module_age_group != age_group:
-            continue
-
-        activity = ActivityRead(
-            id=module.id,
-            title=module.title,
-            description=module.description,
-            type="module",
-            difficulty=module.difficulty,
-            coins=module.points_reward,
-            duration=module.estimated_duration or 15,
-            completed=is_completed,
-            icon="ri-book-line",
-            category=module.category or "financial_literacy",
-            age_group=module_age_group,
-        )
-        activities.append(activity)
-
-    return activities
+    activities = result.scalars().all()
+    user_activity_ids = set()
+    if current_user.role in ["younger_child", "older_child"]:
+        ua_stmt = select(UserActivity.activity_id).where(UserActivity.user_id == current_user.id)
+        ua_result = await session.execute(ua_stmt)
+        user_activity_ids = set([row[0] for row in ua_result.fetchall()])
+    response = []
+    for activity in activities:
+        completed = activity.id in user_activity_ids
+        response.append(ActivityRead(
+            id=activity.id,
+            title=activity.title,
+            description=activity.description or "",
+            difficulty=activity.difficulty,
+            coins=activity.coins,
+            color_scheme=activity.color_scheme,
+            emoji=activity.emoji,
+            button_text=activity.button_text,
+            path=activity.path,
+            completed=completed
+        ))
+    return response
 
 
-@router.get("/activities/{activity_id}")
+@router.get("/activities/{activity_id}", response_model=ActivityRead)
 async def get_activity(
-    activity_id: str,
+    activity_id: int,
     current_user: User = Depends(current_active_user),
     session: AsyncSession = Depends(get_async_session),
 ):
-    """Get detailed information about a specific learning activity or module."""
-
-    stmt = select(Module).where(Module.id == activity_id)
-    result = await session.execute(stmt)
-    module = result.scalar_one_or_none()
-
-    if not module:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Activity not found"
-        )
-
-    user_progress = None
+    """Get details for a specific activity/adventure."""
+    activity = await session.get(Activity, activity_id)
+    if not activity:
+        raise HTTPException(status_code=404, detail="Activity not found")
+    completed = False
     if current_user.role in ["younger_child", "older_child"]:
-        progress_stmt = select(UserModuleProgress).where(
-            and_(
-                UserModuleProgress.user_id == current_user.id,
-                UserModuleProgress.module_id == activity_id,
-            )
+        ua_stmt = select(UserActivity).where(
+            UserActivity.user_id == current_user.id,
+            UserActivity.activity_id == activity_id
         )
-        progress_result = await session.execute(progress_stmt)
-        progress = progress_result.scalar_one_or_none()
-
-        if progress:
-            user_progress = {
-                "progress_percentage": progress.progress_percentage,
-                "is_completed": progress.is_completed,
-                "score": progress.score,
-                "time_spent": progress.time_spent,
-            }
-
-    module_dict = ModuleRead.model_validate(module).model_dump()
-    module_dict["user_progress"] = user_progress
-
-    return module_dict
+        ua_result = await session.execute(ua_stmt)
+        completed = ua_result.scalar_one_or_none() is not None
+    return ActivityRead(
+        id=activity.id,
+        title=activity.title,
+        description=activity.description or "",
+        difficulty=activity.difficulty,
+        coins=activity.coins,
+        color_scheme=activity.color_scheme,
+        emoji=activity.emoji,
+        button_text=activity.button_text,
+        path=activity.path,
+        completed=completed
+    )
 
 
 @router.post("/activities/{activity_id}/complete")
 async def complete_activity(
-    activity_id: str,
-    progress_data: dict,
+    activity_id: int,
     current_user: User = Depends(current_active_user),
     session: AsyncSession = Depends(get_async_session),
 ):
-    """Record progress and mark an activity as completed."""
+    """Mark an activity as completed for the current user."""
     if current_user.role not in ["younger_child", "older_child"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only children can complete activities",
-        )
-
-    # Get module
-    stmt = select(Module).where(Module.id == activity_id)
-    result = await session.execute(stmt)
-    module = result.scalar_one_or_none()
-
-    if not module:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Activity not found"
-        )
-
-    progress_stmt = select(UserModuleProgress).where(
-        and_(
-            UserModuleProgress.user_id == current_user.id,
-            UserModuleProgress.module_id == activity_id,
-        )
+        raise HTTPException(status_code=403, detail="Only children can complete activities")
+    activity = await session.get(Activity, activity_id)
+    if not activity:
+        raise HTTPException(status_code=404, detail="Activity not found")
+    ua_stmt = select(UserActivity).where(
+        UserActivity.user_id == current_user.id,
+        UserActivity.activity_id == activity_id
     )
-    progress_result = await session.execute(progress_stmt)
-    progress = progress_result.scalar_one_or_none()
-
-    if not progress:
-        progress = UserModuleProgress(user_id=current_user.id, module_id=activity_id)
-        session.add(progress)
-
-    progress.progress_percentage = progress_data.get("progress_percentage", 100.0)
-    progress.score = progress_data.get("score", 0.0)
-    progress.time_spent = progress_data.get("time_spent", 0)
-    progress.is_completed = progress_data.get("is_completed", False)
-
-    if progress.is_completed and not progress.completed_at:
-        progress.completed_at = datetime.utcnow()
-
+    ua_result = await session.execute(ua_stmt)
+    user_activity = ua_result.scalar_one_or_none()
+    if not user_activity:
+        user_activity = UserActivity(user_id=current_user.id, activity_id=activity_id)
+        session.add(user_activity)
+        # Optionally award coins here
         child_stmt = select(ChildProfile).where(ChildProfile.user_id == current_user.id)
         child_result = await session.execute(child_stmt)
-        child_profile = child_result.scalar_one()
-
-        coins_earned = module.points_reward
-        child_profile.coins += coins_earned
-
-        transaction = Transaction(
-            user_id=current_user.id,
-            type="earn",
-            amount=coins_earned,
-            description=f"Completed activity: {module.title}",
-            category="activity",
-            reference_id=activity_id,
-            reference_type="activity",
-        )
-        session.add(transaction)
-
-        await session.commit()
-        await session.refresh(child_profile)
-
-        return {
-            "progress": {
-                "progress_percentage": progress.progress_percentage,
-                "is_completed": progress.is_completed,
-                "score": progress.score,
-                "time_spent": progress.time_spent,
-            },
-            "coins_earned": coins_earned,
-            "new_coin_balance": child_profile.coins,
-        }
-
+        child_profile = child_result.scalar_one_or_none()
+        if child_profile:
+            child_profile.coins += activity.coins
+            transaction = Transaction(
+                user_id=current_user.id,
+                type="earn",
+                amount=activity.coins,
+                description=f"Completed activity: {activity.title}",
+                category="activity",
+                reference_id=str(activity_id),
+                reference_type="activity"
+            )
+            session.add(transaction)
     await session.commit()
-
-    return {
-        "progress": {
-            "progress_percentage": progress.progress_percentage,
-            "is_completed": progress.is_completed,
-            "score": progress.score,
-            "time_spent": progress.time_spent,
-        },
-        "coins_earned": 0,
-        "new_coin_balance": None,
-    }
+    return {"success": True, "activity_id": activity_id}
 
 
 @router.get("/learning-modules", response_model=List[ModuleRead])

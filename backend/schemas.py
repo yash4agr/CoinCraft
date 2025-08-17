@@ -489,17 +489,16 @@ class ProgressGoal(BaseModel):
 
 
 class ActivityRead(BaseModel):
-    id: str
+    id: int
     title: str
     description: str
-    type: str
     difficulty: str
     coins: int
-    duration: int
+    color_scheme: str | None = None
+    emoji: str | None = None
+    button_text: str
+    path: str | None = None
     completed: bool
-    icon: str
-    category: str
-    age_group: str
 
     class Config:
         from_attributes = True

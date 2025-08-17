@@ -22,7 +22,7 @@
     </div>
     
     <!-- Action Button -->
-    <button :class="buttonClasses" class="w-full mt-4 bg-white font-medium py-2 rounded-lg hover:bg-gray-50 transition-colors">
+    <button :class="buttonClasses" class="w-full mt-4 bg-white font-medium py-2 rounded-lg hover:bg-gray-50 transition-colors" @click="goToRoute">
       {{ buttonText }}
     </button>
   </div>
@@ -30,6 +30,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useRouter } from 'vue-router'
 
 interface Props {
   title: string
@@ -40,12 +41,21 @@ interface Props {
   completed?: boolean
   buttonText?: string
   colorScheme: 'pink' | 'teal' | 'blue' | 'green' | 'yellow' | 'purple'
+  path?: string
 }
 
 const props = withDefaults(defineProps<Props>(), {
   completed: false,
-  buttonText: 'Start Adventure'
+  buttonText: 'Start Adventure',
+  path: ''
 })
+
+const router = useRouter()
+function goToRoute() {
+  if (props.path) {
+    router.push(props.path)
+  }
+}
 
 const cardClasses = computed(() => {
   const baseClasses = 'bg-gradient-to-br'
@@ -83,6 +93,4 @@ const buttonClasses = computed(() => {
   }
   return colorMap[props.colorScheme]
 })
-
-
-</script> 
+</script>
