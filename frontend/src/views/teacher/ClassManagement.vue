@@ -150,7 +150,7 @@
               <i class="ri-edit-line mr-1"></i> Edit Class
             </button>
             <button 
-              @click="showAddStudentModal = true"
+              @click="openAddStudentModal"
               class="px-4 py-2 bg-green-500 hover:bg-green-600 text-white rounded-lg transition-colors"
             >
               <i class="ri-user-add-line mr-1"></i> Add Student
@@ -273,7 +273,7 @@
           <h4 class="text-lg font-semibold text-gray-800 mb-2">No Students Yet</h4>
           <p class="text-gray-600 mb-4">Add students to this class to get started</p>
           <button 
-            @click="showAddStudentModal = true"
+            @click="openAddStudentModal"
             class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
           >
             Add First Student
@@ -457,7 +457,9 @@
 
         <!-- Student List -->
         <div v-else-if="searchResults.length > 0" class="mb-6">
-          <h4 class="text-lg font-semibold text-gray-800 mb-4">Available Students</h4>
+          <h4 class="text-lg font-semibold text-gray-800 mb-4">
+            Available Students ({{ searchResults.length }})
+          </h4>
           <div class="space-y-3 max-h-64 overflow-y-auto">
             <div 
               v-for="student in searchResults" 
@@ -498,18 +500,15 @@
           </div>
         </div>
 
-        <!-- No Results -->
-        <div v-else-if="studentSearchQuery && !isSearching" class="text-center py-8">
-          <i class="ri-user-line text-gray-300 text-4xl mb-2"></i>
-          <h4 class="text-lg font-semibold text-gray-800 mb-2">No Students Found</h4>
-          <p class="text-gray-600">No students found matching "{{ studentSearchQuery }}"</p>
-        </div>
-
-        <!-- Search Instructions -->
+        <!-- No Students Message -->
         <div v-else class="text-center py-8">
-          <i class="ri-search-line text-gray-300 text-4xl mb-2"></i>
-          <h4 class="text-lg font-semibold text-gray-800 mb-2">Search for Students</h4>
-          <p class="text-gray-600">Enter a student's name above to search and add them to your class</p>
+          <div class="inline-block text-gray-400 mb-4">
+            <i class="ri-user-line text-6xl"></i>
+          </div>
+          <p class="text-gray-600 text-lg mb-2">No Students Available</p>
+          <p class="text-gray-500 text-sm">
+            {{ studentSearchQuery ? 'No students found matching your search.' : 'All students are already in your classes or no students exist yet.' }}
+          </p>
         </div>
 
         <!-- Error Message -->
@@ -908,9 +907,14 @@ const addStudent = async () => {
   }
 }
 
+const openAddStudentModal = async () => {
+  showAddStudentModal.value = true
+  // Load all available students when modal opens
+  await loadAllAvailableStudents()
+}
+
 const closeAddStudentModal = () => {
   showAddStudentModal.value = false
-  studentForm.value.email = ''
   studentSearchQuery.value = ''
   searchResults.value = []
   selectedStudents.value = []
@@ -1109,17 +1113,36 @@ const getModuleCompletionRate = (moduleId: string) => {
 }
 
 // Methods for student search
+const loadAllAvailableStudents = async () => {
+  isSearching.value = true
+  try {
+    // Get age_group from selected class to filter compatible students
+    const ageGroup = selectedClass.value?.age_group
+    // Load all students that can be added to classes
+    const results = await teacherStore.searchStudents('', ageGroup) // Pass age_group parameter
+    searchResults.value = results || []
+  } catch (error) {
+    console.error('Error loading students:', error)
+    studentError.value = 'Failed to load students. Please try again.'
+  } finally {
+    isSearching.value = false
+  }
+}
+
 const searchStudents = async () => {
-  if (!studentSearchQuery.value) {
-    searchResults.value = []
+  if (!studentSearchQuery.value.trim()) {
+    // If no search query, show all available students
+    await loadAllAvailableStudents()
     return
   }
 
   isSearching.value = true
-  searchResults.value = []
   try {
-    const results = await teacherStore.searchStudents(studentSearchQuery.value)
-    searchResults.value = results
+    // Get age_group from selected class to filter compatible students
+    const ageGroup = selectedClass.value?.age_group
+    // Search for students with the query
+    const results = await teacherStore.searchStudents(studentSearchQuery.value.trim(), ageGroup)
+    searchResults.value = results || []
   } catch (error) {
     console.error('Error searching students:', error)
     studentError.value = 'Failed to search students. Please try again.'

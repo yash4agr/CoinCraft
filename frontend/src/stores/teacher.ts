@@ -9,6 +9,7 @@ export interface TeacherClass {
   name: string
   description?: string
   teacher_id: string
+  age_group: string  // Add age_group field
   class_code: string
   is_active: boolean
   created_at: string
@@ -87,6 +88,7 @@ export const useTeacherStore = defineStore('teacher', () => {
             name: cls.name,
             description: cls.description || '',
             teacher_id: cls.teacher_id || user?.id || '',
+            age_group: cls.age_group || '',  // Add age_group field
             class_code: cls.class_code || '',
             is_active: cls.is_active !== false,
             created_at: cls.created_at || new Date().toISOString(),
@@ -113,6 +115,7 @@ export const useTeacherStore = defineStore('teacher', () => {
   const createClass = async (classData: {
     name: string
     description?: string
+    age_group: string  // Add age_group parameter
   }): Promise<TeacherClass | null> => {
     console.log('🏫 [TEACHER] Creating new class...')
     
@@ -132,6 +135,7 @@ export const useTeacherStore = defineStore('teacher', () => {
           name: response.data.name,
           description: response.data.description,
           teacher_id: response.data.teacher_id,
+          age_group: response.data.age_group,  // Add age_group field
           class_code: response.data.class_code,
           is_active: response.data.is_active,
           created_at: response.data.created_at,
@@ -175,6 +179,7 @@ export const useTeacherStore = defineStore('teacher', () => {
           name: cls.name,
           description: cls.description,
           teacher_id: cls.teacher_id,
+          age_group: cls.age_group,  // Add age_group field
           class_code: cls.class_code,
           is_active: cls.is_active,
           created_at: cls.created_at,

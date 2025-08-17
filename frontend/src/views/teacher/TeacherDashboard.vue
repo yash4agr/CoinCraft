@@ -125,8 +125,11 @@
                 Class {{ classItem.name }}
               </span>
             </div>
-            <p class="text-gray-600 text-sm">
+            <p class="text-gray-600 text-sm mb-2">
               Created {{ formatDate(new Date(classItem.created_at)) }}
+            </p>
+            <p class="text-sm text-gray-500">
+              Age Group: <span class="font-medium text-gray-700">{{ classItem.age_group || 'Not specified' }}</span>
             </p>
           </div>
 
@@ -285,6 +288,23 @@
             ></textarea>
           </div>
 
+          <div>
+            <label for="ageGroup" class="block text-sm font-medium text-gray-700 mb-1">
+              Age Group *
+            </label>
+            <select
+              id="ageGroup"
+              v-model="classForm.age_group"
+              required
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              :disabled="isCreatingClass"
+            >
+              <option value="">Select age group</option>
+              <option value="8-10">8-10 years (Younger Children)</option>
+              <option value="11-14">11-14 years (Older Children)</option>
+            </select>
+          </div>
+
           <!-- Error Message -->
           <div v-if="classError" class="p-3 bg-red-50 border border-red-200 rounded-lg">
             <p class="text-sm text-red-600">{{ classError }}</p>
@@ -308,7 +328,7 @@
             <button 
               type="submit"
               class="flex-1 py-3 px-4 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              :disabled="isCreatingClass || !classForm.name.trim()"
+              :disabled="isCreatingClass || !classForm.name.trim() || !classForm.age_group"
             >
               <span v-if="isCreatingClass" class="flex items-center justify-center">
                 <i class="ri-loader-4-line animate-spin mr-2"></i>
@@ -349,7 +369,8 @@ const classSuccess = ref('')
 // Class form data
 const classForm = ref({
   name: '',
-  description: ''
+  description: '',
+  age_group: ''
 })
 
 // Computed properties
@@ -415,7 +436,7 @@ const handleModuleSaved = (module: any) => {
 
 const closeCreateClassModal = () => {
   showCreateClassModal.value = false
-  classForm.value = { name: '', description: '' }
+  classForm.value = { name: '', description: '', age_group: '' }
   classError.value = ''
   classSuccess.value = ''
 }
@@ -426,6 +447,11 @@ const handleCreateClass = async () => {
     return
   }
 
+  if (!classForm.value.age_group) {
+    classError.value = 'Age group is required'
+    return
+  }
+
   isCreatingClass.value = true
   classError.value = ''
   classSuccess.value = ''
@@ -433,7 +459,8 @@ const handleCreateClass = async () => {
   try {
     const newClass = await teacherStore.createClass({
       name: classForm.value.name.trim(),
-      description: classForm.value.description.trim()
+      description: classForm.value.description.trim(),
+      age_group: classForm.value.age_group
     })
 
     if (newClass) {

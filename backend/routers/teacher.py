@@ -242,6 +242,7 @@ async def create_class(
         name=class_data["name"],
         teacher_id=teacher_profile.id,
         description=class_data.get("description", ""),
+        age_group=class_data["age_group"],  # Add age_group field
         class_code=class_code,
         is_active=True,
     )
@@ -257,6 +258,7 @@ async def create_class(
             "id": new_class.id,
             "name": new_class.name,
             "description": new_class.description,
+            "age_group": new_class.age_group,  # Include age_group in response
             "class_code": new_class.class_code,
             "created_at": new_class.created_at.isoformat(),
         },
@@ -891,7 +893,8 @@ async def get_performance_analytics(
 
 @router.get("/search-students")
 async def search_students(
-    query: str,
+    query: str = "",  # Make query optional with default empty string
+    age_group: Optional[str] = None,  # Add age_group parameter
     current_user: User = Depends(current_active_user),
     session: AsyncSession = Depends(get_async_session),
 ):
@@ -903,22 +906,48 @@ async def search_students(
         )
     
     try:
-        # Search for students by name (case-insensitive)
-        search_query = f"%{query}%"
+        # First get the teacher's profile ID
+        teacher_profile_stmt = select(TeacherProfile).where(
+            TeacherProfile.user_id == current_user.id
+        )
+        teacher_profile_result = await session.execute(teacher_profile_stmt)
+        teacher_profile = teacher_profile_result.scalar_one_or_none()
+        
+        if not teacher_profile:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Teacher profile not found"
+            )
+        
+        # Determine which student roles to include based on age_group
+        if age_group == "8-10":
+            student_roles = ["younger_child"]
+        elif age_group == "11-14":
+            student_roles = ["older_child"]
+        else:
+            # If no age_group specified, include both
+            student_roles = ["younger_child", "older_child"]
         
         # Get students that are not already in any of the teacher's classes
-        stmt = select(User).where(
+        base_stmt = select(User).where(
             and_(
                 User.is_active == True,
-                User.role == "student",
-                User.name.ilike(search_query),
+                User.role.in_(student_roles),  # Filter by compatible age group
                 User.id.notin_(
                     select(ClassStudent.student_id).join(Class).where(
-                        Class.teacher_id == current_user.id
+                        Class.teacher_id == teacher_profile.id
                     )
                 )
             )
-        ).limit(20)  # Limit results to prevent overwhelming
+        )
+        
+        # If query is provided, add name filter
+        if query.strip():
+            search_query = f"%{query.strip()}%"
+            base_stmt = base_stmt.where(User.name.ilike(search_query))
+        
+        # Limit results to prevent overwhelming
+        stmt = base_stmt.limit(50)
         
         result = await session.execute(stmt)
         students = result.scalars().all()

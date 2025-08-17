@@ -300,6 +300,7 @@ class ModuleResponse(BaseModel):
 class ClassBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
+    age_group: str = Field(..., pattern="^(8-10|11-14)$")  # Only allow "8-10" or "11-14"
 
 
 class ClassCreate(ClassBase):

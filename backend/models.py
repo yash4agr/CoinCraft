@@ -288,6 +288,7 @@ class Class(Base):
     name = Column(String(200), nullable=False)
     teacher_id = Column(String, ForeignKey("teacher_profiles.id"))
     description = Column(Text, nullable=True)
+    age_group = Column(String(20), nullable=False)  # "8-10" or "11-14"
     class_code = Column(String(20), unique=True)  # for students to join
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.utcnow)
