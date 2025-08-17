@@ -36,8 +36,9 @@
           :difficulty="adventure.difficulty"
           :coins="adventure.coins"
           :completed="adventure.completed"
-          :color-scheme="adventure.colorScheme"
-          :button-text="getAdventureButtonText(adventure)"
+          :color-scheme="adventure.color_scheme"
+          :button-text="adventure.completed ? 'Play Again' : adventure.button_text"
+          :path="adventure.path"
           @click="handleAdventureClick(adventure)"
           :class="getAdventureCardClasses(adventure)"
           role="button"
@@ -209,74 +210,14 @@ const achievements = computed(() => {
 })
 
 // Adventures Data - converted to use activities from store
-const adventures = ref([
-  {
-    id: '1',
-    title: 'Piggy Bank Adventure',
-    description: 'Learn how to save money with your digital piggy bank!',
-    emoji: '🐷',
-    difficulty: 'easy' as const,
-    coins: 10,
-    completed: false,
-    colorScheme: 'pink' as const,
-    buttonText: 'Start Saving!'
-  },
-  {
-    id: '2',
-    title: 'Needs vs Wants Game',
-    description: 'Discover the difference between things you need and want.',
-    emoji: '🤔',
-    difficulty: 'easy' as const,
-    coins: 15,
-    completed: true,
-    colorScheme: 'teal' as const,
-    buttonText: 'Play Again'
-  },
-  {
-    id: '3',
-    title: 'Coin Counting Challenge',
-    description: 'Practice counting coins and making change!',
-    emoji: '🪙',
-    difficulty: 'medium' as const,
-    coins: 20,
-    completed: false,
-    colorScheme: 'blue' as const,
-    buttonText: 'Start Challenge'
-  },
-  {
-    id: '4',
-    title: 'Budget Builder',
-    description: 'Create your first budget and learn to plan ahead.',
-    emoji: '📊',
-    difficulty: 'medium' as const,
-    coins: 25,
-    completed: false,
-    colorScheme: 'green' as const,
-    buttonText: 'Build Budget'
-  },
-  {
-    id: '5',
-    title: 'Shopping Smart',
-    description: 'Learn smart shopping tips and compare prices.',
-    emoji: '🛒',
-    difficulty: 'hard' as const,
-    coins: 30,
-    completed: false,
-    colorScheme: 'yellow' as const,
-    buttonText: 'Shop Smart'
-  },
-  {
-    id: '6',
-    title: 'Goal Setting Quest',
-    description: 'Set and achieve your financial goals step by step.',
-    emoji: '🎯',
-    difficulty: 'hard' as const,
-    coins: 35,
-    completed: false,
-    colorScheme: 'purple' as const,
-    buttonText: 'Set Goals'
-  }
-])
+const adventures = computed(() =>
+  childStore.activities.map(adventure => Object.assign({}, adventure, {
+    color_scheme: (adventure as any).color_scheme || (adventure as any).colorScheme || 'blue',
+    button_text: (adventure as any).button_text || (adventure as any).buttonText || (adventure.completed ? 'Play Again' : 'Start Adventure'),
+    emoji: (adventure as any).emoji || '🎮',
+    path: (adventure as any).path || `/child/games/${adventure.id}`
+  }))
+)
 
 // Learning Journey Data
 const learningJourney = ref([
@@ -375,14 +316,7 @@ const handleAdventureClick = async (adventure: any) => {
       showError('This adventure is already completed!')
       return
     }
-    
-    // Update adventure progress in store
-    await dashboardStore.completeActivity(adventure.id)
-    
-    await router.push({
-      path: `/child/games/${adventure.id}`
-    })
-    
+    await router.push(adventure.path || `/child/games/${adventure.id}`)
     showSuccess(`${adventure.title} started successfully!`)
   } catch (error) {
     console.error('Adventure start failed:', error)

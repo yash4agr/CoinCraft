@@ -108,7 +108,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
 import { useChildStore } from '@/stores/child'
 import apiService from '@/services/api'
@@ -214,6 +214,10 @@ const addGoalFromQuest = async () => {
     showSuccessMessage.value = false;
   }, 3000);
 }
+
+onMounted(() => {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+})
 </script>
 
 <style scoped>

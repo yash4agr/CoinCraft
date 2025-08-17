@@ -484,7 +484,6 @@ export const useUserStore = defineStore('user', () => {
 
   // ✅ Keep profile.streak always in sync
   watch(computedStreak, (val) => {
-    console.log("I AM CHECKING")
     if (profile.value) {
       profile.value.streak = val
     }

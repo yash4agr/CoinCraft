@@ -14,7 +14,6 @@ from schemas import UserCreate
 from fastapi_users import exceptions
 
 from sqlalchemy import inspect
-print("BIG CHECK")
 async def check_columns():
     async with engine.begin() as conn:
         def do_inspect(sync_conn):

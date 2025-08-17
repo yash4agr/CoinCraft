@@ -82,7 +82,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useChildStore } from '@/stores/child'
 import { useUserStore } from '@/stores/user'
@@ -215,4 +215,8 @@ async function handleGameOver() {
   await childStore.loadActivities()
   await userStore.addCoins(coinsEarned.value, 'Completed Budget Builder', 'activity')
 }
+
+onMounted(() => {
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+})
 </script>

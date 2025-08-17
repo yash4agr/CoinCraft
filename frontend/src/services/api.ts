@@ -428,7 +428,6 @@ class ApiService {
    * Purchase an item from shop
    */
   async purchaseItem(userId: string, item_id: string): Promise<any> {
-    console.log("BIG CHECK", item_id)
     const response = await httpClient.post(`/api/shop/${userId}/purchase`, { item_id } )
     return response.data
   }
