@@ -31,7 +31,14 @@ sudo apt install -y python3.12 python3-pip nginx certbot python3-certbot-nginx g
 # Install uv package manager
 echo "📦 Installing uv package manager..."
 curl -LsSf https://astral.sh/uv/install.sh | sh
-source ~/.bashrc
+export PATH="/root/.local/bin:$PATH"
+# Make uv available system-wide
+sudo ln -sf /root/.local/bin/uv /usr/local/bin/uv
+sudo ln -sf /root/.local/bin/uvx /usr/local/bin/uvx
+
+# Verify uv installation
+echo "✅ Verifying uv installation..."
+uv --version
 
 # Create application directory
 echo "📁 Creating application directory..."
@@ -52,8 +59,12 @@ sudo chown -R www-data:www-data /var/log/coincraft
 # Setup Python environment
 echo "🐍 Setting up Python environment..."
 cd $APP_DIR
-sudo -u www-data uv venv
-sudo -u www-data uv pip install -r requirements.txt
+# Create virtual environment using uv
+uv venv .venv
+# Install dependencies using uv
+uv pip install -r requirements.txt
+# Fix permissions for the virtual environment
+sudo chown -R www-data:www-data .venv
 
 # Setup systemd service
 echo "⚙️ Setting up systemd service..."
@@ -82,7 +93,8 @@ sudo systemctl reload nginx
 # Run database migrations
 echo "🗄️ Running database setup..."
 cd $APP_DIR
-sudo -u www-data .venv/bin/uv run seed_data.py
+# Run database setup with proper permissions
+sudo -u www-data .venv/bin/python seed_data.py
 
 echo "✅ Deployment completed successfully!"
 echo ""
