@@ -6,6 +6,18 @@ import type { User, Goal, Task, RedemptionRequest, ChildProgress, DashboardStats
 // Child interface extending User with additional parent-specific fields
 export interface Child extends User {
   // These fields come from child_profile in backend
+  child_profile?: {
+    id: string
+    user_id: string
+    age: number
+    coins: number
+    level: number
+    streak_days: number
+    last_activity_date?: Date
+    parent_id?: string
+  }
+  
+  // Legacy fields for backward compatibility
   age?: number
   coins?: number
   level?: number
