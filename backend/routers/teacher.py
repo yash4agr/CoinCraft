@@ -1,7 +1,7 @@
 """Teacher management router for CoinCraft."""
 
 from typing import List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_, desc
@@ -19,6 +19,7 @@ from models import (
     QuizQuestion,
     QuizOption,
     UserModuleProgress,
+    ModuleClassAssignment,
     Transaction,
     Goal,
     Achievement,
@@ -955,6 +956,26 @@ async def assign_module_to_class(
     try:
         # Create module assignments for each student
         assignments_created = 0
+        
+        # Convert due_date string to datetime if provided
+        due_date_obj = None
+        if assignment_data.get("due_date"):
+            try:
+                due_date_obj = datetime.fromisoformat(assignment_data["due_date"].replace('Z', '+00:00'))
+            except ValueError:
+                print(f"[BACKEND] Invalid due_date format: {assignment_data['due_date']}")
+                due_date_obj = None
+        
+        # Create module-class assignment record
+        module_class_assignment = ModuleClassAssignment(
+            module_id=module_id,
+            class_id=class_id,
+            assigned_by=current_user.id,
+            assigned_at=datetime.now(timezone.utc),
+            due_date=due_date_obj
+        )
+        session.add(module_class_assignment)
+        
         for class_student in class_students:
             # Check if assignment already exists
             existing_assignment = select(UserModuleProgress).where(
@@ -967,20 +988,24 @@ async def assign_module_to_class(
             
             if not existing_result.scalar_one_or_none():
                 # Create new assignment
+                print(f"[BACKEND] Creating UserModuleProgress for student {class_student.student_id} and module {module_id}")
                 assignment = UserModuleProgress(
                     user_id=class_student.student_id,
                     module_id=module_id,
                     assigned_by=current_user.id,
-                    assigned_at=datetime.utcnow(),
-                    due_date=assignment_data.get("due_date"),
+                    assigned_at=datetime.now(timezone.utc),
+                    due_date=due_date_obj,
                     status="assigned"
                 )
                 session.add(assignment)
                 assignments_created += 1
+                print(f"[BACKEND] Created assignment {assignment.id} for student {class_student.student_id}")
+            else:
+                print(f"[BACKEND] Assignment already exists for student {class_student.student_id} and module {module_id}")
 
         await session.commit()
-
         print(f"[BACKEND] Module {module.title} assigned to class {class_obj.name} for {assignments_created} students")
+        print(f"[BACKEND] Total students in class: {len(class_students)}")
 
         return {
             "message": f"Module '{module.title}' assigned to class '{class_obj.name}' successfully",
@@ -1014,7 +1039,7 @@ async def get_performance_analytics(
         )
 
     # Calculate timeframe
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     if timeframe == "week":
         start_date = now - timedelta(days=7)
     elif timeframe == "month":
@@ -1138,3 +1163,170 @@ async def get_available_students(
             })
     
     return available_students
+
+
+@router.get("/students/{student_id}/modules/{module_id}/progress")
+async def get_student_module_progress(
+    student_id: str,
+    module_id: str,
+    current_user: User = Depends(current_active_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    """Get a specific student's progress in a specific module."""
+    
+    print(f"[BACKEND] get_student_module_progress called for student {student_id} on module {module_id}")
+    
+    if current_user.role != "teacher":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only teachers can access this endpoint",
+        )
+    
+    # Get teacher profile first
+    teacher_stmt = select(TeacherProfile).where(TeacherProfile.user_id == current_user.id)
+    teacher_result = await session.execute(teacher_stmt)
+    teacher_profile = teacher_result.scalar_one_or_none()
+    
+    if not teacher_profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Teacher profile not found"
+        )
+    
+    # Verify the teacher has access to this student (through classes)
+    student_access_stmt = select(ClassStudent).join(Class).where(
+        and_(
+            ClassStudent.student_id == student_id,
+            Class.teacher_id == teacher_profile.id  # Use teacher_profile.id, not current_user.id
+        )
+    )
+    student_access_result = await session.execute(student_access_stmt)
+    
+    print(f"[BACKEND] Checking access for teacher {current_user.id} (profile: {teacher_profile.id}) to student {student_id}")
+    print(f"[BACKEND] SQL query: SELECT ClassStudent.* FROM class_students ClassStudent JOIN classes Class ON ClassStudent.class_id = Class.id WHERE ClassStudent.student_id = '{student_id}' AND Class.teacher_id = '{teacher_profile.id}'")
+    
+    if not student_access_result.scalar_one_or_none():
+        print(f"[BACKEND] Teacher {current_user.id} (profile: {teacher_profile.id}) doesn't have access to student {student_id}")
+        print(f"[BACKEND] Checking if student {student_id} is in any of teacher's classes...")
+        
+        # Let's also check what classes the teacher has
+        teacher_classes_stmt = select(Class).where(Class.teacher_id == teacher_profile.id)
+        teacher_classes_result = await session.execute(teacher_classes_stmt)
+        teacher_classes = teacher_classes_result.scalars().all()
+        print(f"[BACKEND] Teacher has classes: {[c.name for c in teacher_classes]}")
+        
+        # Check what students are in the teacher's classes
+        for cls in teacher_classes:
+            students_stmt = select(ClassStudent).where(ClassStudent.class_id == cls.id)
+            students_result = await session.execute(students_stmt)
+            students = students_result.scalars().all()
+            print(f"[BACKEND] Class '{cls.name}' has students: {[s.student_id for s in students]}")
+        
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have access to this student's progress",
+        )
+    
+    print(f"[BACKEND] Teacher {current_user.id} has access to student {student_id}")
+    
+    # Get the student's progress in this module
+    progress_stmt = select(UserModuleProgress).where(
+        and_(
+            UserModuleProgress.user_id == student_id,
+            UserModuleProgress.module_id == module_id
+        )
+    )
+    
+    progress_result = await session.execute(progress_stmt)
+    progress = progress_result.scalar_one_or_none()
+    
+    print(f"[BACKEND] Found progress record: {progress}")
+    
+    if not progress:
+        print(f"[BACKEND] No progress record found, returning default values")
+        return {
+            "status": "not_started",
+            "progress_percentage": 0,
+            "score": None,
+            "started_at": None,
+            "completed_at": None,
+            "time_spent": 0
+        }
+    
+    result = {
+        "status": progress.status,
+        "progress_percentage": progress.progress_percentage,
+        "score": progress.score,
+        "started_at": progress.started_at.isoformat() if progress.started_at else None,
+        "completed_at": progress.completed_at.isoformat() if progress.completed_at else None,
+        "time_spent": progress.time_spent
+    }
+    
+    print(f"[BACKEND] Returning progress data: {result}")
+    return result
+
+
+@router.get("/classes/{class_id}/assigned-modules", response_model=List[dict])
+async def get_modules_assigned_to_class(
+    class_id: str,
+    current_user: User = Depends(current_active_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    """Get all modules assigned to a specific class."""
+    
+    if current_user.role != "teacher":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only teachers can access this endpoint",
+        )
+    
+    # Get teacher profile
+    teacher_stmt = select(TeacherProfile).where(
+        TeacherProfile.user_id == current_user.id
+    )
+    teacher_result = await session.execute(teacher_stmt)
+    teacher_profile = teacher_result.scalar_one_or_none()
+
+    if not teacher_profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Teacher profile not found"
+        )
+    
+    # Verify the teacher owns this class
+    class_stmt = select(Class).where(
+        and_(Class.id == class_id, Class.teacher_id == teacher_profile.id)
+    )
+    class_result = await session.execute(class_stmt)
+    class_obj = class_result.scalar_one_or_none()
+
+    if not class_obj:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Class not found"
+        )
+    
+    # Get modules assigned to this class
+    stmt = select(ModuleClassAssignment).where(
+        and_(
+            ModuleClassAssignment.class_id == class_id,
+            ModuleClassAssignment.is_active == True
+        )
+    ).options(selectinload(ModuleClassAssignment.module))
+    
+    result = await session.execute(stmt)
+    assignments = result.scalars().all()
+    
+    # Format module data for frontend
+    modules_data = []
+    for assignment in assignments:
+        if assignment.module:
+            modules_data.append({
+                "id": assignment.module.id,
+                "title": assignment.module.title,
+                "description": assignment.module.description,
+                "difficulty": assignment.module.difficulty,
+                "category": assignment.module.category,
+                "assigned_at": assignment.assigned_at.isoformat() if assignment.assigned_at else None,
+                "due_date": assignment.due_date.isoformat() if assignment.due_date else None
+            })
+    
+    return modules_data

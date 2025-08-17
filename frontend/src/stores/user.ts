@@ -410,6 +410,12 @@ export const useUserStore = defineStore('user', () => {
       const userRole = profile.value?.role || localStorage.getItem('user_role') || 'older_child'
       console.log(`📊 [USER] Loading dashboard for role: ${userRole}`)
       
+      // Only load dashboard data for appropriate roles
+      if (userRole === 'teacher') {
+        console.log('⚠️ [USER] Skipping dashboard load for teacher role in teen context')
+        return
+      }
+      
       const response = await apiService.getDashboardData(userRole)
       
       if (response.error) {

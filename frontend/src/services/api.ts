@@ -983,6 +983,62 @@ class ApiService {
     }
   }
 
+  /**
+   * Get student module progress for a specific module
+   */
+  async getStudentModuleProgress(studentId: string, moduleId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await httpClient.get(`/api/teacher/students/${studentId}/modules/${moduleId}/progress`)
+      return { data: response.data }
+    } catch (error: any) {
+      console.error('❌ [API] Failed to get student module progress:', error)
+      return { error: error.response?.data?.detail || 'Failed to load student module progress' }
+    }
+  }
+
+  /**
+   * Get modules assigned to a specific class
+   */
+  async getModulesAssignedToClass(classId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await httpClient.get(`/api/teacher/classes/${classId}/assigned-modules`)
+      return { data: response.data }
+    } catch (error: any) {
+      console.error('❌ [API] Failed to get modules assigned to class:', error)
+      return { error: error.response?.data?.detail || 'Failed to load modules assigned to class' }
+    }
+  }
+
+  /**
+   * Update module progress for a student
+   */
+  async updateModuleProgress(moduleId: string, progressData: {
+    status: string
+    score: number
+    completed_at?: string
+  }): Promise<ApiResponse<any>> {
+    try {
+      const response = await httpClient.put(`/api/child/modules/${moduleId}/progress`, progressData)
+      return { data: response.data }
+    } catch (error: any) {
+      console.error('❌ [API] Failed to update module progress:', error)
+      return { error: error.response?.data?.detail || 'Failed to update module progress' }
+    }
+  }
+
+  /**
+   * Get module content including sections and quiz questions
+   */
+  async getModuleContent(moduleId: string): Promise<ApiResponse<any>> {
+    try {
+      const response = await httpClient.get(`/api/child/modules/${moduleId}/content`)
+      return { data: response.data }
+    } catch (error: any) {
+      console.error('❌ [API] Failed to get module content:', error)
+      return { error: error.response?.data?.detail || 'Failed to load module content' }
+    }
+  }
+
   // ===================
   // UTILITY METHODS
   // ===================
@@ -999,6 +1055,19 @@ class ApiService {
    */
   getToken(): string | null {
     return tokenManager.getToken()
+  }
+
+  /**
+   * Get shop transactions for a user
+   */
+  async getShopTransactions(userId: string): Promise<ApiResponse<any[]>> {
+    try {
+      const response = await httpClient.get(`/api/shop/${userId}/transactions`)
+      return { data: response.data }
+    } catch (error: any) {
+      console.error('❌ [API] Failed to get shop transactions:', error)
+      return { error: error.response?.data?.detail || 'Failed to load shop transactions' }
+    }
   }
 }
 

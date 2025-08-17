@@ -130,8 +130,8 @@
             </p>
             <div class="flex items-center justify-between text-sm text-gray-500">
               <span>Created {{ formatDate(classItem.created_at) }}</span>
+              </div>
             </div>
-          </div>
 
           <!-- Class Actions -->
           <div class="p-4 bg-gray-50">
@@ -300,22 +300,22 @@
 
           <!-- Action Buttons -->
           <div class="flex gap-3 pt-4">
-            <button 
+          <button 
               type="button"
-              @click="showCreateClassModal = false"
-              class="flex-1 py-3 px-4 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-colors"
-            >
-              Cancel
-            </button>
-            <button 
+            @click="showCreateClassModal = false"
+            class="flex-1 py-3 px-4 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+          >
+            Cancel
+          </button>
+          <button 
               type="submit"
               :disabled="!newClassData.name || selectedStudentIds.length === 0 || isCreatingClass"
               class="flex-1 py-3 px-4 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+          >
               <span v-if="isCreatingClass">Creating...</span>
               <span v-else>Create Class</span>
-            </button>
-          </div>
+          </button>
+        </div>
         </form>
       </div>
     </div>

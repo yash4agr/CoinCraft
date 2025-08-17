@@ -1,6 +1,6 @@
 """Database models for CoinCraft application."""
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 from enum import Enum as PyEnum
 
@@ -34,8 +34,8 @@ class User(SQLAlchemyBaseUserTable[str], Base):
     name = Column(String(100), nullable=False)
     role = Column(String(20), nullable=False)  # UserRoleEnum values
     avatar_url = Column(String(500), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
     
     # Role-specific relationships
     child_profile = relationship("ChildProfile", back_populates="user", uselist=False, primaryjoin="User.id == ChildProfile.user_id")
@@ -46,6 +46,7 @@ class User(SQLAlchemyBaseUserTable[str], Base):
     goals = relationship("Goal", back_populates="user")
     transactions = relationship("Transaction", back_populates="user")
     achievements = relationship("UserAchievement", back_populates="user")
+    user_progress = relationship("UserModuleProgress", foreign_keys="UserModuleProgress.user_id", back_populates="user")
     tasks_assigned = relationship("Task", foreign_keys="Task.assigned_to", back_populates="assignee")
     tasks_created = relationship("Task", foreign_keys="Task.assigned_by", back_populates="assigner")
     redemption_requests = relationship("RedemptionRequest", back_populates="user", primaryjoin="User.id == RedemptionRequest.user_id")
@@ -113,8 +114,8 @@ class Goal(Base):
     color = Column(String(50), nullable=True)
     deadline = Column(DateTime, nullable=True)
     is_completed = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
     
     user = relationship("User", back_populates="goals")
 
@@ -133,7 +134,7 @@ class Transaction(Base):
     source = Column(String(200), nullable=True)
     reference_id = Column(String, nullable=True)  # ID of related goal, task, etc.
     reference_type = Column(String(50), nullable=True)  # goal, task, activity, shop, redemption
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
     
     user = relationship("User", back_populates="transactions")
 
@@ -150,7 +151,7 @@ class Achievement(Base):
     rarity = Column(String(50), default="common")  # common, uncommon, rare, epic, legendary
     points_reward = Column(Integer, default=0)
     criteria = Column(JSON, nullable=True)  # JSON object defining achievement criteria
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
     
     user_achievements = relationship("UserAchievement", back_populates="achievement")
 
@@ -163,7 +164,7 @@ class UserAchievement(Base):
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String, ForeignKey("users.id"))
     achievement_id = Column(String, ForeignKey("achievements.id"))
-    earned_at = Column(DateTime, default=datetime.utcnow)
+    earned_at = Column(DateTime, default=datetime.now(timezone.utc))
     
     user = relationship("User", back_populates="achievements")
     achievement = relationship("Achievement", back_populates="user_achievements")
@@ -183,8 +184,8 @@ class Module(Base):
     points_reward = Column(Integer, default=0)
     created_by = Column(String, ForeignKey("users.id"))
     is_published = Column(Boolean, default=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
     
     sections = relationship("ModuleSection", back_populates="module")
     user_progress = relationship("UserModuleProgress", back_populates="module")
@@ -249,7 +250,7 @@ class UserModuleProgress(Base):
     is_completed = Column(Boolean, default=False)
     score = Column(Float, nullable=True)
     time_spent = Column(Integer, default=0)  # minutes
-    started_at = Column(DateTime, default=datetime.utcnow)
+    started_at = Column(DateTime, default=datetime.now(timezone.utc))
     completed_at = Column(DateTime, nullable=True)
     
     # New fields for module assignment
@@ -258,8 +259,26 @@ class UserModuleProgress(Base):
     due_date = Column(DateTime, nullable=True)  # Optional due date
     status = Column(String(20), default="assigned")  # assigned, in_progress, completed
     
-    user = relationship("User")
+    user = relationship("User", foreign_keys=[user_id], back_populates="user_progress")
     module = relationship("Module", back_populates="user_progress")
+    assigner = relationship("User", foreign_keys=[assigned_by])
+
+
+class ModuleClassAssignment(Base):
+    """Tracks which modules are assigned to which classes."""
+    
+    __tablename__ = "module_class_assignments"
+    
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    module_id = Column(String, ForeignKey("modules.id"))
+    class_id = Column(String, ForeignKey("classes.id"))
+    assigned_by = Column(String, ForeignKey("users.id"))  # Teacher who assigned
+    assigned_at = Column(DateTime, default=datetime.now(timezone.utc))
+    due_date = Column(DateTime, nullable=True)
+    is_active = Column(Boolean, default=True)
+    
+    module = relationship("Module")
+    class_obj = relationship("Class")
     assigner = relationship("User", foreign_keys=[assigned_by])
 
 
@@ -279,7 +298,7 @@ class Task(Base):
     requires_approval = Column(Boolean, default=True)
     completed_at = Column(DateTime, nullable=True)
     approved_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
     
     assigner = relationship("User", foreign_keys=[assigned_by], back_populates="tasks_created")
     assignee = relationship("User", foreign_keys=[assigned_to], back_populates="tasks_assigned")
@@ -296,7 +315,7 @@ class Class(Base):
     description = Column(Text, nullable=True)
     class_code = Column(String(20))  # removed unique constraint
     is_active = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
     
     teacher = relationship("TeacherProfile", back_populates="classes")
     students = relationship("ClassStudent", back_populates="class_obj")
@@ -310,7 +329,7 @@ class ClassStudent(Base):
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     class_id = Column(String, ForeignKey("classes.id"))
     student_id = Column(String, ForeignKey("users.id"))
-    enrolled_at = Column(DateTime, default=datetime.utcnow)
+    enrolled_at = Column(DateTime, default=datetime.now(timezone.utc))
     
     class_obj = relationship("Class", back_populates="students")
     student = relationship("User")
@@ -329,7 +348,7 @@ class RedemptionRequest(Base):
     status = Column(String(20), default="pending")  # pending, approved, rejected
     approved_by = Column(String, ForeignKey("users.id"), nullable=True)
     approved_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
     
     user = relationship("User", back_populates="redemption_requests", primaryjoin="RedemptionRequest.user_id == User.id")
     approver = relationship("User", primaryjoin="RedemptionRequest.approved_by == User.id")
@@ -347,7 +366,7 @@ class PurchaseRequest(Base):
     status = Column(String(20), default="pending")  # pending, approved, rejected
     approved_by = Column(String, ForeignKey("users.id"), nullable=True)
     approved_at = Column(DateTime, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
     
     user = relationship("User", primaryjoin="PurchaseRequest.user_id == User.id")
     approver = relationship("User", primaryjoin="PurchaseRequest.approved_by == User.id")
@@ -365,8 +384,8 @@ class BudgetCategory(Base):
     spent_amount = Column(Integer, default=0)
     icon = Column(String(100), nullable=True)
     color = Column(String(50), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    updated_at = Column(DateTime, default=datetime.now(timezone.utc), onupdate=datetime.now(timezone.utc))
     
     user = relationship("User")
 
@@ -376,7 +395,7 @@ class UserOwnedItem(Base):
     id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
     shop_item_id = Column(String, ForeignKey("shop_items.id", ondelete="CASCADE"), nullable=False)
-    acquired_at = Column(DateTime, default=datetime.utcnow)
+    acquired_at = Column(DateTime, default=datetime.now(timezone.utc))
 
     # Relationship to ShopItem
     shop_item = relationship("ShopItem", back_populates="owners")
@@ -392,5 +411,5 @@ class ShopItem(Base):
     price = Column(Integer, nullable=False)
     category = Column(String(100), nullable=True)
     emoji = Column(String(10), nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow) 
+    created_at = Column(DateTime, default=datetime.now(timezone.utc)) 
     owners = relationship("UserOwnedItem", back_populates="shop_item", cascade="all, delete")

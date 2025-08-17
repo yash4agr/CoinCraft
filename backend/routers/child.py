@@ -19,6 +19,8 @@ from models import (
     Achievement,
     UserAchievement,
     RedemptionRequest,
+    ModuleSection,
+    QuizQuestion,
 )
 from schemas import UserRead
 
@@ -716,7 +718,7 @@ async def get_assigned_modules(
                 "title": assignment.module.title,
                 "description": assignment.module.description,
                 "difficulty": assignment.module.difficulty,
-                "duration": assignment.module.estimated_duration,
+                "duration": assignment.module.estimated_duration or 15,
                 "category": assignment.module.category,
                 "assigned_at": assignment.assigned_at.isoformat() if assignment.assigned_at else None,
                 "due_date": assignment.due_date.isoformat() if assignment.due_date else None,
@@ -725,3 +727,208 @@ async def get_assigned_modules(
             })
     
     return modules_data
+
+
+@router.put("/modules/{module_id}/progress")
+async def update_module_progress(
+    module_id: str,
+    progress_data: dict,
+    current_user: User = Depends(current_active_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    """Update module progress for the current child/teen user."""
+    
+    print(f"[BACKEND] update_module_progress called for user {current_user.id} on module {module_id}")
+    print(f"[BACKEND] Progress data received: {progress_data}")
+    
+    if current_user.role not in ["younger_child", "older_child"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only children/teens can update module progress",
+        )
+    
+    # Get the existing progress record
+    stmt = select(UserModuleProgress).where(
+        and_(
+            UserModuleProgress.user_id == current_user.id,
+            UserModuleProgress.module_id == module_id
+        )
+    )
+    
+    result = await session.execute(stmt)
+    progress = result.scalar_one_or_none()
+    
+    print(f"[BACKEND] Found progress record: {progress}")
+    
+    if not progress:
+        print(f"[BACKEND] No progress record found for user {current_user.id} and module {module_id}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Module progress record not found. Module may not be assigned to you.",
+        )
+    
+    try:
+        # Update progress fields
+        if "status" in progress_data:
+            print(f"[BACKEND] Updating status from '{progress.status}' to '{progress_data['status']}'")
+            progress.status = progress_data["status"]
+        
+        if "score" in progress_data:
+            print(f"[BACKEND] Updating score from '{progress.score}' to '{progress_data['score']}'")
+            progress.score = progress_data["score"]
+        
+        if "completed_at" in progress_data and progress_data["completed_at"]:
+            print(f"[BACKEND] Setting completed_at to {progress_data['completed_at']}")
+            progress.completed_at = datetime.fromisoformat(progress_data["completed_at"].replace('Z', '+00:00'))
+            progress.is_completed = True
+            progress.progress_percentage = 100.0
+        
+        # Update time spent (estimate based on completion)
+        if progress.status == "completed":
+            progress.time_spent = 15  # Default 15 minutes for completion
+            print(f"[BACKEND] Module completed, setting time_spent to 15 minutes")
+        
+        print(f"[BACKEND] About to commit progress update...")
+        await session.commit()
+        print(f"[BACKEND] Progress update committed successfully")
+        
+        # If module is completed, award coins
+        if progress.status == "completed" and progress.score >= 70:
+            print(f"[BACKEND] Module completed with score {progress.score}%, awarding coins...")
+            # Get the module to determine coin reward
+            module_stmt = select(Module).where(Module.id == module_id)
+            module_result = await session.execute(module_stmt)
+            module = module_result.scalar_one_or_none()
+            
+            if module:
+                coin_reward = module.points_reward or 50  # Default 50 coins
+                
+                # Create transaction for earned coins
+                transaction = Transaction(
+                    user_id=current_user.id,
+                    type="earn",
+                    amount=coin_reward,
+                    description=f"Completed module: {module.title}",
+                    category="learning",
+                    source="module_completion",
+                    reference_id=module_id,
+                    reference_type="activity"
+                )
+                session.add(transaction)
+                
+                # Update child profile coins
+                child_profile_stmt = select(ChildProfile).where(ChildProfile.user_id == current_user.id)
+                child_profile_result = await session.execute(child_profile_stmt)
+                child_profile = child_profile_result.scalar_one_or_none()
+                
+                if child_profile:
+                    child_profile.coins += coin_reward
+                
+                await session.commit()
+        
+        return {
+            "message": "Module progress updated successfully",
+            "status": progress.status,
+            "score": progress.score,
+            "completed": progress.is_completed
+        }
+        
+    except Exception as e:
+        await session.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to update module progress: {str(e)}"
+        )
+
+
+@router.get("/modules/{module_id}/content")
+async def get_module_content(
+    module_id: str,
+    current_user: User = Depends(current_active_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    """Get module content including sections and quiz questions."""
+    
+    if current_user.role not in ["younger_child", "older_child"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only children/teens can access this endpoint",
+        )
+    
+    # Verify the user has access to this module (it's assigned to them)
+    progress_stmt = select(UserModuleProgress).where(
+        and_(
+            UserModuleProgress.user_id == current_user.id,
+            UserModuleProgress.module_id == module_id
+        )
+    )
+    
+    progress_result = await session.execute(progress_stmt)
+    if not progress_result.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have access to this module. It may not be assigned to you.",
+        )
+    
+    # Get the module with sections and quiz questions
+    module_stmt = select(Module).where(Module.id == module_id).options(
+        selectinload(Module.sections).selectinload(ModuleSection.quiz_questions).selectinload(QuizQuestion.options)
+    )
+    
+    module_result = await session.execute(module_stmt)
+    module = module_result.scalar_one_or_none()
+    
+    if not module:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Module not found",
+        )
+    
+    # Format sections data
+    sections_data = []
+    for section in module.sections:
+        section_data = {
+            "id": section.id,
+            "title": section.title,
+            "content": section.content,
+            "type": section.type,
+            "duration": section.duration or "5 min",
+            "order_index": section.order_index
+        }
+        sections_data.append(section_data)
+    
+    # Format quiz questions data
+    quiz_data = []
+    for section in module.sections:
+        for question in section.quiz_questions:
+            question_data = {
+                "id": question.id,
+                "question": question.question_text,
+                "explanation": question.explanation,
+                "points": question.points,
+                "order_index": question.order_index,
+                "options": []
+            }
+            
+            for option in question.options:
+                option_data = {
+                    "id": option.id,
+                    "text": option.option_text,
+                    "isCorrect": option.is_correct,
+                    "order_index": option.order_index
+                }
+                question_data["options"].append(option_data)
+            
+            quiz_data.append(question_data)
+    
+    # Sort by order index
+    sections_data.sort(key=lambda x: x["order_index"])
+    quiz_data.sort(key=lambda x: x["order_index"])
+    
+    return {
+        "module_id": module.id,
+        "title": module.title,
+        "description": module.description,
+        "sections": sections_data,
+        "quiz": quiz_data
+    }

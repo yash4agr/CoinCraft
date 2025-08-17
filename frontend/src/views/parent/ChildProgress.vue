@@ -42,16 +42,16 @@
             <v-col cols="12" md="auto" class="pa-0 text-md-right">
               <v-row>
                 <v-col cols="12" class="pa-0">
-                  <v-btn
-                    block
-                    color="primary"
-                    prepend-icon="mdi-download"
-                    variant="tonal"
-                    @click="exportProgress"
-                    :loading="exporting"
-                  >
-                    Export Report
-                  </v-btn>
+              <v-btn
+                block
+                color="primary"
+                prepend-icon="mdi-download"
+                variant="tonal"
+                @click="exportProgress"
+                :loading="exporting"
+              >
+                Export Report
+              </v-btn>
                 </v-col>
               </v-row>
             </v-col>
@@ -1131,9 +1131,9 @@ const formatDate = (date: Date | string | undefined | null) => {
     }
     
     const formatted = dateObj.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric' 
-    })
+    month: 'short', 
+    day: 'numeric' 
+  })
     
     console.log('🔍 [FORMAT_DATE] Successfully formatted:', date, '→', formatted)
     return formatted
@@ -1158,13 +1158,13 @@ onMounted(async () => {
       setError('An unexpected error occurred. Please refresh the page.')
     })
 
-    // Load parent data to get real children
-    await parentStore.refreshData()
+  // Load parent data to get real children
+  await parentStore.refreshData()
     
     // Load all children's goals for the completed goals table
     await parentStore.loadAllChildrenGoals()
-
-    // Select first child if available
+  
+  // Select first child if available
     if (children.value.length > 0 && !selectedChildId.value) {
       selectedChildId.value = children.value[0].id
       await loadChildProgress()

@@ -274,6 +274,14 @@
     @completed="handlePiggyBankCompleted"
   />
   
+  <!-- Module Execution Modal -->
+  <ModuleExecutionModal
+    :show-modal="showModuleExecutionModal"
+    :current-module="currentModule"
+    @close="showModuleExecutionModal = false"
+    @module-completed="handleModuleCompleted"
+  />
+  
   <!-- Debug Modal State (remove this in production) -->
   <div v-if="showPiggyBankModal" class="fixed top-4 right-4 bg-red-500 text-white p-2 rounded z-50">
     Modal is OPEN! State: {{ showPiggyBankModal }}
@@ -292,6 +300,7 @@ import ProgressCard from '@/components/shared/ProgressCard.vue'
 import AchievementCard from '@/components/shared/AchievementCard.vue'
 import JourneyCard from '@/components/shared/JourneyCard.vue'
 import apiService from '@/services/api'
+import ModuleExecutionModal from '@/components/child/ModuleExecutionModal.vue'
 
 // Stores and router
 const router = useRouter()
@@ -312,6 +321,8 @@ const allowReplay = ref(false)
 // Teacher modules state
 const assignedModules = ref<any[]>([])
 const isLoadingModules = ref(false)
+const showModuleExecutionModal = ref(false)
+const currentModule = ref<any>(null)
 
 // Debug modal state changes
 watch(showPiggyBankModal, (newVal) => {
@@ -606,8 +617,28 @@ const handlePiggyBankCompleted = async (coins: number) => {
 // Teacher module methods
 const startAssignedModule = (module: any) => {
   console.log('🚀 [CHILD] Starting assigned module:', module.title)
-  // TODO: Implement module execution
-  alert(`Starting module: ${module.title}`)
+  // Open the module execution modal
+  showModuleExecutionModal.value = true
+  currentModule.value = module
+}
+
+const handleModuleCompleted = (module: any, score: number) => {
+  console.log('🎉 [CHILD] Module completed!', { module: module.title, score })
+  
+  // Show success message
+  showSuccess(`Congratulations! You completed "${module.title}" with a score of ${score}%`)
+  
+  // Close the modal
+  showModuleExecutionModal.value = false
+  currentModule.value = null
+  
+  // Refresh assigned modules to show updated status
+  loadAssignedModules()
+  
+  // Optionally refresh user data to show updated coins
+  if (userStore.profile?.id) {
+    userStore.loadUserData(userStore.profile.id)
+  }
 }
 
 const getModuleDifficultyClass = (difficulty: string) => {

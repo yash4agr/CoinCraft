@@ -149,39 +149,33 @@
               </span>
             </div>
 
-            <!-- Progress Bar -->
-            <div class="mb-3">
-              <div class="flex justify-between text-xs text-gray-500 mb-1">
-                <span>Progress</span>
-                <span>{{ module.progress || 0 }}%</span>
-              </div>
-              <div class="w-full bg-gray-200 rounded-full h-2">
-                <div 
-                  class="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                  :style="{ width: `${module.progress || 0}%` }"
-                ></div>
-              </div>
-            </div>
-
             <!-- Action Button -->
             <button 
               class="w-full py-2 px-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm font-medium"
               @click.stop="startAssignedModule(module)"
             >
               <i class="ri-play-circle-line mr-1"></i>
-              {{ module.progress > 0 ? 'Continue' : 'Start' }} Module
+              Start Module
             </button>
           </div>
         </div>
       </div>
     </div>
 
+    <!-- Module Execution Modal -->
+    <ModuleExecutionModal
+      :show-modal="showModuleExecutionModal"
+      :current-module="currentModule"
+      @close="showModuleExecutionModal = false"
+      @module-completed="handleModuleCompleted"
+    />
+
     <!-- Quick Actions -->
     <div class="mb-8">
       <h2 class="text-2xl font-bold text-gray-800 mb-6">Quick Actions 🚀</h2>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div 
-          v-for="action in quickActions"
+          v-for="action in dashboardStore.quickActions"
           :key="action.id"
           class="bg-white rounded-xl p-4 shadow-sm hover:shadow-md transition-all duration-200 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           @click="handleQuickActionClick(action)"
@@ -341,6 +335,63 @@
       </div>
     </div>
 
+    <!-- Recent Purchases (Shop Transactions) -->
+    <div class="mb-8">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-2xl font-bold text-gray-800">All Shop Purchases 🛍️</h2>
+        <button
+          @click="handleViewAllPurchasesClick"
+          class="text-blue-600 hover:text-blue-700 font-medium text-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded px-2 py-1"
+          aria-label="View all purchases"
+        >
+          View All
+        </button>
+      </div>
+      <div class="bg-white rounded-xl shadow-sm">
+        <div v-if="isLoadingShopTransactions" class="text-center py-8">
+          <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-4"></div>
+          <p class="text-gray-600">Loading recent purchases...</p>
+        </div>
+        
+        <div v-else-if="shopTransactions && shopTransactions.length > 0">
+          <div 
+            v-for="(transaction, index) in displayedShopTransactions" 
+            :key="transaction.id"
+            class="p-4 cursor-pointer hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
+            :class="{ 'border-b border-gray-100': index < displayedShopTransactions.length - 1 }"
+            @click="handleShopTransactionClick(transaction)"
+            role="button"
+            :aria-label="`View ${transaction.description} purchase details. Amount: ${transaction.amount} coins`"
+            tabindex="0"
+            @keydown.enter="handleShopTransactionClick(transaction)"
+            @keydown.space.prevent="handleShopTransactionClick(transaction)"
+          >
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                  <i class="ri-shopping-cart-line text-red-600"></i>
+                </div>
+                <div>
+                  <div class="font-medium text-gray-800">{{ transaction.description }}</div>
+                  <div class="text-sm text-gray-500">{{ formatDate(transaction.created_at) }}</div>
+                </div>
+              </div>
+              <div class="font-semibold text-red-600">
+                -{{ transaction.amount }} coins
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Empty state for shop transactions -->
+        <div v-else class="text-center py-8">
+          <div class="text-4xl mb-4">🛍️</div>
+          <h3 class="text-lg font-semibold text-gray-700 mb-2">No shop purchases yet</h3>
+          <p class="text-gray-500">Your shop purchases will appear here when you make them.</p>
+        </div>
+      </div>
+    </div>
+
     <!-- Loading Overlay -->
     <div v-if="isLoading" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
       <div class="bg-white rounded-lg p-6 flex items-center gap-3">
@@ -399,6 +450,8 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useDashboardStore } from '@/stores/dashboard'
 import apiService from '@/services/api'
+import ModuleExecutionModal from '@/components/child/ModuleExecutionModal.vue'
+import { formatTransactionDate } from '@/utils/dateUtils'
 
 // Stores and router
 const router = useRouter()
@@ -416,10 +469,15 @@ const errorTimer = ref<NodeJS.Timeout | null>(null)
 const successTimer = ref<NodeJS.Timeout | null>(null)
 const assignedModules = ref<any[]>([])
 const isLoadingModules = ref(false)
+const showModuleExecutionModal = ref(false)
+const currentModule = ref<any>(null)
+const isLoadingShopTransactions = ref(false)
+const shopTransactions = ref<any[]>([])
 
 // Computed properties
 const displayedGoals = computed(() => userStore.activeGoals.slice(0, 2))
 const displayedTransactions = computed(() => userStore.recentTransactions.slice(0, 3))
+const displayedShopTransactions = computed(() => shopTransactions.value)
 
 // Event handlers with comprehensive error handling
 const handleBudgetOverviewClick = async () => {
@@ -517,11 +575,54 @@ const handleViewAllActivitiesClick = async () => {
   }
 }
 
+const handleViewAllPurchasesClick = async () => {
+  try {
+    await router.push('/teen/shop')
+    showSuccess('Shop history loaded successfully!')
+  } catch (error) {
+    console.error('Shop navigation failed:', error)
+    showError('Unable to load shop history. Please try again.')
+  }
+}
+
+const handleShopTransactionClick = async (transaction: any) => {
+  try {
+    // show success - could open modal or navigate to detailed view
+    showSuccess('Purchase details loaded!')
+    
+    // Future: Open purchase detail modal or navigate to shop page
+    // openPurchaseModal(transaction.id)
+  } catch (error) {
+    console.error('Shop transaction click failed:', error)
+    showError('Unable to load purchase details.')
+  }
+}
+
 // Teacher module methods
 const startAssignedModule = (module: any) => {
   console.log('🚀 [TEEN] Starting assigned module:', module.title)
-  // TODO: Implement module execution
-  alert(`Starting module: ${module.title}`)
+  // Open the module execution modal
+  showModuleExecutionModal.value = true
+  currentModule.value = module
+}
+
+const handleModuleCompleted = (module: any, score: number) => {
+  console.log('🎉 [TEEN] Module completed!', { module: module.title, score })
+  
+  // Show success message
+  showSuccess(`Congratulations! You completed "${module.title}" with a score of ${score}%`)
+  
+  // Close the modal
+  showModuleExecutionModal.value = false
+  currentModule.value = null
+  
+  // Refresh assigned modules to show updated status
+  loadAssignedModules()
+  
+  // Optionally refresh user data to show updated coins
+  if (userStore.profile?.id) {
+    userStore.loadUserData(userStore.profile.id)
+  }
 }
 
 const getModuleDifficultyClass = (difficulty: string) => {
@@ -533,15 +634,33 @@ const getModuleDifficultyClass = (difficulty: string) => {
   }
 }
 
-const formatModuleDate = (date: Date) => {
+const formatModuleDate = (date: any) => {
   if (!date) return 'Recently'
+  
+  // Ensure date is a proper Date object
+  let dateObj: Date
+  if (typeof date === 'string') {
+    dateObj = new Date(date)
+  } else if (date instanceof Date) {
+    dateObj = date
+  } else {
+    console.warn('Invalid date format:', date)
+    return 'Recently'
+  }
+  
+  // Check if date is valid
+  if (isNaN(dateObj.getTime())) {
+    console.warn('Invalid date object:', date)
+    return 'Recently'
+  }
+  
   const now = new Date()
-  const diffTime = Math.abs(now.getTime() - date.getTime())
+  const diffTime = Math.abs(now.getTime() - dateObj.getTime())
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
   
   if (diffDays === 1) return 'Yesterday'
   if (diffDays < 7) return `${diffDays} days ago`
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  return dateObj.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 }
 
 // Utility functions
@@ -592,16 +711,8 @@ const dismissSuccess = () => {
   }
 }
 
-const formatDate = (timestamp: string) => {
-  const date = new Date(timestamp)
-  const now = new Date()
-  const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
-  
-  if (diffInHours < 1) return 'Just now'
-  if (diffInHours < 24) return `${diffInHours} hours ago`
-  if (diffInHours < 48) return 'Yesterday'
-  return `${Math.floor(diffInHours / 24)} days ago`
-}
+// Use the utility function for date formatting
+const formatDate = formatTransactionDate
 
 // Methods
 const loadAssignedModules = async () => {
@@ -624,6 +735,30 @@ const loadAssignedModules = async () => {
   }
 }
 
+const loadShopTransactions = async () => {
+  try {
+    if (!userStore.profile?.id) {
+      console.log('⚠️ [TEEN] No user profile ID available for shop transactions')
+      return
+    }
+    
+    isLoadingShopTransactions.value = true
+    const response = await apiService.getShopTransactions(userStore.profile.id)
+    if (response.data) {
+      shopTransactions.value = response.data
+      console.log('✅ [TEEN] Loaded shop transactions:', shopTransactions.value.length)
+    } else {
+      console.error('❌ [TEEN] Failed to load shop transactions:', response.error)
+      shopTransactions.value = []
+    }
+  } catch (error) {
+    console.error('❌ [TEEN] Error loading shop transactions:', error)
+    shopTransactions.value = []
+  } finally {
+    isLoadingShopTransactions.value = false
+  }
+}
+
 // Keyboard navigation support
 const handleKeyboardNavigation = (event: KeyboardEvent) => {
   if (event.key === 'Escape') {
@@ -641,6 +776,7 @@ onMounted(() => {
     userStore.loadUserData(userStore.profile?.id || '')
   }
   loadAssignedModules()
+  loadShopTransactions()
 })
 
 onUnmounted(() => {

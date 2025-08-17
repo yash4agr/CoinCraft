@@ -415,44 +415,78 @@ export const useTeacherStore = defineStore('teacher', () => {
     }
   }
 
-  const getClassStudents = async (classId: string, forceRefresh: boolean = false): Promise<any[]> => {
-    console.log('👥 [TEACHER] Getting students for class:', classId)
+  const getClassStudents = async (classId: string): Promise<any[]> => {
+    console.log(`🔍 [TEACHER] Getting students for class: ${classId}`)
     
-    // Check cache first (unless force refresh is requested)
-    if (!forceRefresh && isCacheValid('students', classId)) {
-      const cachedStudents = lastFetched.value.students[classId]?.data || []
-      if (cachedStudents.length > 0) {
-        console.log(`✅ [TEACHER] Using cached students data for class ${classId}: ${cachedStudents.length} students`)
-        return cachedStudents
-      }
+    // Check cache first
+    if (isCacheValid('students', classId)) {
+      console.log(`✅ [TEACHER] Using cached students for class: ${classId}`)
+      return lastFetched.value.students[classId]?.data || []
     }
     
     try {
       const response = await apiService.getClassStudents(classId)
-      
       if (response.error) {
         throw new Error(response.error)
       }
-
-      if (response.data) {
-        const students = response.data.students || []
-        
-        // Store in cache
-        lastFetched.value.students[classId] = {
-          data: students,
-          timestamp: Date.now()
-        }
-        
-        console.log(`✅ [TEACHER] Loaded ${students.length} students for class ${response.data.class_name}`)
-        return students
+      
+      // The backend returns { class_id, class_name, total_students, students: [...] }
+      // We need to extract the students array
+      const responseData = response.data || {}
+      const students = responseData.students || []
+      
+      console.log(`✅ [TEACHER] Loaded ${students.length} students for class: ${classId}`)
+      console.log(`🔍 [TEACHER] Response structure:`, responseData)
+      
+      // Update cache with the students array
+      lastFetched.value.students[classId] = {
+        data: students,
+        timestamp: Date.now()
       }
-
-      return []
-
+      
+      return students
     } catch (err: any) {
       console.error('❌ [TEACHER] Failed to get class students:', err.message)
       error.value = err.message
       return []
+    }
+  }
+
+  const getModulesAssignedToClass = async (classId: string): Promise<any[]> => {
+    console.log(`🔍 [TEACHER] Getting modules assigned to class: ${classId}`)
+    
+    try {
+      // Get modules assigned to this specific class
+      const response = await apiService.getModulesAssignedToClass(classId)
+      if (response.error) {
+        throw new Error(response.error)
+      }
+      
+      const assignedModules = response.data || []
+      console.log(`✅ [TEACHER] Found ${assignedModules.length} modules assigned to class: ${classId}`)
+      return assignedModules
+    } catch (err: any) {
+      console.error('❌ [TEACHER] Failed to get modules assigned to class:', err.message)
+      error.value = err.message
+      return []
+    }
+  }
+
+  const getStudentModuleProgress = async (studentId: string, moduleId: string): Promise<any> => {
+    console.log(`🔍 [TEACHER] Getting progress for student ${studentId} in module ${moduleId}`)
+    
+    try {
+      const response = await apiService.getStudentModuleProgress(studentId, moduleId)
+      if (response.error) {
+        throw new Error(response.error)
+      }
+      
+      console.log(`✅ [TEACHER] Loaded progress for student ${studentId} in module ${moduleId}`)
+      return response.data
+    } catch (err: any) {
+      console.error('❌ [TEACHER] Failed to get student module progress:', err.message)
+      error.value = err.message
+      return null
     }
   }
 
@@ -496,7 +530,7 @@ export const useTeacherStore = defineStore('teacher', () => {
     await loadClasses(true)
     
     // Force refresh students for this class
-    await getClassStudents(classId, true)
+    await getClassStudents(classId)
     
     console.log(`✅ [TEACHER] Class ${classId} force refresh completed`)
   }
@@ -530,6 +564,8 @@ export const useTeacherStore = defineStore('teacher', () => {
     loadTeacherProfile,
     loadAvailableStudents,
     getClassStudents,
+    getModulesAssignedToClass,
+    getStudentModuleProgress,
     forceRefresh,
     forceRefreshClass
   }
