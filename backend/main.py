@@ -73,12 +73,27 @@ origins = [
 origins.extend(
         [
             "https://coincraft-hmzeh3w24-vidhans-projects-7f7fdefe.vercel.app",
-            "https://coincraft-two.vercel.app"  # Your Vercel frontend URL
+            "https://coincraft-two.vercel.app",  # Your Vercel frontend URL
             "https://api.iitmquizzes.tech",  # Your VM API domain
             "https://iitmquizzes.tech",  # Main domain if needed
         ]
     )
 
+
+# Custom CORS middleware to ensure all responses have CORS headers
+@app.middleware("http")
+async def add_cors_headers(request: Request, call_next):
+    origin = request.headers.get('origin')
+    response = await call_next(request)
+    
+    # Add CORS headers to all responses
+    if origin in origins:
+        response.headers["access-control-allow-origin"] = origin
+        response.headers["access-control-allow-credentials"] = "true"
+        response.headers["access-control-allow-methods"] = "GET,POST,PUT,DELETE,OPTIONS"
+        response.headers["access-control-allow-headers"] = "DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization"
+    
+    return response
 
 # For development, allow all origins to fix CORS issues
 import traceback
@@ -104,8 +119,8 @@ async def catch_exceptions_middleware(request: Request, call_next):
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins - TEMPORARY FIX
-    allow_credentials=False,
+    allow_origins=origins,  # Use specific origins list for proper CORS headers
+    allow_credentials=True,  # Can be True with specific origins
     allow_methods=["*","GET","POST","PUT","DELETE","OPTIONS"],
     allow_headers=["*"],
 )
