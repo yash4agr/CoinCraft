@@ -70,14 +70,15 @@ origins = [
 ]
 
 # Add environment-specific origins
-if os.getenv("ENVIRONMENT") == "production":
-    origins.extend(
+origins.extend(
         [
-            "https://coincraft-hmzeh3w24-vidhans-projects-7f7fdefe.vercel.app",  # Your Vercel frontend URL
+            "https://coincraft-hmzeh3w24-vidhans-projects-7f7fdefe.vercel.app",
+            "https://coincraft-two.vercel.app"  # Your Vercel frontend URL
             "https://api.iitmquizzes.tech",  # Your VM API domain
             "https://iitmquizzes.tech",  # Main domain if needed
         ]
     )
+
 
 # For development, allow all origins to fix CORS issues
 import traceback
@@ -103,8 +104,8 @@ async def catch_exceptions_middleware(request: Request, call_next):
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],  # Specific origins
-    allow_credentials=True,  # Now this is valid
+    allow_origins=origins,  # Use the dynamic origins list instead of hardcoded
+    allow_credentials=True,
     allow_methods=["*","GET","POST","PUT","DELETE","OPTIONS"],
     allow_headers=["*"],
 )
