@@ -73,9 +73,9 @@ origins = [
 if os.getenv("ENVIRONMENT") == "production":
     origins.extend(
         [
-            "https://coincraft.com",
-            "https://www.coincraft.com",
-            "https://api.coincraft.com",
+            "https://coincraft-hmzeh3w24-vidhans-projects-7f7fdefe.vercel.app",  # Your Vercel frontend URL
+            "https://api.iitmquizzes.tech",  # Your VM API domain
+            "https://iitmquizzes.tech",  # Main domain if needed
         ]
     )
 
