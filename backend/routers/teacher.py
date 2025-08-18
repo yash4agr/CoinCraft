@@ -1,6 +1,7 @@
 """Teacher management router for CoinCraft."""
 
 from typing import List, Optional
+import uuid
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -251,6 +252,7 @@ async def create_class(
         )
 
     # Create class
+    class_code = uuid.uuid4().hex[:8].upper()
     new_class = Class(
         name=class_data["name"],
         teacher_id=teacher_profile.id,
@@ -260,26 +262,28 @@ async def create_class(
         is_active=True,
     )
 
-        session.add(new_class)
-        await session.flush()  # Get the ID without committing yet
+    session.add(new_class)
+    await session.flush()  # Get the ID without committing yet
 
-        # Add students to the class if provided
-        student_ids = class_data.get("student_ids", [])
-        if student_ids:
-            for student_id in student_ids:
-                # Verify student exists and is a child
-                student_stmt = select(User).where(
-                    and_(User.id == student_id, User.role.in_(["younger_child", "older_child"]))
+    # Add students to the class if provided
+    student_ids = class_data.get("student_ids", [])
+    if student_ids:
+        for student_id in student_ids:
+            # Verify student exists and is a child
+            student_stmt = select(User).where(
+                and_(User.id == student_id, User.role.in_(["younger_child", "older_child"]))
+            )
+            student_result = await session.execute(student_stmt)
+            student = student_result.scalar_one_or_none()
+            
+            if student:
+                class_student = ClassStudent(
+                    class_id=new_class.id,
+                    student_id=student_id
                 )
-                student_result = await session.execute(student_stmt)
-                student = student_result.scalar_one_or_none()
-                
-                if student:
-                    class_student = ClassStudent(
-                        class_id=new_class.id,
-                        student_id=student_id
-                    )
-                    session.add(class_student)
+                session.add(class_student)
+
+    await session.commit()
 
 
     return {

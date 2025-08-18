@@ -314,8 +314,8 @@ const errorMessage = ref('')
 const successMessage = ref('')
 const showErrorToast = ref(false)
 const showSuccessToast = ref(false)
-const errorTimer = ref<NodeJS.Timeout | null>(null)
-const successTimer = ref<NodeJS.Timeout | null>(null)
+const errorTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const successTimer = ref<ReturnType<typeof setTimeout> | null>(null)
 const allowReplay = ref(false)
 
 // Teacher modules state
@@ -667,12 +667,12 @@ const showError = (message: string) => {
   showErrorToast.value = true
   
   // Clear any existing timer
-  if (errorTimer) {
-    clearTimeout(errorTimer)
+  if (errorTimer.value) {
+    clearTimeout(errorTimer.value)
   }
   
   // Auto-dismiss after 5 seconds
-  errorTimer = setTimeout(() => {
+  errorTimer.value = setTimeout(() => {
     dismissError()
   }, 5000)
 }
@@ -682,29 +682,29 @@ const showSuccess = (message: string) => {
   showSuccessToast.value = true
   
   // Clear any existing timer
-  if (successTimer) {
-    clearTimeout(successTimer)
+  if (successTimer.value) {
+    clearTimeout(successTimer.value)
   }
   
   // Auto-dismiss after 3 seconds
-  successTimer = setTimeout(() => {
+  successTimer.value = setTimeout(() => {
     dismissSuccess()
   }, 3000)
 }
 
 const dismissError = () => {
   showErrorToast.value = false
-  if (errorTimer) {
-    clearTimeout(errorTimer)
-    errorTimer = null
+  if (errorTimer.value) {
+    clearTimeout(errorTimer.value)
+    errorTimer.value = null
   }
 }
 
 const dismissSuccess = () => {
   showSuccessToast.value = false
-  if (successTimer) {
-    clearTimeout(successTimer)
-    successTimer = null
+  if (successTimer.value) {
+    clearTimeout(successTimer.value)
+    successTimer.value = null
   }
 }
 
@@ -745,8 +745,8 @@ onUnmounted(() => {
   document.removeEventListener('keydown', handleKeyboardNavigation)
   
   // Clean up timers
-  if (errorTimer) clearTimeout(errorTimer)
-  if (successTimer) clearTimeout(successTimer)
+  if (errorTimer.value) clearTimeout(errorTimer.value)
+  if (successTimer.value) clearTimeout(successTimer.value)
 })
 
 // Methods

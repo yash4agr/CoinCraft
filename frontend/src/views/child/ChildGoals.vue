@@ -348,7 +348,6 @@
 import { ref, computed } from 'vue'
 import { useUserStore } from '@/stores/user'
 import type { Goal } from '@/stores/user'
-import { profile } from 'node:console'
 import { useAuthStore } from '@/stores/auth'
 
 const userStore = useUserStore()

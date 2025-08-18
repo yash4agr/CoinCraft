@@ -480,8 +480,7 @@ export const useTeacherStore = defineStore('teacher', () => {
     students,
     profile,
     stats,
-    modules,
-    profile,
+    // removed duplicate keys
     isLoading,
     error,
     availableStudents,
