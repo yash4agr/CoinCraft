@@ -1,7 +1,7 @@
 """Teacher management router for CoinCraft."""
 
 from typing import List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_, desc
@@ -19,10 +19,12 @@ from models import (
     QuizQuestion,
     QuizOption,
     UserModuleProgress,
+    ModuleClassAssignment,
     Transaction,
     Goal,
     Achievement,
     UserAchievement,
+    ChildProfile,
 )
 from schemas import UserRead, TeacherDashboardResponse
 
@@ -45,7 +47,6 @@ class StudentSummary:
         self.id = user.id
         self.name = user.name
         self.avatar = user.avatar_url
-        self.grade = progress_data.get("grade", 0)
         self.performance = progress_data.get("performance", 0)
         self.needs_support = progress_data.get("needs_support", False)
         self.last_activity = progress_data.get("last_activity")
@@ -181,6 +182,7 @@ async def get_teacher_dashboard(
             "name": current_user.name,
             "email": current_user.email,
             "role": current_user.role,
+
             "is_active": current_user.is_active,
             "is_superuser": current_user.is_superuser,
             "is_verified": current_user.is_verified,
@@ -198,6 +200,7 @@ async def get_teacher_dashboard(
             "subject": teacher_profile.subject,
         },
         "classes": classes,
+
         "recent_modules": [],  # TODO: Implement recent modules functionality
         "student_progress": [],  # TODO: Implement student progress tracking
     }
@@ -209,12 +212,19 @@ async def create_class(
     current_user: User = Depends(current_active_user),
     session: AsyncSession = Depends(get_async_session),
 ):
-    """Create a new class."""
+    """Create a new class with students."""
 
     if current_user.role != "teacher":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only teachers can create classes",
+        )
+
+    # Validate required fields
+    if not class_data.get("name"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Class name is required"
         )
 
     # Get teacher profile
@@ -229,13 +239,16 @@ async def create_class(
             status_code=status.HTTP_404_NOT_FOUND, detail="Teacher profile not found"
         )
 
-    # Generate unique class code
-    import secrets
-    import string
-
-    class_code = "".join(
-        secrets.choice(string.ascii_uppercase + string.digits) for _ in range(6)
+    # Check if class name already exists for this teacher
+    existing_class_stmt = select(Class).where(
+        and_(Class.name == class_data["name"], Class.teacher_id == teacher_profile.id)
     )
+    existing_class_result = await session.execute(existing_class_stmt)
+    if existing_class_result.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Class with name '{class_data['name']}' already exists"
+        )
 
     # Create class
     new_class = Class(
@@ -247,10 +260,27 @@ async def create_class(
         is_active=True,
     )
 
-    session.add(new_class)
-    await session.commit()
+        session.add(new_class)
+        await session.flush()  # Get the ID without committing yet
 
-    print(f"[BACKEND] Created class: {new_class.name} (ID: {new_class.id})")
+        # Add students to the class if provided
+        student_ids = class_data.get("student_ids", [])
+        if student_ids:
+            for student_id in student_ids:
+                # Verify student exists and is a child
+                student_stmt = select(User).where(
+                    and_(User.id == student_id, User.role.in_(["younger_child", "older_child"]))
+                )
+                student_result = await session.execute(student_stmt)
+                student = student_result.scalar_one_or_none()
+                
+                if student:
+                    class_student = ClassStudent(
+                        class_id=new_class.id,
+                        student_id=student_id
+                    )
+                    session.add(class_student)
+
 
     return {
         "message": "Class created successfully",
@@ -436,6 +466,7 @@ async def get_class_details(
         "id": class_obj.id,
         "name": class_obj.name,
         "description": class_obj.description,
+
         "class_code": class_obj.class_code,
         "students": students,
         "avg_performance": sum(s["performance"] for s in students) / len(students)
@@ -518,6 +549,76 @@ async def add_student_to_class(
             "email": student.email,
             "avatar": student.avatar_url,
         },
+    }
+
+
+@router.get("/classes/{class_id}/students", response_model=dict)
+async def get_class_students(
+    class_id: str,
+    current_user: User = Depends(current_active_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    """Get all students enrolled in a specific class."""
+    
+    if current_user.role != "teacher":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only teachers can view class students",
+        )
+
+    # Get teacher profile
+    teacher_stmt = select(TeacherProfile).where(
+        TeacherProfile.user_id == current_user.id
+    )
+    teacher_result = await session.execute(teacher_stmt)
+    teacher_profile = teacher_result.scalar_one_or_none()
+
+    if not teacher_profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Teacher profile not found"
+        )
+
+    # Get class and verify teacher owns it
+    class_stmt = select(Class).where(
+        and_(Class.id == class_id, Class.teacher_id == teacher_profile.id)
+    )
+    class_result = await session.execute(class_stmt)
+    class_obj = class_result.scalar_one_or_none()
+
+    if not class_obj:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Class not found"
+        )
+
+    # Get students in this class
+    students_stmt = (
+        select(ClassStudent, User, ChildProfile)
+        .join(User, ClassStudent.student_id == User.id)
+        .join(ChildProfile, User.id == ChildProfile.user_id)
+        .where(ClassStudent.class_id == class_id)
+    )
+    students_result = await session.execute(students_stmt)
+    students_data = students_result.all()
+
+    students = []
+    for class_student, user, child_profile in students_data:
+        students.append({
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "role": user.role,
+            "avatar": user.avatar_url,
+            "age": child_profile.age if child_profile else None,
+            "coins": child_profile.coins if child_profile else 0,
+            "level": child_profile.level if child_profile else 1,
+            "enrolled_at": class_student.enrolled_at.isoformat()
+        })
+
+    return {
+        "class_id": class_id,
+        "class_name": class_obj.name,
+        "total_students": len(students),
+        "students": students
     }
 
 
@@ -790,6 +891,137 @@ async def get_teacher_modules(
     return modules_data
 
 
+@router.post("/modules/{module_id}/assign", response_model=dict)
+async def assign_module_to_class(
+    module_id: str,
+    assignment_data: dict,
+    current_user: User = Depends(current_active_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    """Assign a module to a specific class."""
+    
+    if current_user.role != "teacher":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only teachers can assign modules",
+        )
+
+    # Get teacher profile
+    teacher_stmt = select(TeacherProfile).where(
+        TeacherProfile.user_id == current_user.id
+    )
+    teacher_result = await session.execute(teacher_stmt)
+    teacher_profile = teacher_result.scalar_one_or_none()
+
+    if not teacher_profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Teacher profile not found"
+        )
+
+    # Get the module
+    module_stmt = select(Module).where(Module.id == module_id)
+    module_result = await session.execute(module_stmt)
+    module = module_result.scalar_one_or_none()
+
+    if not module:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Module not found"
+        )
+
+    # Get the class and verify teacher owns it
+    class_id = assignment_data.get("class_id")
+    class_stmt = select(Class).where(
+        and_(Class.id == class_id, Class.teacher_id == teacher_profile.id)
+    )
+    class_result = await session.execute(class_stmt)
+    class_obj = class_result.scalar_one_or_none()
+
+    if not class_obj:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Class not found"
+        )
+
+    # Get students in this class
+    students_stmt = select(ClassStudent).where(ClassStudent.class_id == class_id)
+    students_result = await session.execute(students_stmt)
+    class_students = students_result.scalars().all()
+
+    if not class_students:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="No students in this class"
+        )
+
+    try:
+        # Create module assignments for each student
+        assignments_created = 0
+        
+        # Convert due_date string to datetime if provided
+        due_date_obj = None
+        if assignment_data.get("due_date"):
+            try:
+                due_date_obj = datetime.fromisoformat(assignment_data["due_date"].replace('Z', '+00:00'))
+            except ValueError:
+                print(f"[BACKEND] Invalid due_date format: {assignment_data['due_date']}")
+                due_date_obj = None
+        
+        # Create module-class assignment record
+        module_class_assignment = ModuleClassAssignment(
+            module_id=module_id,
+            class_id=class_id,
+            assigned_by=current_user.id,
+            assigned_at=datetime.now(timezone.utc),
+            due_date=due_date_obj
+        )
+        session.add(module_class_assignment)
+        
+        for class_student in class_students:
+            # Check if assignment already exists
+            existing_assignment = select(UserModuleProgress).where(
+                and_(
+                    UserModuleProgress.user_id == class_student.student_id,
+                    UserModuleProgress.module_id == module_id
+                )
+            )
+            existing_result = await session.execute(existing_assignment)
+            
+            if not existing_result.scalar_one_or_none():
+                # Create new assignment
+                print(f"[BACKEND] Creating UserModuleProgress for student {class_student.student_id} and module {module_id}")
+                assignment = UserModuleProgress(
+                    user_id=class_student.student_id,
+                    module_id=module_id,
+                    assigned_by=current_user.id,
+                    assigned_at=datetime.now(timezone.utc),
+                    due_date=due_date_obj,
+                    status="assigned"
+                )
+                session.add(assignment)
+                assignments_created += 1
+                print(f"[BACKEND] Created assignment {assignment.id} for student {class_student.student_id}")
+            else:
+                print(f"[BACKEND] Assignment already exists for student {class_student.student_id} and module {module_id}")
+
+        await session.commit()
+        print(f"[BACKEND] Module {module.title} assigned to class {class_obj.name} for {assignments_created} students")
+        print(f"[BACKEND] Total students in class: {len(class_students)}")
+
+        return {
+            "message": f"Module '{module.title}' assigned to class '{class_obj.name}' successfully",
+            "module_id": module_id,
+            "class_id": class_id,
+            "students_assigned": assignments_created,
+            "total_students": len(class_students)
+        }
+
+    except Exception as e:
+        await session.rollback()
+        print(f"[BACKEND] Error assigning module: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to assign module: {str(e)}"
+        )
+
+
 @router.get("/analytics/performance", response_model=dict)
 async def get_performance_analytics(
     timeframe: str = "month",
@@ -805,7 +1037,7 @@ async def get_performance_analytics(
         )
 
     # Calculate timeframe
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     if timeframe == "week":
         start_date = now - timedelta(days=7)
     elif timeframe == "month":
@@ -889,6 +1121,7 @@ async def get_performance_analytics(
         "total_students": total_students,
         "timeframe": timeframe,
     }
+
 
 
 @router.get("/search-students")

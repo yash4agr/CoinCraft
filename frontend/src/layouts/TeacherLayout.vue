@@ -218,7 +218,7 @@ const navigationItems = [
   },
   {
     name: 'ClassProgress',
-    path: '/teacher/class-progress',
+    path: '/teacher/class-progress/',
     label: 'Class Progress',
     icon: 'ri-line-chart-line'
   },
@@ -227,12 +227,6 @@ const navigationItems = [
     path: '/teacher/module-management',
     label: 'Modules',
     icon: 'ri-book-open-line'
-  },
-  {
-    name: 'ClassManagement',
-    path: '/teacher/class-management',
-    label: 'Classes',
-    icon: 'ri-group-line'
   }
 ]
 </script>

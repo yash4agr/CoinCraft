@@ -1,5 +1,10 @@
 <template>
-  <div :class="cardClasses" class="relative rounded-2xl p-6 text-white overflow-hidden">
+  <div 
+    :class="cardClasses" 
+    class="relative rounded-2xl p-6 text-white overflow-hidden transition-all duration-200 hover:scale-105 hover:shadow-lg"
+    role="button"
+    tabindex="0"
+  >
     <!-- Completed Badge -->
     <div v-if="completed" class="absolute top-4 right-4 bg-white/20 rounded-full p-2">
       <i class="ri-check-line text-xl"></i>
@@ -22,7 +27,11 @@
     </div>
     
     <!-- Action Button -->
-    <button :class="buttonClasses" class="w-full mt-4 bg-white font-medium py-2 rounded-lg hover:bg-gray-50 transition-colors">
+    <button 
+      :class="buttonClasses" 
+      class="w-full mt-4 bg-white font-medium py-2 rounded-lg hover:bg-gray-50 transition-colors"
+      @click.stop="handleButtonClick"
+    >
       {{ buttonText }}
     </button>
   </div>
@@ -46,6 +55,10 @@ const props = withDefaults(defineProps<Props>(), {
   completed: false,
   buttonText: 'Start Adventure'
 })
+
+const emit = defineEmits<{
+  click: []
+}>()
 
 const cardClasses = computed(() => {
   const baseClasses = 'bg-gradient-to-br'
@@ -84,5 +97,13 @@ const buttonClasses = computed(() => {
   return colorMap[props.colorScheme]
 })
 
+// Handle button click with debugging
+const handleButtonClick = (event: Event) => {
+  console.log('🎮 [ADVENTURE_CARD] Button clicked for:', props.title)
+  console.log('🎮 [ADVENTURE_CARD] Event:', event)
+  console.log('🎮 [ADVENTURE_CARD] Emitting click event...')
+  event.stopPropagation()
+  emit('click')
+}
 
 </script> 

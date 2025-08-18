@@ -291,6 +291,131 @@
       v-model="showAIAssistModal"
       @module-saved="handleAIModuleSaved"
     />
+
+    <!-- Module Assignment Modal -->
+    <div v-if="showAssignModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-xl font-bold text-gray-800">Assign Module to Class</h3>
+          <button 
+            @click="showAssignModal = false"
+            class="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <i class="ri-close-line text-2xl"></i>
+          </button>
+        </div>
+
+        <!-- Debug Info (temporary) -->
+        <div class="mb-4 p-3 bg-gray-100 rounded-lg text-xs">
+          <p><strong>Debug Info:</strong></p>
+          <p>Total Classes: {{ teacherStore.classes.length }}</p>
+          <p>Classes Data: {{ JSON.stringify(teacherStore.classes, null, 2) }}</p>
+        </div>
+        
+        <!-- Class Selection -->
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 mb-3">Select Class</label>
+          <div class="space-y-3">
+            <div 
+              v-for="classItem in teacherStore.classes" 
+              :key="classItem.id"
+              class="flex items-start space-x-3 p-3 border border-gray-200 rounded-lg hover:bg-gray-50"
+            >
+              <input
+                type="radio"
+                :id="`class-${classItem.id}`"
+                :value="classItem.id"
+                v-model="selectedClassId"
+                name="class-selection"
+                class="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 mt-1"
+              />
+              <label :for="`class-${classItem.id}`" class="flex-1 cursor-pointer">
+                <div class="flex items-center justify-between">
+                  <div>
+                    <div class="font-medium text-gray-800">{{ classItem.name }}</div>
+                    <div class="text-sm text-gray-500">
+                      {{ classItem.students_count || 0 }} students
+                      <span class="text-xs text-gray-400">(ID: {{ classItem.id }})</span>
+                    </div>
+                  </div>
+                  <div class="text-right">
+                    <div class="text-sm text-gray-500">Created</div>
+                    <div class="text-xs text-gray-400">{{ formatDate(classItem.created_at) }}</div>
+                  </div>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Module Info -->
+        <div v-if="moduleToAssign" class="bg-gray-50 rounded-xl p-4 mb-6">
+          <h4 class="font-semibold text-gray-800 mb-2">{{ moduleToAssign.title }}</h4>
+          <p class="text-sm text-gray-600">{{ moduleToAssign.description }}</p>
+          <div class="flex gap-2 mt-2">
+            <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">
+              {{ moduleToAssign.difficulty }}
+            </span>
+            <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs">
+              {{ moduleToAssign.duration }} min
+            </span>
+          </div>
+        </div>
+
+        <!-- Assignment Options -->
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Assignment Options</label>
+          <div class="space-y-3">
+            <div class="flex items-center gap-3">
+              <input 
+                id="due-date"
+                type="checkbox"
+                v-model="assignmentOptions.hasDueDate"
+                class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <label for="due-date" class="text-sm text-gray-700">Set due date</label>
+            </div>
+            <div v-if="assignmentOptions.hasDueDate" class="ml-7">
+              <input 
+                v-model="assignmentOptions.dueDate"
+                type="date"
+                class="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+            
+            <div class="flex items-center gap-3">
+              <input 
+                id="send-notification"
+                type="checkbox"
+                v-model="assignmentOptions.sendNotification"
+                class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <label for="send-notification" class="text-sm text-gray-700">Send notification to students</label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex gap-3 pt-4">
+          <button 
+            type="button"
+            @click="showAssignModal = false"
+            class="flex-1 py-3 px-4 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+          >
+            Cancel
+          </button>
+          <button 
+            type="button"
+            :disabled="!selectedClassId || isAssigning"
+            @click="assignModule"
+            class="flex-1 py-3 px-4 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span v-if="isAssigning">Assigning...</span>
+            <span v-else>Assign Module</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -314,7 +439,16 @@ const showCreateModuleModal = ref(false)
 const showAIAssistModal = ref(false)
 const showPreviewModal = ref(false)
 const showTryModeModal = ref(false)
+const showAssignModal = ref(false)
 const selectedModule = ref(null)
+const moduleToAssign = ref(null)
+const selectedClassId = ref('')
+const isAssigning = ref(false)
+const assignmentOptions = ref({
+  hasDueDate: false,
+  dueDate: '',
+  sendNotification: true
+})
 
 // Computed properties
 const categories = computed(() => {
@@ -395,8 +529,18 @@ const editModule = (moduleId: string) => {
 }
 
 const openAssignModal = (moduleId: string) => {
-  // Implementation for assign modal
-  console.log('Assign module:', moduleId)
+  console.log('📚 [MODULE] Opening assignment modal for module:', moduleId)
+  moduleToAssign.value = teacherStore.getModuleById(moduleId)
+  selectedClassId.value = ''
+  assignmentOptions.value = {
+    hasDueDate: false,
+    dueDate: '',
+    sendNotification: true
+  }
+  
+  // Force refresh classes to get latest data from API
+  teacherStore.forceRefresh()
+  showAssignModal.value = true
 }
 
 const tryModule = (moduleId: string) => {
@@ -426,12 +570,58 @@ const hasEnhancedContent = (module: any) => {
   )
 }
 
+const assignModule = async () => {
+  if (!moduleToAssign.value || !selectedClassId.value) {
+    alert('Please select both a module and a class')
+    return
+  }
+
+  console.log('📚 [MODULE] Assigning module:', {
+    module: moduleToAssign.value.title,
+    class: selectedClassId.value,
+    options: assignmentOptions.value
+  })
+
+  try {
+    const success = await teacherStore.assignModuleToClass(
+      moduleToAssign.value.id,
+      selectedClassId.value,
+      assignmentOptions.value.hasDueDate ? assignmentOptions.value.dueDate : undefined
+    )
+
+    if (success) {
+      alert(`Module "${moduleToAssign.value.title}" assigned to class successfully!`)
+      
+      // Close modal and reset form
+      showAssignModal.value = false
+      moduleToAssign.value = null
+      selectedClassId.value = ''
+      assignmentOptions.value = {
+        hasDueDate: false,
+        dueDate: '',
+        sendNotification: true
+      }
+      
+      // Refresh modules to show updated assignment status
+      await teacherStore.loadModules()
+    } else {
+      alert('Failed to assign module. Please try again.')
+    }
+  } catch (error) {
+    console.error('❌ [MODULE] Error assigning module:', error)
+    alert('Error assigning module. Please try again.')
+  }
+}
+
 // Lifecycle
 onMounted(async () => {
   if (!teacherStore.profile) {
     await teacherStore.loadTeacherProfile()
   }
-  await teacherStore.loadModules()
+  await Promise.all([
+    teacherStore.loadModules(),
+    teacherStore.loadClasses()
+  ])
 })
 </script>
 

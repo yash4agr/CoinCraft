@@ -14,6 +14,63 @@
         </p>
       </div>
 
+      <!-- Featured Stock Market Simulator Card -->
+      <div class="bg-gradient-to-r from-green-500 to-emerald-600 rounded-2xl shadow-2xl p-8 mb-8 text-white">
+        <div class="flex flex-col lg:flex-row items-center gap-8">
+          <!-- Left Side: Content -->
+          <div class="flex-1 text-center lg:text-left">
+            <div class="text-6xl mb-4">📈</div>
+            <h2 class="text-3xl font-bold mb-3">Stock Market Simulator</h2>
+            <p class="text-green-100 text-lg mb-4">
+              Learn to invest in stocks with virtual money and real market data. 
+              Master the fundamentals of investing through interactive learning!
+            </p>
+            
+            <!-- Features -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+              <div class="flex items-center justify-center lg:justify-start gap-2">
+                <i class="ri-time-line text-green-200"></i>
+                <span class="text-green-100">25 min</span>
+              </div>
+              <div class="flex items-center justify-center lg:justify-start gap-2">
+                <i class="ri-star-line text-green-200"></i>
+                <span class="text-green-100">Intermediate</span>
+              </div>
+              <div class="flex items-center justify-center lg:justify-start gap-2">
+                <i class="ri-coins-line text-green-200"></i>
+                <span class="text-green-100">+50 coins</span>
+              </div>
+            </div>
+
+            <!-- Start Button -->
+            <button
+              @click="openStockMarketSimulator"
+              class="bg-white text-green-600 hover:bg-green-50 px-8 py-4 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
+            >
+              🚀 Start Learning Now
+            </button>
+          </div>
+
+          <!-- Right Side: Visual -->
+          <div class="flex-1 flex justify-center">
+            <div class="relative">
+              <!-- Chart Icon -->
+              <div class="w-32 h-32 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                <i class="ri-line-chart-line text-6xl text-white"></i>
+              </div>
+              
+              <!-- Floating Elements -->
+              <div class="absolute -top-4 -right-4 w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center text-2xl">
+                💰
+              </div>
+              <div class="absolute -bottom-4 -left-4 w-12 h-12 bg-blue-400 rounded-full flex items-center justify-center text-xl">
+                📊
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Search and Filter Bar -->
       <div class="bg-white rounded-2xl shadow-lg p-6 mb-8">
         <div class="flex flex-col lg:flex-row gap-4 items-center">
@@ -56,9 +113,9 @@
               class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
             >
               <option value="">All Levels</option>
-              <option value="beginner">Beginner</option>
-              <option value="intermediate">Intermediate</option>
-              <option value="advanced">Advanced</option>
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
             </select>
 
             <!-- Time Filter -->
@@ -220,6 +277,13 @@
         <span>{{ toastMessage }}</span>
       </div>
     </div>
+
+    <!-- Stock Market Simulator Modal -->
+    <StockMarketSimulator
+      v-model="showStockMarketModal"
+      :coins="50"
+      @completed="handleStockMarketCompleted"
+    />
   </div>
 </template>
 
@@ -227,6 +291,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import ActivityCard from '@/components/explore/ActivityCard.vue'
 import ActivityDetailModal from '@/components/explore/ActivityDetailModal.vue'
+import StockMarketSimulator from '@/components/explore/StockMarketSimulator.vue'
 
 // Interfaces
 interface Activity {
@@ -236,7 +301,7 @@ interface Activity {
   detailedDescription: string
   image: string
   category: string
-  difficulty: 'beginner' | 'intermediate' | 'advanced'
+  difficulty: 'easy' | 'medium' | 'hard'
   timeCommitment: number // in minutes
   ageRecommendation: string
   tags: string[]
@@ -278,6 +343,14 @@ const selectedActivity = ref<Activity | null>(null)
 const showDetailModal = ref(false)
 const showToast = ref(false)
 const toastMessage = ref('')
+
+// Stock Market Simulator Modal
+const showStockMarketModal = ref(false)
+
+// Debug modal state
+watch(showStockMarketModal, (newVal) => {
+  console.log('📈 [TEEN_EXPLORE] Modal state changed to:', newVal)
+})
 
 // Categories
 const categories = [
@@ -368,7 +441,7 @@ const generateDemoActivities = (): Activity[] => {
       detailedDescription: 'Experience the thrill of stock trading without the risk! This comprehensive simulator uses real market data to teach you investment strategies, portfolio management, and risk assessment. Perfect for beginners who want to understand how the stock market works.',
       image: 'https://images.pexels.com/photos/6801648/pexels-photo-6801648.jpeg?auto=compress&cs=tinysrgb&w=400',
       category: 'Investing',
-      difficulty: 'intermediate',
+      difficulty: 'medium',
       timeCommitment: 25,
       ageRecommendation: '14-18',
       tags: ['stocks', 'investing', 'simulation', 'portfolio'],
@@ -391,7 +464,7 @@ const generateDemoActivities = (): Activity[] => {
       detailedDescription: 'Take on the ultimate budgeting challenge! Navigate through various life scenarios from college student to young professional, making financial decisions that impact your virtual life. Learn to balance wants vs needs while building healthy financial habits.',
       image: 'https://images.pexels.com/photos/4386431/pexels-photo-4386431.jpeg?auto=compress&cs=tinysrgb&w=400',
       category: 'Budgeting',
-      difficulty: 'beginner',
+      difficulty: 'easy',
       timeCommitment: 20,
       ageRecommendation: '13-17',
       tags: ['budgeting', 'planning', 'expenses', 'savings'],
@@ -414,7 +487,7 @@ const generateDemoActivities = (): Activity[] => {
       detailedDescription: 'Dive into the world of cryptocurrency with our comprehensive academy. Learn about blockchain technology, different types of cryptocurrencies, and safe trading practices. Use our virtual trading platform to practice without real money at stake.',
       image: 'https://images.pexels.com/photos/8369648/pexels-photo-8369648.jpeg?auto=compress&cs=tinysrgb&w=400',
       category: 'Cryptocurrency',
-      difficulty: 'advanced',
+      difficulty: 'hard',
       timeCommitment: 35,
       ageRecommendation: '16-18',
       tags: ['cryptocurrency', 'blockchain', 'trading', 'technology'],
@@ -437,7 +510,7 @@ const generateDemoActivities = (): Activity[] => {
       detailedDescription: 'Ever dreamed of starting your own company? This immersive simulator lets you experience entrepreneurship firsthand. Make crucial business decisions, manage finances, hire employees, and navigate market challenges in a risk-free environment.',
       image: 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=400',
       category: 'Entrepreneurship',
-      difficulty: 'intermediate',
+      difficulty: 'medium',
       timeCommitment: 40,
       ageRecommendation: '15-18',
       tags: ['entrepreneurship', 'business', 'startup', 'management'],
@@ -460,7 +533,7 @@ const generateDemoActivities = (): Activity[] => {
       detailedDescription: 'Navigate the world of banking with confidence! This interactive workshop covers everything from opening your first bank account to understanding loans, credit cards, and investment options. Perfect for teens preparing for financial independence.',
       image: 'https://images.pexels.com/photos/4386370/pexels-photo-4386370.jpeg?auto=compress&cs=tinysrgb&w=400',
       category: 'Banking',
-      difficulty: 'beginner',
+      difficulty: 'easy',
       timeCommitment: 15,
       ageRecommendation: '13-16',
       tags: ['banking', 'accounts', 'loans', 'credit'],
@@ -483,7 +556,7 @@ const generateDemoActivities = (): Activity[] => {
       detailedDescription: 'Enter the exciting world of real estate investment! Buy, sell, and manage virtual properties while learning about market analysis, financing options, and property management. Understand how real estate can build long-term wealth.',
       image: 'https://images.pexels.com/photos/280229/pexels-photo-280229.jpeg?auto=compress&cs=tinysrgb&w=400',
       category: 'Real Estate',
-      difficulty: 'advanced',
+      difficulty: 'hard',
       timeCommitment: 30,
       ageRecommendation: '16-18',
       tags: ['real estate', 'investment', 'property', 'wealth building'],
@@ -506,7 +579,7 @@ const generateDemoActivities = (): Activity[] => {
       detailedDescription: 'Demystify the tax system with our step-by-step tutorial! Learn about different types of taxes, deductions, and how to file your first tax return. Interactive examples make complex concepts easy to understand.',
       image: 'https://images.pexels.com/photos/6863183/pexels-photo-6863183.jpeg?auto=compress&cs=tinysrgb&w=400',
       category: 'Taxes',
-      difficulty: 'intermediate',
+      difficulty: 'medium',
       timeCommitment: 25,
       ageRecommendation: '16-18',
       tags: ['taxes', 'filing', 'deductions', 'income'],
@@ -529,7 +602,7 @@ const generateDemoActivities = (): Activity[] => {
       detailedDescription: 'Plan your future career with financial wisdom! Explore various career paths, understand salary expectations, and learn how education investments pay off. Make informed decisions about your professional future.',
       image: 'https://images.pexels.com/photos/3184292/pexels-photo-3184292.jpeg?auto=compress&cs=tinysrgb&w=400',
       category: 'Career Planning',
-      difficulty: 'beginner',
+      difficulty: 'easy',
       timeCommitment: 20,
       ageRecommendation: '14-18',
       tags: ['career', 'planning', 'salary', 'education'],
@@ -643,11 +716,25 @@ const expandActivity = (activityId: string) => {
 }
 
 const startActivity = (activityId: string) => {
+  console.log('🚀 [TEEN_EXPLORE] startActivity called with ID:', activityId)
+  console.log('🚀 [TEEN_EXPLORE] Available activities:', activities.value.map(a => ({ id: a.id, title: a.title })))
+  
   const activity = activities.value.find(a => a.id === activityId)
+  console.log('🚀 [TEEN_EXPLORE] Found activity:', activity)
+  
   if (activity) {
-    // Simulate starting activity
-    activity.progress = 10
-    showToastMessage(`Started "${activity.title}"!`)
+    console.log('🚀 [TEEN_EXPLORE] Starting activity:', activity.title)
+    
+    if (activity.title === 'Stock Market Simulator') {
+      console.log('📈 [TEEN_EXPLORE] Opening Stock Market Simulator modal...')
+      showStockMarketModal.value = true
+      console.log('📈 [TEEN_EXPLORE] Modal state set to:', showStockMarketModal.value)
+    } else {
+      // For other activities, show coming soon message
+      showToastMessage(`🚧 ${activity.title} is coming soon! Stay tuned for the full experience.`)
+    }
+  } else {
+    console.error('❌ [TEEN_EXPLORE] Activity not found for ID:', activityId)
   }
 }
 
@@ -701,6 +788,23 @@ const showToastMessage = (message: string) => {
   }, 3000)
 }
 
+const handleStockMarketCompleted = async (coinsEarned: number) => {
+  console.log('🎉 [TEEN_EXPLORE] Stock Market Simulator completed! Coins earned:', coinsEarned)
+  
+  // Update the activity status to completed
+  const stockMarketActivity = activities.value.find(a => a.title === 'Stock Market Simulator')
+  if (stockMarketActivity) {
+    stockMarketActivity.isCompleted = true
+    stockMarketActivity.progress = 100
+  }
+  
+  // Close the modal
+  showStockMarketModal.value = false
+  
+  // Show success message
+  showToastMessage(`🎉 Congratulations! You completed the Stock Market Simulator and earned ${coinsEarned} coins!`)
+}
+
 // Watchers
 watch([selectedCategory, selectedDifficulty, selectedTimeCommitment], () => {
   currentPage.value = 1
@@ -710,6 +814,11 @@ watch([selectedCategory, selectedDifficulty, selectedTimeCommitment], () => {
 onMounted(() => {
   loadActivities()
 })
+
+const openStockMarketSimulator = () => {
+  showStockMarketModal.value = true
+  console.log('📈 [TEEN_EXPLORE] Opening Stock Market Simulator modal...')
+}
 </script>
 
 <style scoped>
