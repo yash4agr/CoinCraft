@@ -24,7 +24,7 @@ share/python-wheels/
 
 backend/coincraft.db
 
-# Virtualenv
+# Virtualenv 
 .env
 .venv
 env/
