@@ -157,7 +157,7 @@
               <div class="w-full bg-gray-200 rounded-full h-2.5">
                 <div 
                   class="bg-blue-500 h-2.5 rounded-full" 
-                  :style="{ width: `${calculateOverallProgress(classItem)}%` }"
+                  :style="{ width: calculateOverallProgress(classItem) + '%' }"
                 ></div>
               </div>
             </div>
@@ -345,7 +345,7 @@
     <AIAssistComponent 
       v-model="showAIAssist"
       @module-saved="handleModuleSaved"
-    />
+    ></AIAssistComponent>
   </div>
 </template>
 
