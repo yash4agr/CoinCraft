@@ -45,7 +45,7 @@
                 <div class="font-medium text-gray-800">{{ authStore.user?.fullName }}</div>
                 <div class="text-sm text-gray-500">CoinCraft Parent</div>
               </div>
-              <button class="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors">
+              <button @click="router.push('/parent/profile')" class="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors">
                 <i class="ri-user-3-line text-gray-400"></i> <span>My Profile</span>
               </button>
               <button class="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors">
@@ -76,7 +76,7 @@
           <div class="font-medium text-gray-800">{{ authStore.user?.fullName }}</div>
           <div class="text-sm text-gray-500">CoinCraft Parent</div>
         </div>
-        <button class="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors">
+        <button @click="router.push('/parent/profile')" class="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors">
           <i class="ri-user-3-line text-gray-400"></i> <span>My Profile</span>
         </button>
         <button class="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors">

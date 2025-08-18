@@ -65,7 +65,6 @@ class ChildProfile(Base):
     streak_days = Column(Integer, default=0)
     last_activity_date = Column(DateTime, nullable=True)
     parent_id = Column(String, ForeignKey("users.id"), nullable=True)
-    temporary_password = Column(String(100), nullable=True)  # Store password temporarily for parent visibility
     
     user = relationship("User", back_populates="child_profile", primaryjoin="ChildProfile.user_id == User.id")
     parent = relationship("User", primaryjoin="ChildProfile.parent_id == User.id")
@@ -314,9 +313,7 @@ class Class(Base):
     name = Column(String(200), nullable=False)
     teacher_id = Column(String, ForeignKey("teacher_profiles.id"))
     description = Column(Text, nullable=True)
-
-    age_group = Column(String(20), nullable=False)  # "8-10" or "11-14"
-    class_code = Column(String(20), unique=True)  # for students to join
+    class_code = Column(String(20))  # removed unique constraint
     is_active = Column(Boolean, default=True)
     created_at = Column(DateTime, default=datetime.now(timezone.utc))
     

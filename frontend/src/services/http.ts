@@ -5,7 +5,7 @@
 
 import axios from 'axios'
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://api.iitmquizzes.tech'
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 
 // Create axios instance with default configuration
 export const httpClient = axios.create({

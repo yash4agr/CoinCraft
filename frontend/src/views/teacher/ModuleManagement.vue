@@ -1,17 +1,5 @@
 <template>
   <div class="min-h-screen bg-gray-50 p-4 pb-20">
-    <!-- Toast Notification -->
-    <transition name="fade">
-      <div
-        v-if="showToast"
-        class="fixed top-4 right-4 z-50 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2"
-        role="status"
-        aria-live="polite"
-      >
-        <i class="ri-check-line"></i>
-        <span>{{ toastMessage }}</span>
-      </div>
-    </transition>
     <!-- Header Section -->
     <div class="mb-8">
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -298,6 +286,130 @@
       @module-completed="handleModuleCompleted"
     />
 
+    <!-- Manual Create Module Modal -->
+    <div v-if="showCreateModuleModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+      <div class="bg-white rounded-2xl p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-6">
+          <h3 class="text-xl font-bold text-gray-800">Create Module</h3>
+          <button @click="closeCreateModal" class="text-gray-400 hover:text-gray-600 transition-colors">
+            <i class="ri-close-line text-2xl"></i>
+          </button>
+        </div>
+
+        <!-- Basic Info -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Title *</label>
+            <input v-model="createForm.title" type="text" placeholder="e.g., Money Basics"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+          </div>
+          <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Description *</label>
+            <textarea v-model="createForm.description" rows="3" placeholder="Describe the module..."
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
+            <input v-model="createForm.category" type="text" placeholder="e.g., Saving"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Difficulty</label>
+            <select v-model="createForm.difficulty"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              <option value="beginner">Beginner</option>
+              <option value="intermediate">Intermediate</option>
+              <option value="advanced">Advanced</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Duration (minutes)</label>
+            <input v-model.number="createForm.duration" type="number" min="1" placeholder="45"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Age Group</label>
+            <select v-model="createForm.ageGroup"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+              <option value="">Unknown</option>
+              <option value="8-10">8-10 years</option>
+              <option value="11-14">11-14 years</option>
+              <option value="15-18">15-18 years</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Sections Builder -->
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="font-semibold text-gray-800">Sections</h4>
+            <button @click="addSection" class="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm">Add Section</button>
+          </div>
+          <div v-if="createForm.sections.length === 0" class="text-sm text-gray-500">No sections added.</div>
+          <div v-for="(s, idx) in createForm.sections" :key="idx" class="border rounded-lg p-3 mb-3">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <input v-model="s.title" type="text" placeholder="Section title"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+              <select v-model="s.type"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                <option value="lesson">Lesson</option>
+                <option value="reading">Reading</option>
+                <option value="video">Video</option>
+                <option value="discussion">Discussion</option>
+              </select>
+              <textarea v-model="s.content" rows="2" placeholder="Section content"
+                class="md:col-span-2 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+              <input v-model="s.duration" type="text" placeholder="e.g., 10 minutes"
+                class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+            </div>
+            <div class="flex justify-end mt-2">
+              <button @click="removeSection(idx)" class="text-red-600 text-sm">Remove</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quiz Builder -->
+        <div class="mb-6">
+          <div class="flex items-center justify-between mb-2">
+            <h4 class="font-semibold text-gray-800">Quiz Questions</h4>
+            <button @click="addQuestion" class="px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm">Add Question</button>
+          </div>
+          <div v-if="createForm.quiz.length === 0" class="text-sm text-gray-500">No questions added.</div>
+          <div v-for="(q, qIdx) in createForm.quiz" :key="qIdx" class="border rounded-lg p-3 mb-3">
+            <input v-model="q.question" type="text" placeholder="Question text"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-2" />
+            <textarea v-model="q.explanation" rows="2" placeholder="Explanation (optional)"
+              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-2"></textarea>
+            <div class="mb-2">
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-sm text-gray-700">Options</span>
+                <button @click="addOption(qIdx)" class="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs">Add Option</button>
+              </div>
+              <div v-for="(opt, oIdx) in q.options" :key="oIdx" class="flex items-center gap-2 mb-2">
+                <input v-model="opt.text" type="text" placeholder="Option text" class="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
+                <label class="flex items-center gap-1 text-sm text-gray-700">
+                  <input type="checkbox" v-model="opt.isCorrect" /> Correct
+                </label>
+                <button @click="removeOption(qIdx, oIdx)" class="text-red-600 text-xs">Remove</button>
+              </div>
+            </div>
+            <div class="flex justify-end">
+              <button @click="removeQuestion(qIdx)" class="text-red-600 text-sm">Remove Question</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="flex gap-3 pt-2">
+          <button type="button" @click="closeCreateModal" class="flex-1 py-3 px-4 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-colors">Cancel</button>
+          <button type="button" :disabled="isSavingModule || !createForm.title.trim() || !createForm.description.trim()" @click="saveNewModule" class="flex-1 py-3 px-4 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            <span v-if="isSavingModule">Saving...</span>
+            <span v-else>Save Module</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- AI Assist Modal -->
     <AIAssistComponent
       v-model="showAIAssistModal"
@@ -456,12 +568,22 @@ const selectedModule = ref(null)
 const moduleToAssign = ref(null)
 const selectedClassId = ref('')
 const isAssigning = ref(false)
-const showToast = ref(false)
-const toastMessage = ref('')
 const assignmentOptions = ref({
   hasDueDate: false,
   dueDate: '',
   sendNotification: true
+})
+// Manual create module state
+const isSavingModule = ref(false)
+const createForm = ref({
+  title: '',
+  description: '',
+  category: 'AI Generated',
+  difficulty: 'beginner',
+  duration: 45,
+  ageGroup: '',
+  sections: [] as Array<{ title: string; type: string; content: string; duration?: string }>,
+  quiz: [] as Array<{ question: string; explanation?: string; options: Array<{ text: string; isCorrect: boolean }> }>
 })
 
 // Computed properties
@@ -571,11 +693,7 @@ const handleAIModuleSaved = async (module: any) => {
   console.log('🤖 [MODULE MANAGEMENT] AI module saved:', module.title)
   // Refresh the modules list to show the new AI-generated module
   await teacherStore.loadModules()
-  // Close the AI modal and show success toast
-  showAIAssistModal.value = false
-  toastMessage.value = `Module "${module.title}" saved successfully!`
-  showToast.value = true
-  setTimeout(() => (showToast.value = false), 3000)
+  // Show success message or notification
   console.log('✅ [MODULE MANAGEMENT] Modules refreshed after AI module creation')
 }
 
@@ -628,6 +746,60 @@ const assignModule = async () => {
   } catch (error) {
     console.error('❌ [MODULE] Error assigning module:', error)
     alert('Error assigning module. Please try again.')
+  }
+}
+
+// Manual create helpers
+const closeCreateModal = () => {
+  showCreateModuleModal.value = false
+  createForm.value = { title: '', description: '', category: 'AI Generated', difficulty: 'beginner', duration: 45, ageGroup: '', sections: [], quiz: [] }
+}
+
+const addSection = () => {
+  createForm.value.sections.push({ title: '', type: 'lesson', content: '', duration: '10 minutes' })
+}
+const removeSection = (idx: number) => {
+  createForm.value.sections.splice(idx, 1)
+}
+const addQuestion = () => {
+  createForm.value.quiz.push({ question: '', explanation: '', options: [{ text: '', isCorrect: false }] })
+}
+const removeQuestion = (qIdx: number) => {
+  createForm.value.quiz.splice(qIdx, 1)
+}
+const addOption = (qIdx: number) => {
+  createForm.value.quiz[qIdx].options.push({ text: '', isCorrect: false })
+}
+const removeOption = (qIdx: number, oIdx: number) => {
+  createForm.value.quiz[qIdx].options.splice(oIdx, 1)
+}
+
+const saveNewModule = async () => {
+  try {
+    isSavingModule.value = true
+    // Map to backend shape
+    const payload: any = {
+      title: createForm.value.title.trim(),
+      description: createForm.value.description.trim(),
+      category: createForm.value.category,
+      difficulty: createForm.value.difficulty,
+      duration: Number(createForm.value.duration) || 45,
+      ageGroup: createForm.value.ageGroup,
+      sections: createForm.value.sections.map((s, i) => ({ title: s.title, type: s.type, content: s.content, duration: s.duration, orderIndex: i + 1 })),
+      activities: [],
+      quiz: createForm.value.quiz.map((q, i) => ({ question: q.question, type: 'multiple_choice', options: q.options.map((o, j) => ({ text: o.text, isCorrect: o.isCorrect })), explanation: q.explanation }))
+    }
+    const saved = await teacherStore.addModule(payload)
+    if (saved) {
+      showAIAssistModal.value = false
+      showCreateModuleModal.value = false
+      await teacherStore.loadModules()
+    }
+  } catch (e) {
+    console.error('❌ [MODULE] Failed to save manual module:', e)
+    alert('Failed to save module. Please check required fields.')
+  } finally {
+    isSavingModule.value = false
   }
 }
 
