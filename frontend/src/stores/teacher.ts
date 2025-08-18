@@ -9,6 +9,9 @@ export interface TeacherClass {
   name: string
   description?: string
   teacher_id: string
+
+  age_group: string  // Add age_group field
+  class_code: string
   is_active: boolean
   created_at: string
   students_count?: number
@@ -28,14 +31,17 @@ export interface TeacherStats {
 export const useTeacherStore = defineStore('teacher', () => {
   // State
   const classes = ref<TeacherClass[]>([])
+  const currentClass = ref<TeacherClass | null>(null)
+  const modules = ref<any[]>([])
+  const students = ref<User[]>([])
   const stats = ref<TeacherStats>({
     total_students: 0,
     total_classes: 0,
     average_performance: 0,
     total_modules: 0
   })
-  const modules = ref<any[]>([])
-  const profile = ref<any>(null)
+
+  const profile = ref<any>(null) // Teacher profile data
   const isLoading = ref(false)
   const error = ref<string | null>(null)
   const availableStudents = ref<User[]>([])
@@ -103,13 +109,44 @@ export const useTeacherStore = defineStore('teacher', () => {
       const dashboardData = await apiService.getTeacherDashboard()
 
       if (dashboardData.data) {
-        // Update stats from dashboard data
-        stats.value = {
-          total_students: dashboardData.data.students_count || 0,
-          total_classes: dashboardData.data.classes_count || 0,
-          average_performance: dashboardData.data.average_performance || 0,
-          total_modules: dashboardData.data.modules_count || 0
+        const { user, stats: dashboardStats, classes: dashboardClasses } = dashboardData.data
+        
+        // Update profile information
+        if (user) {
+          profile.value = {
+            avatar: user.avatar_url,
+            school: (dashboardStats as any)?.school || '',
+            subject: (dashboardStats as any)?.subject || ''
+          }
         }
+        
+        // Update stats from dashboard data
+        if (dashboardStats) {
+          stats.value = {
+            total_students: (dashboardStats as any).total_students || 0,
+            total_classes: (dashboardStats as any).total_classes || 0,
+            average_performance: (dashboardStats as any).avg_performance || 0,
+            total_modules: (dashboardStats as any).total_modules || 0
+          }
+        }
+        
+        // Update classes if available
+        if (dashboardClasses) {
+          classes.value = dashboardClasses.map((cls: any) => ({
+            id: cls.id,
+            name: cls.name,
+            description: cls.description || '',
+            teacher_id: cls.teacher_id || user?.id || '',
+            age_group: cls.age_group || '',  // Add age_group field
+            class_code: cls.class_code || '',
+            is_active: cls.is_active !== false,
+            created_at: cls.created_at || new Date().toISOString(),
+            students_count: cls.student_count || 0,
+            average_performance: cls.avg_performance || 0,
+            grade: cls.grade || ''
+          }))
+        }
+        
       } else {
         error.value = dashboardData.error || 'Failed to fetch teacher dashboard'
       }
@@ -127,7 +164,8 @@ export const useTeacherStore = defineStore('teacher', () => {
   const createClass = async (classData: {
     name: string
     description?: string
-    student_ids?: string[]
+
+    age_group: string  // Add age_group parameter
   }): Promise<TeacherClass | null> => {
     console.log('🏫 [TEACHER] Creating new class...')
     
@@ -141,8 +179,20 @@ export const useTeacherStore = defineStore('teacher', () => {
         throw new Error(response.error)
       }
 
-      if (response.data && response.data.class) {
-        console.log('✅ [TEACHER] Class created successfully:', response.data.class.name)
+
+      if (response.data) {
+        const newClass: TeacherClass = {
+          id: response.data.id,
+          name: response.data.name,
+          description: response.data.description,
+          teacher_id: response.data.teacher_id,
+          age_group: response.data.age_group,  // Add age_group field
+          class_code: response.data.class_code,
+          is_active: response.data.is_active,
+          created_at: response.data.created_at,
+          students_count: 0,
+          average_performance: 0
+        }
         
         // Don't add to local state - let the component refresh from API
         // This ensures we always have the latest data from database
@@ -190,22 +240,18 @@ export const useTeacherStore = defineStore('teacher', () => {
       const response = await apiService.getTeacherClasses()
       
       if (response.data) {
-        console.log('🔍 [TEACHER] Raw API response:', response.data)
-        
-        classes.value = response.data.map(cls => {
-          const mappedClass = {
-            id: cls.id,
-            name: cls.name,
-            description: cls.description,
-            teacher_id: cls.teacher_id || '',
-            is_active: cls.is_active,
-            created_at: cls.created_at,
-            students_count: cls.student_count || 0,  // Fixed: use student_count from API
-            average_performance: cls.avg_performance || 0
-          }
-          console.log(`🔍 [TEACHER] Mapped class "${cls.name}":`, mappedClass)
-          return mappedClass
-        })
+        classes.value = response.data.map(cls => ({
+          id: cls.id,
+          name: cls.name,
+          description: cls.description,
+          teacher_id: cls.teacher_id,
+          age_group: cls.age_group,  // Add age_group field
+          class_code: cls.class_code,
+          is_active: cls.is_active,
+          created_at: cls.created_at,
+          students_count: cls.students_count || 0,
+          average_performance: cls.average_performance || 0
+        }))
         
         // Update cache timestamp
         updateCacheTimestamp('classes')
@@ -285,28 +331,84 @@ export const useTeacherStore = defineStore('teacher', () => {
     error.value = null
   }
 
-  const addModule = async (moduleData: any): Promise<any> => {
-    console.log('📚 [TEACHER] Adding new module...')
+  const addStudentToClass = async (classId: string, studentData: { email: string }) => {
+    console.log('👥 [TEACHER] Adding student to class...')
     
     isLoading.value = true
     error.value = null
 
     try {
-      const response = await apiService.createModule(moduleData)
+
+      const response = await apiService.addStudentToClass(classId, studentData)
+      
+      if (response.error) {
+        return { error: response.error }
+      }
+
+      // Update the class student count locally
+      const classIndex = classes.value.findIndex(cls => cls.id === classId)
+      if (classIndex !== -1) {
+        const existingClass = classes.value[classIndex]
+        if (existingClass) {
+          existingClass.students_count = (existingClass.students_count || 0) + 1
+        }
+      }
+
+      console.log('✅ [TEACHER] Student added successfully')
+      return { success: true, data: response.data }
+
+    } catch (err: any) {
+      console.error('❌ [TEACHER] Failed to add student:', err.message)
+      return { error: err.message }
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const loadClassDetails = async (classId: string) => {
+    console.log('📋 [TEACHER] Loading class details...')
+    
+    isLoading.value = true
+    error.value = null
+
+    try {
+      const response = await apiService.getClassDetails(classId)
       
       if (response.error) {
         throw new Error(response.error)
       }
 
       if (response.data) {
-        console.log('✅ [TEACHER] Module added successfully:', response.data.title)
+        // Store the current class details
+        currentClass.value = response.data as TeacherClass
+        
+        // Update students if included in response
+        if (response.data.students) {
+          students.value = response.data.students
+        }
+        
+        // Update the class in our local store with full details including students
+        const classIndex = classes.value.findIndex(cls => cls.id === classId)
+        if (classIndex !== -1) {
+          const existingClass = classes.value[classIndex]
+          if (existingClass) {
+            classes.value[classIndex] = {
+              ...existingClass,
+              students: response.data.students || existingClass.students,
+              students_count: response.data.students?.length || existingClass.students_count || 0,
+              average_performance: response.data.avg_performance || existingClass.average_performance || 0
+            }
+          }
+        }
+
+        console.log('✅ [TEACHER] Class details loaded successfully')
         return response.data
       }
 
       return null
 
     } catch (err: any) {
-      console.error('❌ [TEACHER] Failed to add module:', err.message)
+      console.error('❌ [TEACHER] Failed to load class details:', err.message)
       error.value = err.message
       return null
     } finally {
@@ -314,8 +416,19 @@ export const useTeacherStore = defineStore('teacher', () => {
     }
   }
 
-  const loadModules = async (): Promise<void> => {
-    console.log('📚 [TEACHER] Loading modules...')
+  const loadTeacherProfile = async () => {
+    // For now, just set a basic profile since we don't have a separate profile endpoint
+    console.log('📋 [TEACHER] Loading teacher profile...')
+    profile.value = {
+      avatar: null,
+      school: 'Default School',
+      subject: 'Financial Literacy'
+    }
+    return Promise.resolve()
+  }
+
+  const loadModules = async () => {
+    console.log('📚 [TEACHER] Loading teacher modules...')
     
     isLoading.value = true
     error.value = null
@@ -323,221 +436,49 @@ export const useTeacherStore = defineStore('teacher', () => {
     try {
       const response = await apiService.getTeacherModules()
       
-      if (response.data) {
-        modules.value = response.data
-        console.log(`✅ [TEACHER] Loaded ${modules.value.length} modules`)
-      } else {
-        error.value = response.error || 'Failed to load modules'
+      if (response.error) {
+        throw new Error(response.error)
       }
+
+      // For now, we'll just log success since modules aren't fully implemented
+      console.log('✅ [TEACHER] Modules loaded successfully')
+      return response.data || []
 
     } catch (err: any) {
       console.error('❌ [TEACHER] Failed to load modules:', err.message)
       error.value = err.message
+      return []
     } finally {
       isLoading.value = false
     }
   }
 
-  const getModuleById = (moduleId: string): any | undefined => {
-    return modules.value.find(module => module.id === moduleId)
-  }
-
-  const assignModuleToClass = async (moduleId: string, classId: string, dueDate?: string): Promise<boolean> => {
-    console.log(`📚 [TEACHER] Assigning module ${moduleId} to class ${classId}...`)
+  // Search for students by name
+  const searchStudents = async (query: string): Promise<any[]> => {
+    console.log('🔍 [TEACHER] Searching for students:', query)
     
     try {
-      const response = await apiService.assignModuleToClass(moduleId, {
-        class_id: classId,
-        due_date: dueDate
-      })
+      const response = await apiService.searchStudents(query)
       
-      if (response.error) {
-        throw new Error(response.error)
-      }
-
-      if (response.data) {
-        console.log(`✅ [TEACHER] Module assigned successfully: ${response.data.message}`)
-        return true
-      }
-
-      return false
-
-    } catch (err: any) {
-      console.error('❌ [TEACHER] Failed to assign module to class:', err.message)
-      error.value = err.message
-      return false
-    }
-  }
-
-  const loadTeacherProfile = async (): Promise<void> => {
-    console.log('👤 [TEACHER] Loading teacher profile...')
-    
-    isLoading.value = true
-    error.value = null
-
-    try {
-      // For now, create a default profile since the endpoint doesn't exist
-      // In a real implementation, this would come from an API endpoint
-      profile.value = {
-        id: 'default-teacher-profile',
-        school_name: 'Financial Literacy Academy',
-        grade_level: 'K-12',
-        subject: 'Financial Education',
-        avatar: null
-      }
-      console.log('✅ [TEACHER] Default profile created')
-    } catch (err: any) {
-      console.error('❌ [TEACHER] Failed to load profile:', err.message)
-      error.value = err.message
-    } finally {
-      isLoading.value = false
-    }
-  }
-
-  const loadAvailableStudents = async (): Promise<void> => {
-    console.log('👥 [TEACHER] Loading available students...')
-    isLoading.value = true
-    error.value = null
-    try {
-      const response = await apiService.getAvailableStudents()
-      if (response.data) {
-        availableStudents.value = response.data
-        console.log(`✅ [TEACHER] Loaded ${availableStudents.value.length} available students`)
+      if (response.data && response.data.students) {
+        return response.data.students
       } else {
-        error.value = response.error || 'Failed to load available students'
-        console.error('❌ [TEACHER] Failed to load students:', response.error)
+        console.error('Invalid response format for student search:', response)
+        return []
       }
-    } catch (err: any) {
-      console.error('❌ [TEACHER] Failed to load students:', err.message)
-      error.value = err.message
-    } finally {
-      isLoading.value = false
+    } catch (error) {
+      console.error('Error searching students:', error)
+      throw error
     }
-  }
-
-  const getClassStudents = async (classId: string): Promise<any[]> => {
-    console.log(`🔍 [TEACHER] Getting students for class: ${classId}`)
-    
-    // Check cache first
-    if (isCacheValid('students', classId)) {
-      console.log(`✅ [TEACHER] Using cached students for class: ${classId}`)
-      return lastFetched.value.students[classId]?.data || []
-    }
-    
-    try {
-      const response = await apiService.getClassStudents(classId)
-      if (response.error) {
-        throw new Error(response.error)
-      }
-      
-      // The backend returns { class_id, class_name, total_students, students: [...] }
-      // We need to extract the students array
-      const responseData = response.data || {}
-      const students = responseData.students || []
-      
-      console.log(`✅ [TEACHER] Loaded ${students.length} students for class: ${classId}`)
-      console.log(`🔍 [TEACHER] Response structure:`, responseData)
-      
-      // Update cache with the students array
-      lastFetched.value.students[classId] = {
-        data: students,
-        timestamp: Date.now()
-      }
-      
-      return students
-    } catch (err: any) {
-      console.error('❌ [TEACHER] Failed to get class students:', err.message)
-      error.value = err.message
-      return []
-    }
-  }
-
-  const getModulesAssignedToClass = async (classId: string): Promise<any[]> => {
-    console.log(`🔍 [TEACHER] Getting modules assigned to class: ${classId}`)
-    
-    try {
-      // Get modules assigned to this specific class
-      const response = await apiService.getModulesAssignedToClass(classId)
-      if (response.error) {
-        throw new Error(response.error)
-      }
-      
-      const assignedModules = response.data || []
-      console.log(`✅ [TEACHER] Found ${assignedModules.length} modules assigned to class: ${classId}`)
-      return assignedModules
-    } catch (err: any) {
-      console.error('❌ [TEACHER] Failed to get modules assigned to class:', err.message)
-      error.value = err.message
-      return []
-    }
-  }
-
-  const getStudentModuleProgress = async (studentId: string, moduleId: string): Promise<any> => {
-    console.log(`🔍 [TEACHER] Getting progress for student ${studentId} in module ${moduleId}`)
-    
-    try {
-      const response = await apiService.getStudentModuleProgress(studentId, moduleId)
-      if (response.error) {
-        throw new Error(response.error)
-      }
-      
-      console.log(`✅ [TEACHER] Loaded progress for student ${studentId} in module ${moduleId}`)
-      return response.data
-    } catch (err: any) {
-      console.error('❌ [TEACHER] Failed to get student module progress:', err.message)
-      error.value = err.message
-      return null
-    }
-  }
-
-  const forceRefresh = async (): Promise<void> => {
-    console.log('🔄 [TEACHER] Force refreshing all data from API...')
-    
-    // Clear cache to force fresh data
-    lastFetched.value = {
-      classes: null,
-      dashboard: null,
-      students: {}
-    }
-    
-    // Clear local state to force fresh data
-    classes.value = []
-    stats.value = {
-      total_students: 0,
-      total_classes: 0,
-      average_performance: 0,
-      total_modules: 0
-    }
-    
-    // Reload everything from API
-    await Promise.all([
-      loadDashboard(),
-      loadClasses(true) // Force refresh
-    ])
-    
-    console.log('✅ [TEACHER] Force refresh completed')
-  }
-
-  const forceRefreshClass = async (classId: string): Promise<void> => {
-    console.log(`🔄 [TEACHER] Force refreshing class ${classId}...`)
-    
-    // Clear cache for this specific class
-    if (lastFetched.value.students[classId]) {
-      delete lastFetched.value.students[classId]
-    }
-    
-    // Force refresh classes list
-    await loadClasses(true)
-    
-    // Force refresh students for this class
-    await getClassStudents(classId)
-    
-    console.log(`✅ [TEACHER] Class ${classId} force refresh completed`)
   }
 
   return {
     // State
     classes,
+    currentClass,
+    modules,
+    students,
+    profile,
     stats,
     modules,
     profile,
@@ -556,17 +497,11 @@ export const useTeacherStore = defineStore('teacher', () => {
     updateClass,
     deleteClass,
     getClassById,
-    clearError,
-    addModule,
-    loadModules,
-    getModuleById,
-    assignModuleToClass,
+    addStudentToClass,
+    loadClassDetails,
     loadTeacherProfile,
-    loadAvailableStudents,
-    getClassStudents,
-    getModulesAssignedToClass,
-    getStudentModuleProgress,
-    forceRefresh,
-    forceRefreshClass
+    loadModules,
+    clearError,
+    searchStudents
   }
 })

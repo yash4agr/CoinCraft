@@ -333,9 +333,9 @@
           <tr v-for="(child, index) in children" :key="child.id">
             <td>{{ index + 1 }}</td>
             <td>{{ child.name }}</td>
-            <td>{{ child.age || '—' }}</td>
+            <td>{{ child.child_profile?.age || '—' }}</td>
             <td>{{ child.email || '—' }}</td>
-            <td>{{ child.password || '—' }}</td>
+            <td>{{ child.child_profile?.temporary_password || '—' }}</td>
           </tr>
         </template>
       </tbody>

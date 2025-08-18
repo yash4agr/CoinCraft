@@ -18,7 +18,7 @@ dependencies = [
     "bcrypt>=4.1.2",
     "python-jose[cryptography]>=3.3.0",
     "passlib[bcrypt]>=1.7.4",
-    "pytest>=7.0.0",           # Added pytest
-    "httpx>=0.24.0",           # Added httpx
-    "pytest-asyncio>=0.21.0"   # Added pytest-asyncio
+    "pytest>=7.0.0", # Added pytest
+    "httpx>=0.24.0", # Added httpx # Added pytest-asyncio
+    "pytest-asyncio>=0.21.0",
 ]
