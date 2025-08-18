@@ -45,6 +45,8 @@ export const useAuthStore = defineStore('auth', () => {
 
   // Actions
   const login = async (credentials: LoginCredentials): Promise<boolean> => {
+    // Normalize email/username to avoid accidental whitespace issues
+    credentials.username = (credentials.username || '').trim()
     console.log('🔐 [AUTH] Attempting login for:', credentials.username)
     
     isLoading.value = true

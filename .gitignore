@@ -22,6 +22,8 @@ share/python-wheels/
 *.manifest
 *.spec
 
+backend/coincraft.db
+
 # Virtualenv
 .env
 .venv

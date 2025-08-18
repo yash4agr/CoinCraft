@@ -213,6 +213,33 @@ async def update_task_status(
     return TaskRead.model_validate(task)
 
 
+@router.put("/tasks/{task_id}/reject", response_model=TaskRead)
+async def reject_task(
+    task_id: str,
+    current_user: User = Depends(current_active_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    """Reject a completed task (parent-only)."""
+    # Get task
+    stmt = select(Task).where(Task.id == task_id)
+    result = await session.execute(stmt)
+    task = result.scalar_one_or_none()
+
+    if not task:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Task not found")
+
+    if current_user.id != task.assigned_by or current_user.role != "parent":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only the assigning parent can reject tasks")
+
+    if task.status not in ["completed", "pending", "in_progress"]:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Task cannot be rejected in current state")
+
+    task.status = "rejected"
+    await session.commit()
+    await session.refresh(task)
+    return TaskRead.model_validate(task)
+
+
 @router.delete("/tasks/{task_id}")
 async def delete_task(
     task_id: str,

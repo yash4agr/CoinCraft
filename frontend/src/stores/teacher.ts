@@ -9,6 +9,7 @@ export interface TeacherClass {
   name: string
   description?: string
   teacher_id: string
+
   age_group: string  // Add age_group field
   class_code: string
   is_active: boolean
@@ -39,9 +40,57 @@ export const useTeacherStore = defineStore('teacher', () => {
     average_performance: 0,
     total_modules: 0
   })
+
   const profile = ref<any>(null) // Teacher profile data
   const isLoading = ref(false)
   const error = ref<string | null>(null)
+  const availableStudents = ref<User[]>([])
+  
+  // Cache management
+  const lastFetched = ref<{
+    classes: number | null
+    dashboard: number | null
+    students: Record<string, { data: any[], timestamp: number }>
+  }>({
+    classes: null,
+    dashboard: null,
+    students: {}
+  })
+  
+  const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+  
+  // Cache validation methods
+  const isCacheValid = (type: 'classes' | 'dashboard' | 'students', classId?: string): boolean => {
+    const now = Date.now()
+    
+    if (type === 'students' && classId) {
+      const studentCache = lastFetched.value.students[classId]
+      return studentCache ? (now - studentCache.timestamp) < CACHE_DURATION : false
+    }
+    
+    if (type === 'classes' || type === 'dashboard') {
+      const timestamp = lastFetched.value[type]
+      return timestamp !== null ? (now - timestamp) < CACHE_DURATION : false
+    }
+    
+    return false
+  }
+  
+  const updateCacheTimestamp = (type: 'classes' | 'dashboard' | 'students', classId?: string) => {
+    const now = Date.now()
+    
+    if (type === 'students' && classId) {
+      if (!lastFetched.value.students[classId]) {
+        lastFetched.value.students[classId] = { data: [], timestamp: now }
+      } else {
+        lastFetched.value.students[classId].timestamp = now
+      }
+    } else if (type === 'classes') {
+      lastFetched.value.classes = now
+    } else if (type === 'dashboard') {
+      lastFetched.value.dashboard = now
+    }
+  }
 
   // Computed
   const totalStudents = computed(() => 
@@ -115,6 +164,7 @@ export const useTeacherStore = defineStore('teacher', () => {
   const createClass = async (classData: {
     name: string
     description?: string
+
     age_group: string  // Add age_group parameter
   }): Promise<TeacherClass | null> => {
     console.log('🏫 [TEACHER] Creating new class...')
@@ -128,6 +178,7 @@ export const useTeacherStore = defineStore('teacher', () => {
       if (response.error) {
         throw new Error(response.error)
       }
+
 
       if (response.data) {
         const newClass: TeacherClass = {
@@ -143,10 +194,19 @@ export const useTeacherStore = defineStore('teacher', () => {
           average_performance: 0
         }
         
-        classes.value.push(newClass)
+        // Don't add to local state - let the component refresh from API
+        // This ensures we always have the latest data from database
         
-        console.log('✅ [TEACHER] Class created successfully:', newClass.name)
-        return newClass
+        return {
+          id: response.data.class.id,
+          name: response.data.class.name,
+          description: response.data.class.description,
+          teacher_id: '', // Will be set by backend
+          is_active: true,
+          created_at: response.data.class.created_at,
+          students_count: response.data.class.student_count || 0,
+          average_performance: 0
+        }
       }
 
       return null
@@ -164,8 +224,14 @@ export const useTeacherStore = defineStore('teacher', () => {
     return classes.value.find(cls => cls.id === classId)
   }
 
-  const loadClasses = async (): Promise<void> => {
+  const loadClasses = async (forceRefresh: boolean = false): Promise<void> => {
     console.log('🏫 [TEACHER] Loading classes...')
+    
+    // Check cache first (unless force refresh is requested)
+    if (!forceRefresh && isCacheValid('classes') && classes.value.length > 0) {
+      console.log('✅ [TEACHER] Using cached classes data')
+      return
+    }
     
     isLoading.value = true
     error.value = null
@@ -187,7 +253,11 @@ export const useTeacherStore = defineStore('teacher', () => {
           average_performance: cls.average_performance || 0
         }))
         
-        console.log(`✅ [TEACHER] Loaded ${classes.value.length} classes`)
+        // Update cache timestamp
+        updateCacheTimestamp('classes')
+        
+        console.log(`✅ [TEACHER] Loaded ${classes.value.length} classes with student counts:`, 
+          classes.value.map(c => `${c.name}: ${c.students_count} students`))
       } else {
         error.value = response.error || 'Failed to load classes'
       }
@@ -268,6 +338,7 @@ export const useTeacherStore = defineStore('teacher', () => {
     error.value = null
 
     try {
+
       const response = await apiService.addStudentToClass(classId, studentData)
       
       if (response.error) {
@@ -409,8 +480,11 @@ export const useTeacherStore = defineStore('teacher', () => {
     students,
     profile,
     stats,
+    modules,
+    profile,
     isLoading,
     error,
+    availableStudents,
     
     // Computed
     totalStudents,
