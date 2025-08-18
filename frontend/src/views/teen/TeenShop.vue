@@ -115,30 +115,36 @@
       <div class="bg-white rounded-xl p-6 shadow-sm">
         <h2 class="text-xl font-bold text-gray-800 mb-4">
           <i class="ri-history-line mr-2"></i>
-          Recent Purchases
+          All Shop Purchases
         </h2>
         
-        <div v-if="recentPurchases.length === 0" class="text-center py-8 text-gray-500">
+        <div v-if="isLoadingPurchases" class="text-center py-8 text-gray-500">
+          <i class="ri-loader-4-line animate-spin text-4xl mb-2"></i>
+          <p>Loading purchases...</p>
+        </div>
+        <div v-else-if="shopTransactions.length === 0" class="text-center py-8 text-gray-500">
           <i class="ri-shopping-bag-line text-4xl mb-2"></i>
           <p>No purchases yet. Start shopping!</p>
         </div>
         
         <div v-else class="space-y-3">
           <div 
-            v-for="purchase in recentPurchases"
-            :key="purchase.id"
+            v-for="transaction in shopTransactions"
+            :key="transaction.id"
             class="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
           >
             <div class="flex items-center gap-3">
-              <span class="text-2xl">{{ purchase.emoji }}</span>
+              <div class="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                <i class="ri-shopping-cart-line text-red-600"></i>
+              </div>
               <div>
-                <div class="font-medium text-gray-800">{{ purchase.name }}</div>
-                <div class="text-sm text-gray-500">{{ formatDate(purchase.purchaseDate) }}</div>
+                <div class="font-medium text-gray-800">{{ transaction.description }}</div>
+                <div class="text-sm text-gray-500">{{ formatDate(transaction.created_at) }}</div>
               </div>
             </div>
-            <div class="flex items-center gap-1 text-sm font-medium text-gray-600">
+            <div class="flex items-center gap-1 text-sm font-medium text-red-600">
               <img src="/coin.svg" class="coin-icon" alt="coin">
-              <span>{{ purchase.price }}</span>
+              <span>{{ transaction.amount }}</span>
             </div>
           </div>
         </div>
@@ -247,6 +253,8 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
+import { apiService } from '@/services/api'
+import { formatTransactionDate } from '@/utils/dateUtils'
 
 const userStore = useUserStore()
 
@@ -260,6 +268,8 @@ const selectedConversion = ref<ConversionAmount | null>(null)
 const conversionReason = ref('')
 const successMessage = ref('')
 const recentPurchases = ref<PurchaseHistory[]>([])
+const isLoadingPurchases = ref(false)
+const shopTransactions = ref<any[]>([])
 
 // Interfaces
 interface ShopItem {
@@ -351,14 +361,8 @@ const confirmPurchase = async () => {
   if (success) {
     selectedItem.value.owned = true
     
-    // Add to purchase history
-    recentPurchases.value.unshift({
-      id: Date.now().toString(),
-      name: selectedItem.value.name,
-      emoji: selectedItem.value.emoji,
-      price: selectedItem.value.price,
-      purchaseDate: new Date().toISOString()
-    })
+    // Refresh shop transactions to show the new purchase
+    await loadShopTransactions()
     
     showSuccessMessage.value = true
     successMessage.value = `You bought ${selectedItem.value.name}!`
@@ -403,21 +407,36 @@ const submitConversionRequest = async () => {
   conversionReason.value = ''
 }
 
-const formatDate = (dateString: string) => {
-  const date = new Date(dateString)
-  const now = new Date()
-  const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60))
-  
-  if (diffInHours < 1) return 'Just now'
-  if (diffInHours < 24) return `${diffInHours} hours ago`
-  if (diffInHours < 48) return 'Yesterday'
-  return `${Math.floor(diffInHours / 24)} days ago`
-}
-
 // Load purchase history on mount
-onMounted(() => {
-  // TODO: Load from API
-  // For now, use demo data
-  recentPurchases.value = []
+onMounted(async () => {
+  await loadShopTransactions()
 })
+
+// Use the utility function for date formatting
+const formatDate = formatTransactionDate
+
+// Load shop transactions from API
+const loadShopTransactions = async () => {
+  try {
+    if (!userStore.profile?.id) {
+      console.log('⚠️ [TEEN SHOP] No user profile ID available for shop transactions')
+      return
+    }
+    
+    isLoadingPurchases.value = true
+    const response = await apiService.getShopTransactions(userStore.profile.id)
+    if (response.data) {
+      shopTransactions.value = response.data
+      console.log('✅ [TEEN SHOP] Loaded shop transactions:', shopTransactions.value.length)
+    } else {
+      console.error('❌ [TEEN SHOP] Failed to load shop transactions:', response.error)
+      shopTransactions.value = []
+    }
+  } catch (error) {
+    console.error('❌ [TEEN SHOP] Error loading shop transactions:', error)
+    shopTransactions.value = []
+  } finally {
+    isLoadingPurchases.value = false
+  }
+}
 </script>

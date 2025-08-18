@@ -3,7 +3,7 @@
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, and_
 
 from database import get_async_session
 from auth import current_active_user
@@ -100,49 +100,66 @@ async def purchase_item(
 @router.get('/shop/purchase_requests', response_model=List[PurchaseRequestRead])
 async def get_purchase_requests(
     session: AsyncSession = Depends(get_async_session),
-    current_user: User = Depends(current_active_user)
+    current_user: User = Depends(current_active_user),
 ):
-    """Get purchase requests for current user (child sees own; parent sees for all children)."""
-    if current_user.role == 'parent':
-        # Parent: fetch all purchase requests for their children
-        from models import ChildProfile
-        child_ids_stmt = select(ChildProfile.user_id).where(ChildProfile.parent_id == current_user.id)
-        ids_result = await session.execute(child_ids_stmt)
-        child_ids = [row[0] for row in ids_result.all()]
-        if not child_ids:
-            return []
-        stmt = select(PurchaseRequest).where(PurchaseRequest.user_id.in_(child_ids)).order_by(PurchaseRequest.created_at.desc())
-    else:
-        # Child: own requests
-        stmt = select(PurchaseRequest).where(PurchaseRequest.user_id == current_user.id).order_by(PurchaseRequest.created_at.desc())
-
+    """Get all purchase requests for the current user."""
+    
+    if current_user.role not in ["younger_child", "older_child"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only children can view purchase requests"
+        )
+    
+    stmt = select(PurchaseRequest).where(PurchaseRequest.user_id == current_user.id)
     result = await session.execute(stmt)
-    requests = result.scalars().all()
-    # Attach item info
-    enriched = []
-    for req in requests:
-        item_result = await session.execute(select(ShopItem).where(ShopItem.id == req.shop_item_id))
-        item = item_result.scalar_one_or_none()
-        data = {
-            "id": req.id,
-            "user_id": req.user_id,
-            "shop_item_id": req.shop_item_id,
-            "price": req.price,
-            "status": req.status,
-            "approved_by": req.approved_by,
-            "approved_at": req.approved_at,
-            "created_at": req.created_at,
-        }
-        if item:
-            data["item_info"] = {
-                "id": item.id,
-                "name": item.name,
-                "price": item.price,
-                "emoji": item.emoji,
-                "category": item.category
-            }
-        enriched.append(data)
-    return enriched
+    purchase_requests = result.scalars().all()
+    
+    return [PurchaseRequestRead.model_validate(req) for req in purchase_requests]
+
+
+@router.get("/shop/{user_id}/transactions", response_model=List[dict])
+async def get_shop_transactions(
+    user_id: str,
+    session: AsyncSession = Depends(get_async_session),
+    current_user: User = Depends(current_active_user),
+):
+    """Get all shop-related transactions for a specific user."""
+    
+    # Verify the user is requesting their own transactions or is authorized
+    if current_user.id != user_id and current_user.role not in ["parent", "teacher"]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only view your own transactions"
+        )
+    
+    # Get shop transactions (spend type with shop category)
+    stmt = select(Transaction).where(
+        and_(
+            Transaction.user_id == user_id,
+            Transaction.category == "shop",
+            Transaction.type == "spend"
+        )
+    ).order_by(Transaction.created_at.desc())
+    
+    result = await session.execute(stmt)
+    transactions = result.scalars().all()
+    
+    # Format transactions for frontend
+    shop_transactions = []
+    for transaction in transactions:
+        shop_transactions.append({
+            "id": transaction.id,
+            "type": transaction.type,
+            "amount": transaction.amount,
+            "description": transaction.description,
+            "category": transaction.category,
+            "source": transaction.source,
+            "reference_id": transaction.reference_id,
+            "reference_type": transaction.reference_type,
+            "created_at": transaction.created_at.isoformat() if transaction.created_at else None
+        })
+    
+    return shop_transactions
 
 @router.put('/shop/purchase_requests/{request_id}/approve', response_model=PurchaseRequestRead)
 async def approve_purchase_request(

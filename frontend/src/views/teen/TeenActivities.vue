@@ -6,6 +6,63 @@
       <p class="text-gray-600">Interactive learning modules to build financial skills</p>
     </div>
 
+    <!-- Featured Advanced Budgeting Card -->
+    <div class="bg-gradient-to-r from-purple-500 to-purple-700 rounded-2xl shadow-2xl p-8 mb-8 text-white">
+      <div class="flex flex-col lg:flex-row items-center gap-8">
+        <!-- Left Side: Content -->
+        <div class="flex-1 text-center lg:text-left">
+          <div class="text-6xl mb-4">📊</div>
+          <h2 class="text-3xl font-bold mb-3">Advanced Budgeting</h2>
+          <p class="text-purple-100 text-lg mb-4">
+            Master advanced budgeting techniques and strategies. 
+            Learn zero-based budgeting, envelope systems, and financial planning!
+          </p>
+          
+          <!-- Features -->
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="flex items-center justify-center lg:justify-start gap-2">
+              <i class="ri-time-line text-purple-200"></i>
+              <span class="text-purple-100">30 min</span>
+            </div>
+            <div class="flex items-center justify-center lg:justify-start gap-2">
+              <i class="ri-star-line text-purple-200"></i>
+              <span class="text-purple-100">Intermediate</span>
+            </div>
+            <div class="flex items-center justify-center lg:justify-start gap-2">
+              <i class="ri-coins-line text-purple-200"></i>
+              <span class="text-purple-100">+40 coins</span>
+            </div>
+          </div>
+
+          <!-- Start Button -->
+          <button
+            @click="openAdvancedBudgeting"
+            class="bg-white text-purple-600 hover:bg-purple-50 px-8 py-4 rounded-xl font-bold text-lg transition-all duration-300 transform hover:scale-105 hover:shadow-lg"
+          >
+            🚀 Start Learning Now
+          </button>
+        </div>
+
+        <!-- Right Side: Visual -->
+        <div class="flex-1 flex justify-center">
+          <div class="relative">
+            <!-- Calculator Icon -->
+            <div class="w-32 h-32 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+              <i class="ri-calculator-line text-6xl text-white"></i>
+            </div>
+            
+            <!-- Floating Elements -->
+            <div class="absolute -top-4 -right-4 w-16 h-16 bg-yellow-400 rounded-full flex items-center justify-center text-2xl">
+              💰
+            </div>
+            <div class="absolute -bottom-4 -left-4 w-12 h-12 bg-blue-400 rounded-full flex items-center justify-center text-xl">
+              📈
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Learning Modules -->
     <div class="mb-8">
       <h2 class="text-xl font-bold text-gray-800 mb-6">Learning Modules</h2>
@@ -21,6 +78,7 @@
           :completed="module.completed"
           :color-scheme="module.colorScheme"
           :button-text="module.buttonText"
+          @click="handleModuleClick(module)"
         />
       </div>
     </div>
@@ -121,6 +179,13 @@
         />
       </div>
     </div>
+
+    <!-- Advanced Budgeting Modal -->
+    <AdvancedBudgeting
+      v-model="showAdvancedBudgetingModal"
+      :coins="40"
+      @completed="handleAdvancedBudgetingCompleted"
+    />
   </div>
 </template>
 
@@ -129,6 +194,7 @@ import { ref, computed } from 'vue'
 import { useDashboardStore } from '@/stores/dashboard'
 import AdventureCard from '@/components/shared/AdventureCard.vue'
 import AchievementCard from '@/components/shared/AchievementCard.vue'
+import AdvancedBudgeting from '@/components/explore/AdvancedBudgeting.vue'
 
 const dashboardStore = useDashboardStore()
 
@@ -155,4 +221,40 @@ const nextModuleReward = computed(() => {
   const nextModule = learningModules.find(module => !module.completed)
   return nextModule ? nextModule.coins : 0
 })
+
+// Advanced Budgeting Modal
+const showAdvancedBudgetingModal = ref(false)
+
+const handleModuleClick = (module: any) => {
+  console.log('📚 [TEEN_ACTIVITIES] Module clicked:', module.title)
+  
+  if (module.title === 'Advanced Budgeting') {
+    console.log('📊 [TEEN_ACTIVITIES] Opening Advanced Budgeting modal...')
+    showAdvancedBudgetingModal.value = true
+  } else {
+    // Handle other modules or show coming soon message
+    alert(`🚧 ${module.title} is coming soon! Stay tuned for more learning modules.`)
+  }
+}
+
+const handleAdvancedBudgetingCompleted = async (coinsEarned: number) => {
+  console.log('🎉 [TEEN_ACTIVITIES] Advanced Budgeting completed! Coins earned:', coinsEarned)
+  
+  // Update the module status to completed
+  const advancedBudgetingModule = learningModules.find(m => m.title === 'Advanced Budgeting')
+  if (advancedBudgetingModule) {
+    advancedBudgetingModule.completed = true
+  }
+  
+  // Close the modal
+  showAdvancedBudgetingModal.value = false
+  
+  // Show success message
+  alert(`🎉 Congratulations! You completed the Advanced Budgeting module and earned ${coinsEarned} coins!`)
+}
+
+const openAdvancedBudgeting = () => {
+  showAdvancedBudgetingModal.value = true
+  console.log('📊 [TEEN_ACTIVITIES] Opening Advanced Budgeting modal...')
+}
 </script> 
