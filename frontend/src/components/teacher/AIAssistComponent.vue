@@ -775,7 +775,20 @@ const saveModule = async () => {
       createdBy: teacherStore.profile?.id || 'ai-teacher'
     }
 
-    const savedModule = await teacherStore.addModule(moduleData)
+    // Prefer store action if available; fallback to direct API
+    let savedModule: any
+    const maybeAdd = (teacherStore as any).addModule
+    if (typeof maybeAdd === 'function') {
+      savedModule = await maybeAdd(moduleData)
+    } else {
+      const resp = await apiService.createModule(moduleData)
+      if (resp.error || !resp.data) {
+        throw new Error(resp.error || 'Failed to save module')
+      }
+      savedModule = resp.data
+      // Refresh the local modules list so UI updates
+      await teacherStore.loadModules()
+    }
     
     emit('module-saved', savedModule)
     closeDialog()

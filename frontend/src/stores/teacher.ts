@@ -440,14 +440,95 @@ export const useTeacherStore = defineStore('teacher', () => {
         throw new Error(response.error)
       }
 
-      // For now, we'll just log success since modules aren't fully implemented
-      console.log('✅ [TEACHER] Modules loaded successfully')
-      return response.data || []
+      // Persist modules into store for UI consumption
+      modules.value = (response.data || []).map((m: any) => ({
+        id: m.id,
+        title: m.title,
+        description: m.description,
+        category: m.category,
+        difficulty: m.difficulty,
+        duration: m.duration,
+        ageGroup: m.ageGroup,
+        skills: m.skills || [],
+        published: m.published,
+        createdAt: m.created_at,
+        updatedAt: m.updated_at,
+        sections: m.sections || [],
+        activities: m.activities || [],
+        quiz: m.quiz || [],
+        learningObjectives: m.learningObjectives || [],
+        prerequisites: m.prerequisites || [],
+        keyTopics: m.keyTopics || []
+      }))
+
+      console.log('✅ [TEACHER] Modules loaded successfully:', modules.value.length)
+      return modules.value
 
     } catch (err: any) {
       console.error('❌ [TEACHER] Failed to load modules:', err.message)
       error.value = err.message
       return []
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Create a module and update local state
+  const addModule = async (moduleData: any): Promise<any> => {
+    try {
+      isLoading.value = true
+      const response = await apiService.createModule(moduleData)
+      if (response.error || !response.data) {
+        throw new Error(response.error || 'Failed to create module')
+      }
+
+      // API returns the created module; normalize and store
+      const saved = response.data
+      const normalized = {
+        id: saved.id,
+        title: saved.title,
+        description: saved.description,
+        category: saved.category,
+        difficulty: saved.difficulty,
+        duration: saved.duration,
+        ageGroup: saved.ageGroup,
+        skills: saved.skills || [],
+        published: saved.published,
+        createdAt: saved.created_at,
+        updatedAt: saved.updated_at,
+        sections: saved.sections || [],
+        activities: saved.activities || [],
+        quiz: saved.quiz || [],
+        learningObjectives: saved.learningObjectives || [],
+        prerequisites: saved.prerequisites || [],
+        keyTopics: saved.keyTopics || []
+      }
+      modules.value.unshift(normalized)
+      return normalized
+    } catch (err: any) {
+      console.error('❌ [TEACHER] Failed to add module:', err.message)
+      throw err
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  // Assign a module to a class
+  const assignModuleToClass = async (
+    moduleId: string,
+    classId: string,
+    dueDate?: string
+  ): Promise<boolean> => {
+    try {
+      isLoading.value = true
+      const payload: any = { class_id: classId }
+      if (dueDate) payload.due_date = dueDate
+      const response = await apiService.assignModuleToClass(moduleId, payload)
+      if (response.error) throw new Error(response.error)
+      return true
+    } catch (err: any) {
+      console.error('❌ [TEACHER] Failed to assign module to class:', err.message)
+      return false
     } finally {
       isLoading.value = false
     }
@@ -500,6 +581,8 @@ export const useTeacherStore = defineStore('teacher', () => {
     loadClassDetails,
     loadTeacherProfile,
     loadModules,
+    addModule,
+    assignModuleToClass,
     clearError,
     searchStudents
   }

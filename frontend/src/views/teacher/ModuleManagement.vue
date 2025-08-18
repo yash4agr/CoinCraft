@@ -1,5 +1,17 @@
 <template>
   <div class="min-h-screen bg-gray-50 p-4 pb-20">
+    <!-- Toast Notification -->
+    <transition name="fade">
+      <div
+        v-if="showToast"
+        class="fixed top-4 right-4 z-50 bg-green-500 text-white px-4 py-3 rounded-lg shadow-lg flex items-center gap-2"
+        role="status"
+        aria-live="polite"
+      >
+        <i class="ri-check-line"></i>
+        <span>{{ toastMessage }}</span>
+      </div>
+    </transition>
     <!-- Header Section -->
     <div class="mb-8">
       <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -444,6 +456,8 @@ const selectedModule = ref(null)
 const moduleToAssign = ref(null)
 const selectedClassId = ref('')
 const isAssigning = ref(false)
+const showToast = ref(false)
+const toastMessage = ref('')
 const assignmentOptions = ref({
   hasDueDate: false,
   dueDate: '',
@@ -557,7 +571,11 @@ const handleAIModuleSaved = async (module: any) => {
   console.log('🤖 [MODULE MANAGEMENT] AI module saved:', module.title)
   // Refresh the modules list to show the new AI-generated module
   await teacherStore.loadModules()
-  // Show success message or notification
+  // Close the AI modal and show success toast
+  showAIAssistModal.value = false
+  toastMessage.value = `Module "${module.title}" saved successfully!`
+  showToast.value = true
+  setTimeout(() => (showToast.value = false), 3000)
   console.log('✅ [MODULE MANAGEMENT] Modules refreshed after AI module creation')
 }
 
