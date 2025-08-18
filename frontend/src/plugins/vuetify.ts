@@ -3,7 +3,8 @@ import * as components from 'vuetify/components'
 import * as directives from 'vuetify/directives'
 import { aliases, mdi } from 'vuetify/iconsets/mdi'
 import '@mdi/font/css/materialdesignicons.css'
-import 'vuetify/styles'
+// Note: vuetify/styles import commented out for build compatibility
+// import 'vuetify/styles'
 
 export default createVuetify({
   components,

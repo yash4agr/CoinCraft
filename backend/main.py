@@ -1,13 +1,14 @@
 """CoinCraft FastAPI Backend Application."""
 
 import os
+import traceback
 from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 
 load_dotenv()
 
-from fastapi import FastAPI, status
-from fastapi.responses import FileResponse, HTMLResponse
+from fastapi import FastAPI, status, Request, HTTPException
+from fastapi.responses import FileResponse, HTMLResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -70,19 +71,17 @@ origins = [
 ]
 
 # Add environment-specific origins
-if os.getenv("ENVIRONMENT") == "production":
-    origins.extend(
+origins.extend(
         [
-            "https://coincraft.com",
-            "https://www.coincraft.com",
-            "https://api.coincraft.com",
+            "https://coincraft-hmzeh3w24-vidhans-projects-7f7fdefe.vercel.app",
+            "https://coincraft-two.vercel.app",  # Your Vercel frontend URL
+            "https://api.iitmquizzes.tech",  # Your VM API domain
+            "https://iitmquizzes.tech",  # Main domain if needed
         ]
     )
 
-# For development, allow all origins to fix CORS issues
-import traceback
-from fastapi import Request, HTTPException
-from fastapi.responses import JSONResponse
+
+# Exception handling middleware
 @app.middleware("http")
 async def catch_exceptions_middleware(request: Request, call_next):
     try:
@@ -103,8 +102,8 @@ async def catch_exceptions_middleware(request: Request, call_next):
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],  # Specific origins
-    allow_credentials=True,  # Now this is valid
+    allow_origins=origins,  # Use specific origins list for proper CORS headers
+    allow_credentials=True,  # Can be True with specific origins
     allow_methods=["*","GET","POST","PUT","DELETE","OPTIONS"],
     allow_headers=["*"],
 )
