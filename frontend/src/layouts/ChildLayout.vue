@@ -134,7 +134,6 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
-import CoinIcon from '@/components/shared/CoinIcon.vue'
 
 const authStore = useAuthStore()
 const userStore = useUserStore()

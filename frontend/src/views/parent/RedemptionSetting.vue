@@ -253,7 +253,7 @@
                     color="success"
                     size="small"
                     variant="tonal"
-                    @click="approveRedemption(item)"
+                    @click="approveRedemption(_item)"
                   >
                     Approve
                   </v-btn>
@@ -261,7 +261,7 @@
                     color="error"
                     size="small"
                     variant="tonal"
-                    @click="rejectRedemption(item)"
+                    @click="rejectRedemption(_item)"
                   >
                     Reject
                   </v-btn>

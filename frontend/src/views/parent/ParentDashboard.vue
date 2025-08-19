@@ -848,7 +848,7 @@ const generatedEmail = computed(() => {
   if (!newChild.name) return ''
   const parentName = (authStore.user?.name || 'parent').toLowerCase().replace(/\s+/g, '')
   const childName = newChild.name.toLowerCase().replace(/\s+/g, '')
-  return `${parentName}.${childName}@cc.com`
+  return `${parentName}+${childName}@cc.com`
 })
 
 // Static data
@@ -967,12 +967,12 @@ const addChild = async () => {
   
   try {
     // Generate password
-    const password = generateRandomPassword()
+    const password = generatedPassword.value || generateRandomPassword()
     
     // Generate email using parent name + child name + @cc.com
     const parentName = (authStore.user?.name || 'parent').toLowerCase().replace(/\s+/g, '')
     const childName = newChild.name.toLowerCase().replace(/\s+/g, '')
-    const generatedEmail = `${parentName}.${childName}@cc.com`
+  const generatedEmail = `${parentName}+${childName}@cc.com`
     
     const childData = {
       name: newChild.name,

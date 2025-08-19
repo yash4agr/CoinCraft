@@ -284,7 +284,6 @@
 <script setup lang="ts">
 import { ref, reactive, computed } from 'vue'
 import { useTeacherStore } from '@/stores/teacher'
-import { apiService } from '@/services/api'
 
 // Props
 interface Props {

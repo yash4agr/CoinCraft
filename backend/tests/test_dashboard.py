@@ -3,7 +3,7 @@ from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from backend.models import User, ChildProfile, ParentProfile, TeacherProfile, Goal, Transaction, Module, UserModuleProgress, Achievement, UserAchievement, Class, ClassStudent
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 @pytest.mark.asyncio
 async def test_get_dashboard_data_child_success(auth_child_client: dict, session: AsyncSession):
@@ -26,22 +26,22 @@ async def test_get_dashboard_data_child_success(auth_child_client: dict, session
     session.add(goal)
 
     # Add transactions
-    transaction1 = Transaction(user_id=child_id, type="earn", amount=50, description="Allowance", created_at=datetime.utcnow() - timedelta(days=1))
-    transaction2 = Transaction(user_id=child_id, type="spend", amount=20, description="Candy", created_at=datetime.utcnow() - timedelta(days=2))
+    transaction1 = Transaction(user_id=child_id, type="earn", amount=50, description="Allowance", created_at=datetime.now(timezone.utc) - timedelta(days=1))
+    transaction2 = Transaction(user_id=child_id, type="spend", amount=20, description="Candy", created_at=datetime.now(timezone.utc) - timedelta(days=2))
     session.add_all([transaction1, transaction2])
 
     # Add a completed module
     module = Module(title="Money Management", description="Learn to manage money", category="finance", difficulty="easy", points_reward=20, is_published=True, created_by="system")
     session.add(module)
     await session.commit()
-    user_module_progress = UserModuleProgress(user_id=child_id, module_id=module.id, is_completed=True, score=100, completed_at=datetime.utcnow() - timedelta(days=3))
+    user_module_progress = UserModuleProgress(user_id=child_id, module_id=module.id, is_completed=True, score=100, completed_at=datetime.now(timezone.utc) - timedelta(days=3))
     session.add(user_module_progress)
 
     # Add an achievement
     achievement = Achievement(title="Saving Star", description="Achieved a saving goal", icon="star", rarity="rare", points_reward=10, criteria={})
     session.add(achievement)
     await session.commit()
-    user_achievement = UserAchievement(user_id=child_id, achievement_id=achievement.id, earned_at=datetime.utcnow() - timedelta(days=4))
+    user_achievement = UserAchievement(user_id=child_id, achievement_id=achievement.id, earned_at=datetime.now(timezone.utc) - timedelta(days=4))
     session.add(user_achievement)
 
     await session.commit()
@@ -189,18 +189,18 @@ async def test_get_todays_goals_child_success(auth_child_client: dict, session: 
     child_id = auth_child_client["user_id"]
 
     # Add some activity and transactions for today
-    today = datetime.utcnow().date()
+    today = datetime.now(timezone.utc).date()
     module = Module(title="Daily Lesson", description="Quick read", category="lesson", difficulty="easy", points_reward=5, is_published=True, created_by="system")
     session.add(module)
     await session.commit()
 
     # Simulate progress for "Read Lessons" and "Complete Games"
-    progress1 = UserModuleProgress(user_id=child_id, module_id=module.id, progress_percentage=50, started_at=datetime.utcnow())
-    progress2 = UserModuleProgress(user_id=child_id, module_id=module.id, is_completed=True, completed_at=datetime.utcnow())
+    progress1 = UserModuleProgress(user_id=child_id, module_id=module.id, progress_percentage=50, started_at=datetime.now(timezone.utc))
+    progress2 = UserModuleProgress(user_id=child_id, module_id=module.id, is_completed=True, completed_at=datetime.now(timezone.utc))
     session.add_all([progress1, progress2])
 
     # Simulate "Earn Coins"
-    transaction = Transaction(user_id=child_id, type="earn", amount=30, description="Daily task", created_at=datetime.utcnow())
+    transaction = Transaction(user_id=child_id, type="earn", amount=30, description="Daily task", created_at=datetime.now(timezone.utc))
     session.add(transaction)
     await session.commit()
 

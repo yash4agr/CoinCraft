@@ -250,7 +250,7 @@ const handleQuickRate = (rating: number) => {
   emit('quickRate', props.activity.id, rating)
 }
 
-const getDifficultyClass = (difficulty: string) => {
+const getDifficultyClass = (difficulty: 'easy' | 'medium' | 'hard') => {
   const classes = {
     easy: 'bg-green-500/90 text-white',
     medium: 'bg-yellow-500/90 text-white',
@@ -279,6 +279,7 @@ const formatNumber = (num: number) => {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  line-clamp: 2;
 }
 
 .line-clamp-3 {
@@ -286,5 +287,6 @@ const formatNumber = (num: number) => {
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  line-clamp: 2;
 }
 </style> 

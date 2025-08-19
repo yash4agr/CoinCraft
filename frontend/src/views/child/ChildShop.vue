@@ -62,7 +62,7 @@
             
             <!-- Buy Button -->
             <button 
-              @click="handlePurchase(item)"
+              @click="handlePurchase(_item)"
               :disabled="userStore.totalCoins < item.price || item.owned"
               class="w-full py-2 px-3 rounded-lg font-medium transition-colors text-sm"
               :class="item.owned 

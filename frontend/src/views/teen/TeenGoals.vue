@@ -202,7 +202,7 @@
       <h2 class="text-xl font-bold text-gray-800 mb-6">SMART Goal Framework 💡</h2>
       <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-200">
         <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
-          <div v-for="(criteria, index) in smartCriteria" :key="criteria.letter" class="text-center">
+          <div v-for="(criteria, _) in smartCriteria" :key="criteria.letter" class="text-center">
             <div class="w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center text-white font-bold text-lg"
                  :class="criteria.color">
               {{ criteria.letter }}
@@ -473,7 +473,7 @@
                 <div class="flex items-center justify-between mb-3">
                   <h5 class="font-medium text-gray-800">Milestone {{ index + 1 }}</h5>
                   <button 
-                    @click="removeMilestone(index)"
+                    @click="removeMilestone(_index)"
                     class="text-red-500 hover:text-red-700 transition-colors"
                   >
                     <i class="ri-delete-bin-line"></i>

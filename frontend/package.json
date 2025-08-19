@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@cerebras/cerebras_cloud_sdk": "^1.35.0",
+    "@cerebras/cerebras_cloud_sdk": "^1.46.0",
     "@vueuse/core": "^13.4.0",
     "axios": "^1.11.0",
     "bootstrap": "^5.3.7",
@@ -29,8 +29,12 @@
     "@mdi/font": "^7.4.47",
     "@types/axios": "^0.9.36",
     "@types/node": "^24.3.0",
+    "@typescript-eslint/eslint-plugin": "^8.40.0",
+    "@typescript-eslint/parser": "^8.40.0",
     "@vitejs/plugin-vue": "^5.2.3",
     "@vue/tsconfig": "^0.7.0",
+    "eslint": "^9.33.0",
+    "eslint-plugin-vue": "^10.4.0",
     "typescript": "~5.8.3",
     "vite": "^6.3.5",
     "vite-plugin-vuetify": "^2.0.4",

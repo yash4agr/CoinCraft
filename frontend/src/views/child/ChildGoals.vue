@@ -59,6 +59,12 @@
             >
               <i class="ri-edit-line mr-1"></i>Edit Goal
             </button>
+            <button 
+              @click="markCompleted(goal)"
+              class="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-full transition-colors font-medium"
+            >
+              <i class="ri-check-double-line mr-1"></i>Mark Completed
+            </button>
           </div>
         </div>
 
@@ -153,7 +159,7 @@
               v-for="amount in getQuickAmounts()"
               :key="amount"
               @click="coinsToAdd = amount"
-              :disabled="amount > userStore.totalCoins"
+              :disabled="amount > Math.min(userStore.totalCoins, (selectedGoal?.target_amount || 0) - (selectedGoal?.current_amount || 0))"
               class="py-2 px-3 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 rounded-lg text-sm font-medium transition-colors"
             >
               {{ amount }}
@@ -334,14 +340,22 @@
         <span>{{ successMessage }}</span>
       </div>
     </div>
+
+    <!-- Error Message -->
+    <div v-if="showErrorMessage" class="fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50">
+      <div class="flex items-center gap-2">
+        <i class="ri-close-line"></i>
+        <span>{{ errorMessage }}</span>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, watch } from 'vue'
 import { useUserStore } from '@/stores/user'
 import type { Goal } from '@/stores/user'
-import { profile } from 'node:console'
+import { useAuthStore } from '@/stores/auth'
 
 const userStore = useUserStore()
 
@@ -351,6 +365,8 @@ const showEditGoalModalFlag = ref(false)
 const showCreateGoalModalFlag = ref(false)
 const showSuccessMessage = ref(false)
 const successMessage = ref('')
+const showErrorMessage = ref(false)
+const errorMessage = ref('')
 
 // Selected goal for modals
 const selectedGoal = ref<Goal | null>(null)
@@ -536,6 +552,45 @@ const createNewGoal = async () => {
   
   closeCreateGoalModal()
 }
+
+const markCompleted = async (goal: Goal) => {
+  try {
+    const authStore = useAuthStore()
+    const userId = authStore.user?.id
+    
+    if (!userId) {
+      showErrorMessage.value = true
+      errorMessage.value = 'User not authenticated'
+      return
+    }
+    
+    const ok = await userStore.updateGoal(goal.id, { completed: true })
+    if (ok) {
+      showSuccessMessage.value = true
+      successMessage.value = `Marked goal "${goal.title}" as completed! 🎉`
+      setTimeout(() => (showSuccessMessage.value = false), 2500)
+      
+      // Goal was completed successfully - no need to refresh immediately
+      // The UI will update when the user navigates or refreshes
+      console.log('✅ [CHILD_GOALS] Goal marked as completed successfully')
+    } else {
+      showErrorMessage.value = true
+      errorMessage.value = 'Failed to mark goal as completed'
+    }
+  } catch (error) {
+    console.error('Error marking goal as completed:', error)
+    showErrorMessage.value = true
+    errorMessage.value = 'An error occurred while marking goal as completed'
+  }
+}
+
+watch(coinsToAdd, (newValue) => {
+  const compareValue = Math.min(userStore.totalCoins, (selectedGoal.value?.target_amount || 0) - (selectedGoal.value?.current_amount || 0))
+  
+  if (newValue > compareValue) {
+    coinsToAdd.value = compareValue
+  }
+})
 </script>
 
 <style scoped>

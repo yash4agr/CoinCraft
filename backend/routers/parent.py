@@ -1,7 +1,7 @@
 """Parent management router for CoinCraft."""
 
 from typing import List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import uuid
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -131,7 +131,7 @@ async def get_parent_dashboard(
         goals_result = await session.execute(goals_stmt)
         active_goals = goals_result.scalar() or 0
 
-        thirty_days_ago = datetime.utcnow() - timedelta(days=30)
+        thirty_days_ago = datetime.now(timezone.utc) - timedelta(days=30)
         tasks_stmt = select(func.count(Task.id)).where(
             and_(
                 Task.assigned_to == user.id,
@@ -351,7 +351,7 @@ async def get_child_progress(
     child_user, child_profile = child_data
 
     # Calculate timeframe dates
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     if timeframe == "week":
         start_date = now - timedelta(days=7)
     elif timeframe == "month":
@@ -591,7 +591,7 @@ async def get_family_tasks(
             tasks_stmt = tasks_stmt.where(Task.status == "pending")
         elif status == "overdue":
             tasks_stmt = tasks_stmt.where(
-                and_(Task.status == "pending", Task.due_date < datetime.utcnow())
+                and_(Task.status == "pending", Task.due_date < datetime.now(timezone.utc))
             )
 
     if child_id:
@@ -650,7 +650,7 @@ async def approve_task(
 
     # Approve task and award coins
     task.status = "approved"
-    task.approved_at = datetime.utcnow()
+    task.approved_at = datetime.now(timezone.utc)
 
     # Award coins to child
     child_profile.coins += task.coins_reward

@@ -1,7 +1,7 @@
 """Redemption requests management router."""
 
 from typing import List
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
@@ -180,7 +180,7 @@ async def approve_redemption_request(
     # Update request
     redemption_request.status = "approved"
     redemption_request.approved_by = current_user.id
-    redemption_request.approved_at = datetime.utcnow()
+    redemption_request.approved_at = datetime.now(timezone.utc)
     
     await session.commit()
     await session.refresh(redemption_request)
@@ -220,7 +220,7 @@ async def reject_redemption_request(
   
     redemption_request.status = "rejected"
     redemption_request.approved_by = current_user.id
-    redemption_request.approved_at = datetime.utcnow()
+    redemption_request.approved_at = datetime.now(timezone.utc)
     
     
     child_profile.coins += redemption_request.coins_amount

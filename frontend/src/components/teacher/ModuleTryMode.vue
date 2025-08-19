@@ -149,11 +149,11 @@
                 
                 <v-alert
                   v-if="showQuizFeedback && quizAnswers[index] !== undefined"
-                  :type="isAnswerCorrect(index) ? 'success' : 'error'"
+                  :type="isAnswerCorrect(_index) ? 'success' : 'error'"
                   variant="tonal"
                   density="compact"
                 >
-                  <div v-if="isAnswerCorrect(index)">
+                  <div v-if="isAnswerCorrect(_index)">
                     <strong>Correct!</strong> {{ question.explanation }}
                   </div>
                   <div v-else>
@@ -211,7 +211,7 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import type { Module, ModuleSection, ModuleActivity, QuizQuestion } from '@/stores/teacher'
+import type { Module } from '@/stores/teacher'
 
 // Props
 interface Props {

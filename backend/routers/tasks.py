@@ -1,7 +1,7 @@
 """Tasks management router."""
 
 from typing import List
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
@@ -184,9 +184,9 @@ async def update_task_status(
         setattr(task, field, value)
 
     if task_update.status == "completed":
-        task.completed_at = datetime.utcnow()
+        task.completed_at = datetime.now(timezone.utc)
     elif task_update.status == "approved":
-        task.approved_at = datetime.utcnow()
+        task.approved_at = datetime.now(timezone.utc)
 
         # Award coins to child
         stmt = select(ChildProfile).where(ChildProfile.user_id == task.assigned_to)

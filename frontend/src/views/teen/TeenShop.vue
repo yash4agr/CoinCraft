@@ -62,7 +62,7 @@
             
             <!-- Buy Button -->
             <button 
-              @click="handlePurchase(item)"
+              @click="handlePurchase(_item)"
               :disabled="userStore.totalCoins < item.price || item.owned"
               class="w-full py-2 px-3 rounded-lg font-medium transition-colors text-sm"
               :class="item.owned 
@@ -267,7 +267,7 @@ const selectedItem = ref<ShopItem | null>(null)
 const selectedConversion = ref<ConversionAmount | null>(null)
 const conversionReason = ref('')
 const successMessage = ref('')
-const recentPurchases = ref<PurchaseHistory[]>([])
+// const recentPurchases = ref<PurchaseHistory[]>([])
 const isLoadingPurchases = ref(false)
 const shopTransactions = ref<any[]>([])
 

@@ -55,7 +55,7 @@ package-lock.json # If team decides to only commit yarn.lock or vice-versa
 dist/ # Vue CLI build output
 .output/ # Nuxt 3 build output
 # Add other framework specific build/cache folders if necessary
-
+fix-eslint.sh
 # IDE / Editor specific
 .vscode/
 .idea/

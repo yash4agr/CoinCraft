@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import { apiService } from '@/services/api'
 import { useAuthStore } from './auth'
-import { isPartOfTypeOnlyImportOrExportDeclaration } from 'typescript'
 
 
 export interface UserProfile {
@@ -108,7 +107,7 @@ export const useUserStore = defineStore('user', () => {
       }
 
       transactions.value.push(transaction)
-      let response = await apiService.createTransaction(profile.value.id, transaction)
+      await apiService.createTransaction(profile.value.id, transaction)
       profile.value.coins += amount
       authStore.user.coins=profile.value.coins
       profile.value.totalCoinsEarned += amount

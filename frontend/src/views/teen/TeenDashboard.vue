@@ -282,12 +282,12 @@
           :key="transaction.id"
           class="p-4 cursor-pointer hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
           :class="{ 'border-b border-gray-100': index < displayedTransactions.length - 1 }"
-          @click="handleTransactionClick(transaction)"
+          @click="handleTransactionClick(_transaction)"
           role="button"
           :aria-label="`View ${transaction.description} transaction details. Amount: ${transaction.type === 'spend' ? '-' : '+'}${transaction.amount} coins`"
           tabindex="0"
-          @keydown.enter="handleTransactionClick(transaction)"
-          @keydown.space.prevent="handleTransactionClick(transaction)"
+          @keydown.enter="handleTransactionClick(_transaction)"
+          @keydown.space.prevent="handleTransactionClick(_transaction)"
         >
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -359,12 +359,12 @@
             :key="transaction.id"
             class="p-4 cursor-pointer hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
             :class="{ 'border-b border-gray-100': index < displayedShopTransactions.length - 1 }"
-            @click="handleShopTransactionClick(transaction)"
+            @click="handleShopTransactionClick(_transaction)"
             role="button"
             :aria-label="`View ${transaction.description} purchase details. Amount: ${transaction.amount} coins`"
             tabindex="0"
-            @keydown.enter="handleShopTransactionClick(transaction)"
-            @keydown.space.prevent="handleShopTransactionClick(transaction)"
+            @keydown.enter="handleShopTransactionClick(_transaction)"
+            @keydown.space.prevent="handleShopTransactionClick(_transaction)"
           >
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
@@ -465,8 +465,8 @@ const errorMessage = ref('')
 const successMessage = ref('')
 const showErrorToast = ref(false)
 const showSuccessToast = ref(false)
-const errorTimer = ref<NodeJS.Timeout | null>(null)
-const successTimer = ref<NodeJS.Timeout | null>(null)
+const errorTimer = ref<number | null>(null)
+const successTimer = ref<number | null>(null)
 const assignedModules = ref<any[]>([])
 const isLoadingModules = ref(false)
 const showModuleExecutionModal = ref(false)
@@ -552,7 +552,7 @@ const handleCreateGoalClick = async () => {
   }
 }
 
-const handleTransactionClick = async (transaction: any) => {
+const handleTransactionClick = async (_transaction: any) => {
   try {
     // show success - could open modal or navigate to detailed view
     showSuccess('Transaction details loaded!')
@@ -585,7 +585,7 @@ const handleViewAllPurchasesClick = async () => {
   }
 }
 
-const handleShopTransactionClick = async (transaction: any) => {
+const handleShopTransactionClick = async (_transaction: any) => {
   try {
     // show success - could open modal or navigate to detailed view
     showSuccess('Purchase details loaded!')
@@ -664,10 +664,10 @@ const formatModuleDate = (date: any) => {
 }
 
 // Utility functions
-const setLoading = (loading: boolean, message = '') => {
-  isLoading.value = loading
-  loadingMessage.value = message
-}
+// const setLoading = (loading: boolean, message = '') => {
+//   isLoading.value = loading
+//   loadingMessage.value = message
+// }
 
 const showError = (message: string) => {
   errorMessage.value = message

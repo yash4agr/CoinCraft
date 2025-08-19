@@ -363,7 +363,7 @@
                 class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" />
             </div>
             <div class="flex justify-end mt-2">
-              <button @click="removeSection(idx)" class="text-red-600 text-sm">Remove</button>
+              <button @click="removeSection(_idx)" class="text-red-600 text-sm">Remove</button>
             </div>
           </div>
         </div>
@@ -787,7 +787,7 @@ const saveNewModule = async () => {
       ageGroup: createForm.value.ageGroup,
       sections: createForm.value.sections.map((s, i) => ({ title: s.title, type: s.type, content: s.content, duration: s.duration, orderIndex: i + 1 })),
       activities: [],
-      quiz: createForm.value.quiz.map((q, i) => ({ question: q.question, type: 'multiple_choice', options: q.options.map((o, j) => ({ text: o.text, isCorrect: o.isCorrect })), explanation: q.explanation }))
+      quiz: createForm.value.quiz.map((q, _) => ({ question: q.question, type: 'multiple_choice', options: q.options.map((o, _) => ({ text: o.text, isCorrect: o.isCorrect })), explanation: q.explanation }))
     }
     const saved = await teacherStore.addModule(payload)
     if (saved) {

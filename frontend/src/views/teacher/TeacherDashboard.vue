@@ -334,8 +334,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useTeacherStore } from '@/stores/teacher'
 import AIAssistComponent from '@/components/teacher/AIAssistComponent.vue'
-import type { Class } from '@/types'
-import { apiService } from '@/services/api'
+
 
 const router = useRouter()
 const teacherStore = useTeacherStore()
@@ -356,22 +355,22 @@ const totalStudents = computed(() => {
 })
 
 // Methods
-const calculateOverallProgress = (_classItem: Class) => {
-  // Simple progress based on student count - will be replaced with real data later
-  return _classItem.students_count ? Math.min(_classItem.students_count * 10, 100) : 0
-}
+// const calculateOverallProgress = (_classItem: Class) => {
+//   // Simple progress based on student count - will be replaced with real data later
+//   return _classItem.students_count ? Math.min(_classItem.students_count * 10, 100) : 0
+// }
 
-const getStudentsNeedingSupportCount = (_classItem: Class) => {
-  // Simple placeholder - will be replaced with real data later
-  return 0
-}
+// const getStudentsNeedingSupportCount = (_classItem: Class) => {
+//   // Simple placeholder - will be replaced with real data later
+//   return 0
+// }
 
-const getPerformanceColorClass = (performance: number) => {
-  if (performance >= 90) return 'text-success'
-  if (performance >= 75) return 'text-primary'
-  if (performance >= 60) return 'text-warning'
-  return 'text-error'
-}
+// const getPerformanceColorClass = (performance: number) => {
+//   if (performance >= 90) return 'text-success'
+//   if (performance >= 75) return 'text-primary'
+//   if (performance >= 60) return 'text-warning'
+//   return 'text-error'
+// }
 
 const formatDate = (dateString: string | Date) => {
   const date = typeof dateString === 'string' ? new Date(dateString) : dateString

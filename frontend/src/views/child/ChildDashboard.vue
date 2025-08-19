@@ -423,12 +423,12 @@ const learningJourney = ref([
 ])
 
 // Computed properties for button states
-const getAdventureButtonText = (adventure: any) => {
-  if (adventure.completed) {
-    return allowReplay.value ? 'Play Again' : 'Completed'
-  }
-  return adventure.buttonText || 'Start Adventure'
-}
+// const getAdventureButtonText = (adventure: any) => {
+//   if (adventure.completed) {
+//     return allowReplay.value ? 'Play Again' : 'Completed'
+//   }
+//   return adventure.buttonText || 'Start Adventure'
+// }
 
 const getAdventureCardClasses = (adventure: any) => {
   const baseClasses = 'cursor-pointer transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:ring-offset-2 rounded-lg'

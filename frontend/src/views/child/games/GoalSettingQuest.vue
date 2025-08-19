@@ -18,7 +18,7 @@
           <button
             v-for="item in items"
             :key="item.name"
-            @click="selectItem(item)"
+            @click="selectItem(_item)"
             :class="['flex flex-col items-center justify-center p-6 rounded-xl border-2 transition-colors cursor-pointer shadow selection-box', selectedItem?.name === item.name ? 'border-green-500 bg-green-700 text-white' : 'border-gray-300 bg-blue-700 text-white hover:border-green-200']"
           >
             <div class="text-5xl mb-2">{{ item.emoji }}</div>
@@ -49,7 +49,7 @@
             <table class="calendar-table">
               <thead>
                 <tr>
-                  <th v-for="(day, idx) in weekDays" :key="day" class="calendar-cell calendar-header">{{ day }}</th>
+                  <th v-for="(day, _idx) in weekDays" :key="day" class="calendar-cell calendar-header">{{ day }}</th>
                 </tr>
               </thead>
               <tbody>
@@ -68,7 +68,7 @@
             <table class="calendar-table">
               <thead>
                 <tr>
-                  <th v-for="(week, idx) in weekLabels" :key="week" class="calendar-cell calendar-header">{{ week }}</th>
+                  <th v-for="(week, _idx) in weekLabels" :key="week" class="calendar-cell calendar-header">{{ week }}</th>
                 </tr>
               </thead>
               <tbody>

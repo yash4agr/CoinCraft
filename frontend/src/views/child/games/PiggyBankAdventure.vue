@@ -138,7 +138,7 @@ async function completeActivity() {
     showMotivation.value = true
     return
   }
-  const result = await apiService.completeActivity(String(ACTIVITY_ID))
+  await apiService.completeActivity(String(ACTIVITY_ID))
   await childStore.loadActivities()
   await userStore.addCoins(10, 'Completed Piggy Bank Adventure', 'activity')
   showSuccess.value = true

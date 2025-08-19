@@ -1,7 +1,7 @@
 """Goals management router."""
 
 from typing import List
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
@@ -104,7 +104,7 @@ async def update_goal(
     for field, value in update_data.items():
         setattr(goal, field, value)
 
-    goal.updated_at = datetime.utcnow()
+    goal.updated_at = datetime.now(timezone.utc)
 
     await session.commit()
     await session.refresh(goal)
@@ -192,7 +192,7 @@ async def contribute_to_goal(
     if goal.current_amount >= goal.target_amount:
         goal.is_completed = True
 
-    goal.updated_at = datetime.utcnow()
+    goal.updated_at = datetime.now(timezone.utc)
 
     transaction = Transaction(
         user_id=user_id,
@@ -238,7 +238,7 @@ async def update_goal_progress(
     if goal.current_amount >= goal.target_amount:
         goal.is_completed = True
 
-    goal.updated_at = datetime.utcnow()
+    goal.updated_at = datetime.now(timezone.utc)
 
     # Create transaction record
     transaction = Transaction(
@@ -274,7 +274,7 @@ async def add_goal_amount(
 
     # Update current amount
     goal.current_amount = contribution.amount
-    goal.updated_at = datetime.utcnow()
+    goal.updated_at = datetime.now(timezone.utc)
 
     await session.commit()
     await session.refresh(goal)
@@ -301,7 +301,7 @@ async def update_goal_partial(
     update_data = goal_update.model_dump(exclude_unset=True)
     for field, value in update_data.items():
         setattr(goal, field, value)
-    goal.updated_at = datetime.utcnow()
+    goal.updated_at = datetime.now(timezone.utc)
 
     await session.commit()
     await session.refresh(goal)

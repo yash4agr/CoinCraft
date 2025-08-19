@@ -238,7 +238,7 @@ function onDrag(event: MouseEvent | TouchEvent) {
   }
 }
 
-function endDrag(event: MouseEvent | TouchEvent) {
+function endDrag(_event: MouseEvent | TouchEvent) {
   if (!dragging.value) return
   dragging.value = false
   let droppedIn = highlightedBox.value
