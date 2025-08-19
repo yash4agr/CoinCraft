@@ -39,7 +39,7 @@
                 <div class="text-sm text-gray-500">Financial Literacy Academy</div>
               </div>
               
-              <button class="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors">
+              <button @click="router.push('/teacher/profile')" class="w-full flex items-center gap-3 px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors">
                 <i class="ri-user-3-line text-gray-400"></i>
                 <span>My Profile</span>
               </button>
@@ -91,7 +91,7 @@
           :key="item.name"
           :to="item.path"
           class="flex items-center gap-3 px-3 py-3 rounded-lg transition-colors hover:bg-purple-50"
-          :class="currentRouteName === item.name ? 'bg-purple-100 text-purple-600' : 'text-gray-700 hover:text-purple-600'"
+          :class="$route.name === item.name ? 'bg-purple-100 text-purple-600' : 'text-gray-700 hover:text-purple-600'"
         >
           <i :class="item.icon" class="text-xl min-w-[1.25rem]"></i>
           <span v-if="!sidebarCollapsed" class="font-medium">{{ item.label }}</span>
@@ -104,7 +104,7 @@
       class="transition-all duration-300 pt-16 lg:pt-16 pb-20 lg:pb-4"
       :class="sidebarCollapsed ? 'lg:pl-16' : 'lg:pl-64'"
     >
-      <router-view :key="$route.fullPath" />
+      <router-view />
     </main>
 
     <!-- Bottom Navigation for Mobile/Tablet -->
@@ -115,7 +115,7 @@
           :key="item.name"
           :to="item.path"
           class="flex flex-col items-center justify-center gap-1 transition-colors"
-          :class="currentRouteName === item.name ? 'text-purple-600 bg-purple-50' : 'text-gray-500 hover:text-purple-600'"
+          :class="$route.name === item.name ? 'text-purple-600 bg-purple-50' : 'text-gray-500 hover:text-purple-600'"
         >
           <i :class="item.icon" class="text-xl"></i>
           <span class="text-xs font-medium">{{ item.label }}</span>
@@ -126,21 +126,17 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { useRouter, useRoute } from 'vue-router'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useTeacherStore } from '@/stores/teacher'
 
 const authStore = useAuthStore()
 const teacherStore = useTeacherStore()
 const router = useRouter()
-const route = useRoute()
 
 const sidebarCollapsed = ref(false)
 const showProfileMenu = ref(false)
-
-// Computed current route name for reactivity
-const currentRouteName = computed(() => route.name)
 
 const toggleSidebar = () => {
   sidebarCollapsed.value = !sidebarCollapsed.value
@@ -170,15 +166,6 @@ onMounted(() => {
   if (authStore.isAuthenticated && authStore.user && authStore.user.role === 'teacher') {
     teacherStore.loadTeacherProfile()
   }
-
-  // Debug route changes
-  console.log('🔍 [TEACHER LAYOUT] Initial route:', route.name, route.path)
-})
-
-// Watch for route changes for debugging
-watch(() => route.name, (newName, oldName) => {
-  console.log('🔍 [TEACHER LAYOUT] Route changed:', oldName, '->', newName)
-  console.log('🔍 [TEACHER LAYOUT] Current path:', route.path)
 })
 
 onUnmounted(() => {
@@ -218,7 +205,7 @@ const navigationItems = [
   },
   {
     name: 'ClassProgress',
-    path: '/teacher/class-progress',
+    path: '/teacher/class-progress/',
     label: 'Class Progress',
     icon: 'ri-line-chart-line'
   },
@@ -227,12 +214,6 @@ const navigationItems = [
     path: '/teacher/module-management',
     label: 'Modules',
     icon: 'ri-book-open-line'
-  },
-  {
-    name: 'ClassManagement',
-    path: '/teacher/class-management',
-    label: 'Classes',
-    icon: 'ri-group-line'
   }
 ]
 </script>

@@ -45,6 +45,44 @@ export const useDashboardStore = defineStore('dashboard', () => {
   const achievements = ref<Achievement[]>([])
   const todaysGoals = ref<ProgressGoal[]>([])
   const learningModules = ref<LearningModule[]>([])
+  const quickActions = ref([
+    {
+      id: 'budget',
+      title: 'Budget',
+      description: 'Track spending',
+      icon: 'ri-pie-chart-line',
+      iconBg: 'bg-blue-100',
+      iconColor: '#3B82F6',
+      route: '/teen/budget'
+    },
+    {
+      id: 'goals',
+      title: 'Goals',
+      description: 'Set targets',
+      icon: 'ri-target-line',
+      iconBg: 'bg-green-100',
+      iconColor: '#10B981',
+      route: '/teen/goals'
+    },
+    {
+      id: 'activities',
+      title: 'Activities',
+      description: 'Learn & earn',
+      icon: 'ri-book-open-line',
+      iconBg: 'bg-purple-100',
+      iconColor: '#8B5CF6',
+      route: '/teen/activities'
+    },
+    {
+      id: 'shop',
+      title: 'Shop',
+      description: 'Spend coins',
+      icon: 'ri-shopping-bag-line',
+      iconBg: 'bg-orange-100',
+      iconColor: '#F59E0B',
+      route: '/teen/shop'
+    }
+  ])
   const isLoading = ref(false)
   const error = ref<DashboardError | null>(null)
 
@@ -77,13 +115,16 @@ export const useDashboardStore = defineStore('dashboard', () => {
       
       // Check if user is authenticated (has valid token)
       if (!apiService.isAuthenticated()) {
+        console.log('🔐 [DASHBOARD] User not authenticated, loading mock data...')
         // Use mock data for demo/unauthenticated users
         if (userRole === 'younger_child' || userRole === 'older_child') {
           await loadChildMockData(userRole)
+          return // Add this return statement
         }
         return
       }
       
+      console.log('🔐 [DASHBOARD] User authenticated, loading from API...')
       // Use real API data for authenticated users
       const response = await apiService.getDashboardData(userRole)
       
@@ -109,6 +150,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
       
       // Fallback to mock data if API fails
       if (userRole === 'younger_child' || userRole === 'older_child') {
+        console.log('🔄 [DASHBOARD] API failed, falling back to mock data...')
         await loadChildMockData(userRole)
       }
     } finally {
@@ -576,6 +618,7 @@ export const useDashboardStore = defineStore('dashboard', () => {
     achievements,
     todaysGoals,
     learningModules,
+    quickActions,
     isLoading,
     error,
     availableActivities,

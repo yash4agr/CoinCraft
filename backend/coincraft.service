@@ -1,0 +1,19 @@
+[Unit]
+Description=CoinCraft FastAPI Backend
+After=network.target
+
+[Service]
+Type=notify
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/coincraft/backend
+Environment="PATH=/var/www/coincraft/backend/.venv/bin"
+Environment="ENVIRONMENT=production"
+EnvironmentFile=/var/www/coincraft/backend/.env.production
+ExecStart=/var/www/coincraft/backend/.venv/bin/gunicorn main:app -c gunicorn.conf.py
+ExecReload=/bin/kill -s HUP $MAINPID
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

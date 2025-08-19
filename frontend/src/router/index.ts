@@ -195,6 +195,11 @@ const routes = [
         component: ParentDashboard
       },
       {
+        path: 'profile',
+        name: 'ParentProfile',
+        component: UserProfile
+      },
+      {
         path: 'assigntask',
         name: 'AssignTask',
         component: AssignTask
@@ -232,6 +237,11 @@ const routes = [
         path: 'dashboard',
         name: 'TeacherDashboard',
         component: TeacherDashboard
+      },
+      {
+        path: 'profile',
+        name: 'TeacherProfile',
+        component: UserProfile
       },
       {
         path: 'class-progress/:id?',

@@ -6,18 +6,6 @@ import type { User, Goal, Task, RedemptionRequest, ChildProgress, DashboardStats
 // Child interface extending User with additional parent-specific fields
 export interface Child extends User {
   // These fields come from child_profile in backend
-  child_profile?: {
-    id: string
-    user_id: string
-    age: number
-    coins: number
-    level: number
-    streak_days: number
-    last_activity_date?: Date
-    parent_id?: string
-  }
-  
-  // Legacy fields for backward compatibility
   age?: number
   coins?: number
   level?: number
@@ -57,6 +45,28 @@ interface ParentError {
 export const useParentStore = defineStore('parent', () => {
   // State
   const children = ref<Child[]>([])
+  // Store newly created credentials for display (persisted locally, not on server)
+  const childCredentials = ref<Record<string, { password?: string; age?: number }>>({})
+
+  // Local persistence helpers (scoped to the parent device)
+  const CREDENTIALS_KEY = 'parent_child_credentials'
+  const loadCredentialsMap = () => {
+    try {
+      const raw = localStorage.getItem(CREDENTIALS_KEY)
+      if (raw) childCredentials.value = JSON.parse(raw)
+    } catch {
+      childCredentials.value = {}
+    }
+  }
+  const saveCredentialsMap = () => {
+    try {
+      localStorage.setItem(CREDENTIALS_KEY, JSON.stringify(childCredentials.value))
+    } catch {
+      // ignore storage errors
+    }
+  }
+  // Initialize from localStorage on store creation
+  loadCredentialsMap()
   const tasks = ref<ParentTask[]>([])
   const redemptionRequests = ref<RedemptionRequest[]>([])
   const childProgress = ref<ChildProgress>({
@@ -119,8 +129,10 @@ export const useParentStore = defineStore('parent', () => {
 
       // Update children list
       if (dashboardData.children) {
-        children.value = dashboardData.children.map((child: User) => ({
+        children.value = dashboardData.children.map((child: User & { age?: number }) => ({
           ...child,
+          // merge transient credentials if we just created this child this session
+          ...(childCredentials.value[child.id] || {}),
           goalsActive: 0,
           lastActivity: new Date(),
           completedTasks: 0
@@ -165,14 +177,22 @@ export const useParentStore = defineStore('parent', () => {
       }
 
       const newChild: Child = {
-        ...response.data.child,
-        age: childData.age,
+        ...response.data,
+        // Prefer backend-confirmed values if present in response payload
+        age: ((response.data as any)?.age) ?? childData.age,
+        password: ((response.data as any)?.password) ?? childData.password,
         goalsActive: 0,
         lastActivity: new Date(),
         completedTasks: 0
       }
       
       children.value.push(newChild)
+      // Remember credentials for reloads within this session
+      childCredentials.value[newChild.id] = {
+        password: newChild.password,
+        age: newChild.age
+      }
+      saveCredentialsMap()
       familyStats.value.totalChildren = children.value.length
       
       console.log('✅ [PARENT] Child created successfully:', newChild.name)
@@ -305,6 +325,23 @@ export const useParentStore = defineStore('parent', () => {
     }
   }
 
+  const rejectTask = async (taskId: string): Promise<boolean> => {
+    console.log('❌ [PARENT] Rejecting task:', taskId)
+    try {
+      const response = await apiService.rejectTask(taskId)
+      if (response.error) throw new Error(response.error)
+      if (response.data) {
+        const idx = tasks.value.findIndex(t => t.id === taskId)
+        if (idx !== -1) tasks.value[idx] = { ...tasks.value[idx], ...response.data }
+      }
+      return true
+    } catch (err: any) {
+      console.error('❌ [PARENT] Failed to reject task:', err.message)
+      error.value = { message: err.message, code: 'TASK_REJECT_ERROR', timestamp: new Date() }
+      return false
+    }
+  }
+
   const loadRedemptions = async (): Promise<void> => {
     console.log('💰 [PARENT] Loading redemption requests...')
     
@@ -331,6 +368,46 @@ export const useParentStore = defineStore('parent', () => {
         code: 'REDEMPTIONS_LOAD_ERROR',
         timestamp: new Date()
       }
+    }
+  }
+
+  // Purchase approvals (shop)
+  const purchaseRequests = ref<any[]>([])
+  const loadPurchaseRequests = async (): Promise<void> => {
+    try {
+      const list = await apiService.getPurchaseRequests()
+      purchaseRequests.value = list || []
+    } catch (err: any) {
+      console.error('❌ [PARENT] Failed to load purchase requests:', err.message)
+    }
+  }
+
+  const approvePurchase = async (requestId: string): Promise<boolean> => {
+    try {
+      const res = await apiService.approvePurchaseRequest(requestId)
+      if (res && res.status === 'approved') {
+        // Refresh tasks/redemptions/requests and dashboard to update coins and alerts
+        await Promise.all([loadPurchaseRequests(), loadRedemptions(), loadTasks(), loadDashboard()])
+        return true
+      }
+      return false
+    } catch (err: any) {
+      console.error('❌ [PARENT] Failed to approve purchase:', err.message)
+      return false
+    }
+  }
+
+  const rejectPurchase = async (requestId: string): Promise<boolean> => {
+    try {
+      const res = await apiService.rejectPurchaseRequest(requestId)
+      if (res && res.status === 'rejected') {
+        await loadPurchaseRequests()
+        return true
+      }
+      return false
+    } catch (err: any) {
+      console.error('❌ [PARENT] Failed to reject purchase:', err.message)
+      return false
     }
   }
 
@@ -402,8 +479,11 @@ export const useParentStore = defineStore('parent', () => {
     await Promise.all([
       loadDashboard(),
       loadTasks(),
-      loadRedemptions()
+      loadRedemptions(),
+      loadPurchaseRequests()
     ])
+    // Load all children's goals after other data is loaded
+    await loadAllChildrenGoals()
   }
 
   // Helper function to get child name by ID
@@ -427,11 +507,44 @@ export const useParentStore = defineStore('parent', () => {
     
   }
 
+  // Load all children's goals for the Goals Completed section
+  const allChildrenGoals = ref<any[]>([])
+  const loadAllChildrenGoals = async (): Promise<void> => {
+    try {
+      console.log('🔄 [PARENT] Loading all children goals using new endpoint...')
+      
+      const response = await apiService.getAllChildrenGoals()
+      console.log('🔄 [PARENT] API response:', response)
+      
+      if (response && !response.error && Array.isArray(response.data)) {
+        allChildrenGoals.value = response.data
+        console.log('✅ [PARENT] All children goals loaded successfully:', response.data.length)
+        
+        // Log completed goals specifically
+        const completedGoals = response.data.filter(goal => goal.is_completed === true)
+        console.log('🎯 [PARENT] Completed goals found:', completedGoals.length, completedGoals)
+        
+        // Log all goals with their completion status
+        response.data.forEach(goal => {
+          console.log(`🔍 [PARENT] Goal ${goal.title} (${goal.child_name}): is_completed = ${goal.is_completed} (type: ${typeof goal.is_completed})`)
+        })
+      } else {
+        console.warn('⚠️ [PARENT] Invalid response from getAllChildrenGoals:', response)
+        allChildrenGoals.value = []
+      }
+      
+    } catch (err: any) {
+      console.error('❌ [PARENT] Failed to load all children goals:', err.message)
+      allChildrenGoals.value = []
+    }
+  }
+
   return {
     // State
     children,
     tasks,
     redemptionRequests,
+    purchaseRequests,
     familyStats,
     isLoading,
     error,
@@ -448,12 +561,18 @@ export const useParentStore = defineStore('parent', () => {
     loadTasks,
     createTask,
     approveTask,
+    rejectTask,
     loadRedemptions,
+    loadPurchaseRequests,
     approveRedemption,
+    approvePurchase,
     rejectRedemption,
+    rejectPurchase,
     clearError,
     refreshData,
     getChildName,
-    getChildProgress
+    getChildProgress,
+    allChildrenGoals,
+    loadAllChildrenGoals
   }
 })

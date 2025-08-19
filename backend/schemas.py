@@ -26,6 +26,9 @@ class UserRead(schemas.BaseUser[str]):
     is_active: bool
     is_superuser: bool
     is_verified: bool
+class ChildSummaryRead(UserRead):
+    age: Optional[int] = None
+
 
 
 # Extended user schema with profile data (for endpoints that explicitly load profiles)
@@ -49,17 +52,14 @@ class UserUpdate(schemas.BaseUserUpdate):
 
 # Profile Schemas
 class ChildProfileRead(BaseModel):
-    """Child profile data for reading."""
-    
     id: str
     user_id: str
     age: int
-    coins: int
-    level: int
-    streak_days: int
+    coins: int = 0
+    level: int = 1
+    streak_days: int = 0
     last_activity_date: Optional[datetime] = None
     parent_id: Optional[str] = None
-    temporary_password: Optional[str] = None  # Include password for parent visibility
 
     class Config:
         from_attributes = True
@@ -133,6 +133,7 @@ class GoalUpdate(BaseModel):
     icon: Optional[str] = None
     color: Optional[str] = None
     deadline: Optional[datetime] = None
+    is_completed: Optional[bool] = None
 
 
 class GoalRead(GoalBase):
@@ -300,7 +301,6 @@ class ModuleResponse(BaseModel):
 class ClassBase(BaseModel):
     name: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = None
-    age_group: str = Field(..., pattern="^(8-10|11-14)$")  # Only allow "8-10" or "11-14"
 
 
 class ClassCreate(ClassBase):
@@ -424,8 +424,23 @@ class ShopItemRead(BaseModel):
 
     class Config:
         from_attributes = True
+
 class ShopItemRequest(BaseModel):
     item_id: str
+
+class PurchaseRequestRead(BaseModel):
+    id: str
+    user_id: str
+    shop_item_id: str
+    price: int
+    status: str = "pending"
+    approved_by: Optional[str] = None
+    approved_at: Optional[datetime] = None
+    created_at: datetime
+    item_info: Optional[Dict[str, Any]] = None
+
+    class Config:
+        from_attributes = True
 
 # Dashboard Schemas
 class DashboardStats(BaseModel):
@@ -439,7 +454,7 @@ class DashboardStats(BaseModel):
 class ParentDashboardResponse(BaseModel):
     user: UserRead
     stats: DashboardStats
-    children: List[UserWithProfilesRead]
+    children: List[ChildSummaryRead]
     recent_transactions: List[TransactionRead]
     pending_redemptions: List[RedemptionRequestRead]
 
@@ -541,6 +556,9 @@ class ChildCreateResponse(BaseModel):
     success: bool
     message: str
     child: UserRead
+    # Returned only at creation time so parent can note credentials
+    password: Optional[str] = None
+    age: Optional[int] = None
 
     class Config:
         from_attributes = True

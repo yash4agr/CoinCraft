@@ -333,9 +333,9 @@
           <tr v-for="(child, index) in children" :key="child.id">
             <td>{{ index + 1 }}</td>
             <td>{{ child.name }}</td>
-            <td>{{ child.child_profile?.age || '—' }}</td>
+            <td>{{ child.age || '—' }}</td>
             <td>{{ child.email || '—' }}</td>
-            <td>{{ child.child_profile?.temporary_password || '—' }}</td>
+            <td>{{ child.password || '—' }}</td>
           </tr>
         </template>
       </tbody>
@@ -751,6 +751,17 @@ const alerts = computed(() => {
     })
   }
 
+  // Add alerts for purchase requests
+  const purchasePending = (parentStore as any).purchaseRequests?.filter((r: any) => r.status === 'pending')?.length || 0
+  if (purchasePending > 0) {
+    alertsList.push({
+      id: 'pending-purchases',
+      type: 'warning',
+      title: 'Shop Purchases',
+      message: `${purchasePending} purchase request${purchasePending > 1 ? 's' : ''} need your approval`
+    })
+  }
+
   // Add success alert for new children
   if (parentStore.children.length > 0) {
     alertsList.push({
@@ -758,6 +769,17 @@ const alerts = computed(() => {
       type: 'success',
       title: 'Family Active',
       message: `${parentStore.children.length} child${parentStore.children.length > 1 ? 'ren' : ''} actively earning coins`
+    })
+  }
+
+  // Add alert for completed goals
+  const completedGoalsCount = (parentStore as any).allChildrenGoals?.filter((g: any) => g.is_completed)?.length || 0
+  if (completedGoalsCount > 0) {
+    alertsList.push({
+      id: 'goals-completed',
+      type: 'success',
+      title: 'Goals Achieved',
+      message: `${completedGoalsCount} goal${completedGoalsCount > 1 ? 's' : ''} completed by children! 🎉`
     })
   }
 
@@ -782,6 +804,19 @@ const pendingApprovals = computed(() => {
         title: `Task: ${task.title}`,
         child: childName,
         type: 'task'
+      })
+    })
+
+  // Add pending purchase requests
+  ;((parentStore as any).purchaseRequests || [])
+    .filter((req: any) => req.status === 'pending')
+    .forEach((req: any) => {
+      const childName = parentStore.getChildName(req.user_id)
+      approvals.push({
+        id: req.id,
+        title: `Buy: ${(req.item_info?.name || req.item?.name) || 'Item'} (${req.price} coins)`,
+        child: childName,
+        type: 'purchase'
       })
     })
 
@@ -869,13 +904,25 @@ const getChildInitials = (name: string) => {
 const approveItem = async (item: any) => {
   localLoading.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    const index = pendingApprovals.value.findIndex(a => a.id === item.id)
-    if (index > -1) {
-      pendingApprovals.value.splice(index, 1)
+    if (item.type === 'task') {
+      const ok = await parentStore.approveTask(item.id)
+      if (!ok) throw new Error('Approve task failed')
+    } else if (item.type === 'redemption') {
+      const ok = await parentStore.approveRedemption(item.id)
+      if (!ok) throw new Error('Approve redemption failed')
+    } else if (item.type === 'purchase') {
+      const ok = await (parentStore as any).approvePurchase?.(item.id)
+      if (!ok) throw new Error('Approve purchase failed')
     }
-    
+
+    // Refresh store data so computed pendingApprovals updates
+    await Promise.all([
+      parentStore.loadTasks(),
+      parentStore.loadRedemptions(),
+      (parentStore as any).loadPurchaseRequests?.(),
+      parentStore.loadDashboard(),
+    ])
+
     showSuccessSnackbar.value = true
     successMessage.value = `${item.title} approved!`
   } catch (error) {
@@ -888,13 +935,24 @@ const approveItem = async (item: any) => {
 const rejectItem = async (item: any) => {
   localLoading.value = true
   try {
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    const index = pendingApprovals.value.findIndex(a => a.id === item.id)
-    if (index > -1) {
-      pendingApprovals.value.splice(index, 1)
+    if (item.type === 'task') {
+      const ok = await parentStore.rejectTask(item.id)
+      if (!ok) throw new Error('Reject task failed')
+    } else if (item.type === 'redemption') {
+      const ok = await parentStore.rejectRedemption(item.id)
+      if (!ok) throw new Error('Reject redemption failed')
+    } else if (item.type === 'purchase') {
+      const ok = await (parentStore as any).rejectPurchase?.(item.id)
+      if (!ok) throw new Error('Reject purchase failed')
     }
-    
+
+    await Promise.all([
+      parentStore.loadTasks(),
+      parentStore.loadRedemptions(),
+      (parentStore as any).loadPurchaseRequests?.(),
+      parentStore.loadDashboard(),
+    ])
+
     showSuccessSnackbar.value = true
     successMessage.value = `${item.title} rejected.`
   } catch (error) {
@@ -989,7 +1047,8 @@ const reloadDashboard = async () => {
     await Promise.all([
       parentStore.loadDashboard(),
       parentStore.loadTasks(),
-      parentStore.loadRedemptions()
+      parentStore.loadRedemptions(),
+      (parentStore as any).loadPurchaseRequests?.()
     ])
     
     console.log('✅ [DASHBOARD] All data reloaded successfully:', {
@@ -1075,7 +1134,8 @@ onMounted(async () => {
     await Promise.all([
       parentStore.loadDashboard(),
       parentStore.loadTasks(),
-      parentStore.loadRedemptions()
+      parentStore.loadRedemptions(),
+      (parentStore as any).loadPurchaseRequests?.()
     ])
     
     console.log('✅ [DASHBOARD] All data loaded on mount:', {

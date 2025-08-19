@@ -1,7 +1,7 @@
-"""Minimal seed data for CoinCraft application."""
+"""Seed initial data for CoinCraft application."""
 
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from database import create_db_and_tables, get_async_session, engine
 from models import (
@@ -13,22 +13,8 @@ from auth import get_user_db, get_user_manager
 from schemas import UserCreate
 from fastapi_users import exceptions
 
-from sqlalchemy import inspect
-async def check_columns():
-    async with engine.begin() as conn:
-        def do_inspect(sync_conn):
-            insp = inspect(sync_conn)
-            cols = insp.get_columns("activities")
-            for col in cols:
-                print(col["name"], col["type"])
-        await conn.run_sync(do_inspect)
-
-# Run it (e.g. in an async context)
-import asyncio
-asyncio.run(check_columns())
-
 async def seed_data():
-    """Create database tables only - no dummy data."""
+    """Seed initial data for development."""
     print("Creating database tables...")
     await create_db_and_tables()
     
@@ -131,7 +117,7 @@ async def seed_data():
                     level=3,
                     streak_days=7,
                     parent_id=parent_user.id,
-                    last_activity_date=datetime.utcnow()
+                    last_activity_date=datetime.now(timezone.utc)
                 )
                 session.add(child1_profile)
                 print("Created child1 profile (Luna)")
@@ -165,7 +151,7 @@ async def seed_data():
                     level=5,
                     streak_days=12,
                     parent_id=parent_user.id,
-                    last_activity_date=datetime.utcnow()
+                    last_activity_date=datetime.now(timezone.utc)
                 )
                 session.add(child2_profile)
                 print("Created child2 profile (Harry)")
@@ -605,18 +591,18 @@ async def seed_data():
                 {
                     "user_id": child1_user.id,
                     "shop_item_id": "1",  # Star Stickers
-                    "acquired_at": datetime.utcnow(),
+                    "acquired_at": datetime.now(timezone.utc),
                 },
                 {
                     "user_id": child1_user.id,
                     "shop_item_id": "5",  # Magic Wand
-                    "acquired_at": datetime.utcnow(),
+                    "acquired_at": datetime.now(timezone.utc),
                 },
                 # child_2 owns one item
                 {
                     "user_id": child2_user.id,
                     "shop_item_id": "2",  # Animal Stickers
-                    "acquired_at": datetime.utcnow(),
+                    "acquired_at": datetime.now(timezone.utc),
                 },
             ]
             for owned_item in owned_items_data:

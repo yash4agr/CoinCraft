@@ -52,6 +52,13 @@
         </div>
       </div>
     </div>
+
+    <!-- Piggy Bank Adventure Modal -->
+    <PiggyBankAdventure
+      v-model="showPiggyBankModal"
+      :coins="10"
+      @completed="handlePiggyBankCompleted"
+    />
   </div>
 </template>
 

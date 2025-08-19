@@ -23,6 +23,126 @@
       </div>
     </div>
 
+    <!-- Assigned Tasks Section -->
+    <div class="mb-8">
+      <h2 class="text-2xl font-bold text-gray-800 mb-6">Assigned Tasks ✅</h2>
+      <div v-if="assignedTasks.length === 0" class="text-gray-500">No tasks assigned yet.</div>
+      <div v-else class="space-y-3">
+        <div
+          v-for="task in assignedTasks"
+          :key="task.id"
+          class="bg-white rounded-lg p-4 shadow flex items-center justify-between"
+        >
+          <div class="flex items-center gap-3">
+            <input
+              type="checkbox"
+              :checked="task.status === 'completed' || task.status === 'approved'"
+              :disabled="task.status === 'completed' || task.status === 'approved'"
+              @change="() => markTaskCompleted(task.id)"
+              class="h-5 w-5"
+              :aria-label="`Mark ${task.title} as completed`"
+            />
+            <div>
+              <div class="font-semibold text-gray-800">{{ task.title }}</div>
+              <div class="text-sm text-gray-500">
+                {{ task.description || 'No description' }}
+              </div>
+              <div class="text-xs text-gray-400 mt-1">
+                Reward: {{ task.coins_reward }} coins
+                <span v-if="task.due_date"> • Due: {{ new Date(task.due_date).toLocaleDateString() }}</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <span
+              class="px-2 py-1 rounded text-xs"
+              :class="{
+                'bg-yellow-100 text-yellow-800': task.status === 'pending',
+                'bg-blue-100 text-blue-800': task.status === 'in_progress',
+                'bg-green-100 text-green-800': task.status === 'completed',
+                'bg-emerald-100 text-emerald-800': task.status === 'approved'
+              }"
+            >
+              {{ task.status === 'approved' ? 'Approved' : task.status === 'completed' ? 'Awaiting Approval' : task.status.replace('_', ' ') }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Teacher-Assigned Modules Section -->
+    <div class="mb-8">
+      <h2 class="text-2xl font-bold text-gray-800 mb-6">📚 Teacher-Assigned Modules</h2>
+      <div v-if="isLoadingModules" class="text-center py-8 bg-white rounded-xl shadow-sm">
+        <i class="ri-book-line text-4xl text-gray-300 mb-4"></i>
+        <p class="text-gray-500">Loading modules...</p>
+      </div>
+      <div v-else-if="assignedModules.length === 0" class="text-center py-8 bg-white rounded-xl shadow-sm">
+        <i class="ri-book-line text-4xl text-gray-300 mb-4"></i>
+        <p class="text-gray-500">No modules assigned by your teacher yet.</p>
+        <p class="text-sm text-gray-400 mt-1">Check back later for new assignments!</p>
+      </div>
+      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div
+          v-for="module in assignedModules"
+          :key="module.id"
+          class="bg-white rounded-xl shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer"
+          @click="startAssignedModule(module)"
+        >
+          <!-- Module Header -->
+          <div class="p-4 border-b border-gray-100">
+            <div class="flex items-center justify-between mb-2">
+              <h3 class="font-semibold text-gray-800 line-clamp-1">{{ module.title }}</h3>
+              <span 
+                class="px-2 py-1 rounded-full text-xs font-medium"
+                :class="getModuleDifficultyClass(module.difficulty)"
+              >
+                {{ module.difficulty }}
+              </span>
+            </div>
+            <p class="text-sm text-gray-600 line-clamp-2">{{ module.description }}</p>
+          </div>
+
+          <!-- Module Stats -->
+          <div class="p-4">
+            <div class="flex items-center justify-between text-sm text-gray-500 mb-3">
+              <span class="flex items-center gap-1">
+                <i class="ri-time-line"></i>
+                {{ module.duration }} min
+              </span>
+              <span class="flex items-center gap-1">
+                <i class="ri-calendar-line"></i>
+                {{ formatModuleDate(module.assigned_at) }}
+              </span>
+            </div>
+
+            <!-- Progress Bar -->
+            <div class="mb-3">
+              <div class="flex justify-between text-xs text-gray-500 mb-1">
+                <span>Progress</span>
+                <span>{{ module.progress || 0 }}%</span>
+              </div>
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div 
+                  class="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                  :style="{ width: `${module.progress || 0}%` }"
+                ></div>
+              </div>
+            </div>
+
+            <!-- Action Button -->
+            <button 
+              class="w-full py-2 px-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm font-medium"
+              @click.stop="startAssignedModule(module)"
+            >
+              <i class="ri-play-circle-line mr-1"></i>
+              {{ module.progress > 0 ? 'Continue' : 'Start' }} Module
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Choose Your Adventure Section -->
     <div class="mb-8">
       <h2 class="text-2xl font-bold text-gray-800 mb-6">Choose Your Adventure! 🚀</h2>
@@ -147,36 +267,80 @@
       </div>
     </div>
   </div>
+
+  <!-- Piggy Bank Adventure Modal -->
+  <PiggyBankAdventure
+    v-model="showPiggyBankModal"
+    :coins="10"
+    @completed="handlePiggyBankCompleted"
+  />
+  
+  <!-- Module Execution Modal -->
+  <ModuleExecutionModal
+    :show-modal="showModuleExecutionModal"
+    :current-module="currentModule"
+    @close="showModuleExecutionModal = false"
+    @module-completed="handleModuleCompleted"
+  />
+  
+  <!-- Debug Modal State (remove this in production) -->
+  <div v-if="showPiggyBankModal" class="fixed top-4 right-4 bg-red-500 text-white p-2 rounded z-50">
+    Modal is OPEN! State: {{ showPiggyBankModal }}
+  </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useDashboardStore } from '@/stores/dashboard'
 import { useChildStore } from '@/stores/child'
+import { useUserStore } from '@/stores/user'
 import AdventureCard from '@/components/shared/AdventureCard.vue'
+import PiggyBankAdventure from '@/components/explore/PiggyBankAdventure.vue'
 import ProgressCard from '@/components/shared/ProgressCard.vue'
 import AchievementCard from '@/components/shared/AchievementCard.vue'
 import JourneyCard from '@/components/shared/JourneyCard.vue'
+import apiService from '@/services/api'
+import ModuleExecutionModal from '@/components/child/ModuleExecutionModal.vue'
 
 // Stores and router
 const router = useRouter()
 const dashboardStore = useDashboardStore()
 const childStore = useChildStore()
+const userStore = useUserStore()
 
-// Reactive state
-const isLoading = ref(false)
-const loadingMessage = ref('')
-const showErrorToast = ref(false)
-const showSuccessToast = ref(false)
+// State
+const showPiggyBankModal = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
-const allowReplay = ref(true)
+const showErrorToast = ref(false)
+const showSuccessToast = ref(false)
+const errorTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const successTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const allowReplay = ref(false)
 
-// Auto-dismiss timers
-// Timer type for cleanup
-let errorTimer: ReturnType<typeof setTimeout> | null = null
-let successTimer: ReturnType<typeof setTimeout> | null = null
+// Teacher modules state
+const assignedModules = ref<any[]>([])
+const isLoadingModules = ref(false)
+const showModuleExecutionModal = ref(false)
+const currentModule = ref<any>(null)
+
+// Debug modal state changes
+watch(showPiggyBankModal, (newVal) => {
+  console.log('🐷 [CHILD] Modal state changed to:', newVal)
+})
+// Assigned tasks from child store
+const assignedTasks = computed(() => childStore.tasks)
+
+const markTaskCompleted = async (taskId: string) => {
+  try {
+    await childStore.completeTask(taskId)
+    showSuccess('Task marked as completed! Awaiting parent approval.')
+  } catch (e) {
+    showError('Failed to mark task completed')
+  }
+}
+
 
 // Use dashboard store data
 const todaysGoals = computed(() => {
@@ -312,6 +476,8 @@ const handleGoalClick = async (goalId: string) => {
 
 const handleAdventureClick = async (adventure: any) => {
   try {
+    console.log('🎮 [CHILD] Adventure clicked:', adventure)
+    
     if (adventure.completed && !allowReplay.value) {
       showError('This adventure is already completed!')
       return
@@ -319,7 +485,7 @@ const handleAdventureClick = async (adventure: any) => {
     await router.push(adventure.path || `/child/games/${adventure.id}`)
     showSuccess(`${adventure.title} started successfully!`)
   } catch (error) {
-    console.error('Adventure start failed:', error)
+    console.error('❌ [CHILD] Adventure start failed:', error)
     showError(`Unable to start ${adventure.title}. Please try again.`)
   }
 }
@@ -357,18 +523,81 @@ const handleJourneyClick = async (journey: any) => {
   }
 }
 
+const handlePiggyBankCompleted = async (coins: number) => {
+  try {
+    console.log('🎉 [CHILD] Piggy Bank Adventure completed! Coins earned:', coins)
+    
+    // Close the modal
+    showPiggyBankModal.value = false
+    
+    // Refresh user coins to show updated balance
+    await userStore.refreshCoins()
+    
+  } catch (error) {
+    console.error('Failed to handle piggy bank completion:', error)
+    showError('Failed to complete the adventure. Please try again.')
+  }
+}
+
+// Teacher module methods
+const startAssignedModule = (module: any) => {
+  console.log('🚀 [CHILD] Starting assigned module:', module.title)
+  // Open the module execution modal
+  showModuleExecutionModal.value = true
+  currentModule.value = module
+}
+
+const handleModuleCompleted = (module: any, score: number) => {
+  console.log('🎉 [CHILD] Module completed!', { module: module.title, score })
+  
+  // Show success message
+  showSuccess(`Congratulations! You completed "${module.title}" with a score of ${score}%`)
+  
+  // Close the modal
+  showModuleExecutionModal.value = false
+  currentModule.value = null
+  
+  // Refresh assigned modules to show updated status
+  loadAssignedModules()
+  
+  // Optionally refresh user data to show updated coins
+  if (userStore.profile?.id) {
+    userStore.loadUserData(userStore.profile.id)
+  }
+}
+
+const getModuleDifficultyClass = (difficulty: string) => {
+  switch (difficulty) {
+    case 'beginner': return 'bg-green-100 text-green-700'
+    case 'intermediate': return 'bg-yellow-100 text-yellow-700'
+    case 'advanced': return 'bg-red-100 text-red-700'
+    default: return 'bg-gray-100 text-gray-700'
+  }
+}
+
+const formatModuleDate = (date: Date) => {
+  if (!date) return 'Recently'
+  const now = new Date()
+  const diffTime = Math.abs(now.getTime() - date.getTime())
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+  
+  if (diffDays === 1) return 'Yesterday'
+  if (diffDays < 7) return `${diffDays} days ago`
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
 // Utility functions
 const showError = (message: string) => {
   errorMessage.value = message
   showErrorToast.value = true
   
   // Clear any existing timer
-  if (errorTimer) {
-    clearTimeout(errorTimer)
+  if (errorTimer.value) {
+    clearTimeout(errorTimer.value)
   }
   
   // Auto-dismiss after 5 seconds
-  errorTimer = setTimeout(() => {
+  errorTimer.value = setTimeout(() => {
     dismissError()
   }, 5000)
 }
@@ -378,29 +607,29 @@ const showSuccess = (message: string) => {
   showSuccessToast.value = true
   
   // Clear any existing timer
-  if (successTimer) {
-    clearTimeout(successTimer)
+  if (successTimer.value) {
+    clearTimeout(successTimer.value)
   }
   
   // Auto-dismiss after 3 seconds
-  successTimer = setTimeout(() => {
+  successTimer.value = setTimeout(() => {
     dismissSuccess()
   }, 3000)
 }
 
 const dismissError = () => {
   showErrorToast.value = false
-  if (errorTimer) {
-    clearTimeout(errorTimer)
-    errorTimer = null
+  if (errorTimer.value) {
+    clearTimeout(errorTimer.value)
+    errorTimer.value = null
   }
 }
 
 const dismissSuccess = () => {
   showSuccessToast.value = false
-  if (successTimer) {
-    clearTimeout(successTimer)
-    successTimer = null
+  if (successTimer.value) {
+    clearTimeout(successTimer.value)
+    successTimer.value = null
   }
 }
 
@@ -419,25 +648,52 @@ onMounted(async () => {
   
   // Load child dashboard data
   try {
-    await childStore.loadDashboard()
-    console.log('✅ [CHILD] Dashboard loaded successfully')
+    await Promise.all([
+      childStore.loadDashboard(),
+      childStore.loadTasks()
+    ])
+    console.log('✅ [CHILD] Dashboard and tasks loaded successfully')
   } catch (error) {
-    console.error('❌ [CHILD] Failed to load dashboard:', error)
+    console.error('❌ [CHILD] Failed to load dashboard or tasks:', error)
   }
   
   // Also load dashboard store data for backwards compatibility
   if (!dashboardStore.todaysGoals.length) {
     dashboardStore.loadDashboardData('younger_child')
   }
+
+  // Load assigned modules
+  loadAssignedModules()
 })
 
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeyboardNavigation)
   
   // Clean up timers
-  if (errorTimer) clearTimeout(errorTimer)
-  if (successTimer) clearTimeout(successTimer)
+  if (errorTimer.value) clearTimeout(errorTimer.value)
+  if (successTimer.value) clearTimeout(successTimer.value)
 })
+
+// Methods
+const loadAssignedModules = async () => {
+  try {
+    isLoadingModules.value = true
+    const response = await apiService.getAssignedModules()
+    
+    if (response.data) {
+      assignedModules.value = response.data
+      console.log('✅ [CHILD] Loaded assigned modules:', assignedModules.value.length)
+    } else {
+      console.error('❌ [CHILD] Failed to load assigned modules:', response.error)
+      assignedModules.value = []
+    }
+  } catch (error) {
+    console.error('❌ [CHILD] Error loading assigned modules:', error)
+    assignedModules.value = []
+  } finally {
+    isLoadingModules.value = false
+  }
+}
 </script>
 
 <style scoped>

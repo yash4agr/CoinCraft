@@ -203,18 +203,16 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  const updateGoal = async (goalId: string, updates: Partial<Goal>) => {
+  const updateGoal = async (goalId: string, updates: Partial<Goal>): Promise<boolean> => {
     try {
+      console.log('🔄 [USER] Updating goal:', goalId, 'with updates:', updates)
+      
       const goalIndex = goals.value.findIndex(g => g.id === goalId)
-      if (goalIndex === -1) return false
-
-      // Update local state first
-      goals.value[goalIndex] = { ...goals.value[goalIndex], ...updates }
-      if (goals.value[goalIndex].currentAmount >= goals.value[goalIndex].targetAmount) {
-        goals.value[goalIndex].completed = true
+      if (goalIndex === -1) {
+        console.error('❌ [USER] Goal not found:', goalId)
+        return false
       }
 
-      // Call backend API to persist changes
       const apiUpdates: any = {}
       if (updates.title !== undefined) apiUpdates.title = updates.title
       if (updates.description !== undefined) apiUpdates.description = updates.description
@@ -224,18 +222,50 @@ export const useUserStore = defineStore('user', () => {
       if (updates.category !== undefined) apiUpdates.category = updates.category
       // Add other fields as needed
 
-      const response = await apiService.updateGoal(goalId, apiUpdates)
+      if (updates.completed !== undefined) apiUpdates.is_completed = updates.completed
+      
+      console.log('🔄 [USER] API updates to send:', apiUpdates)
+      console.log('🔄 [USER] Profile ID:', profile.value?.id)
+      
+      const response = await apiService.updateGoal(profile.value.id, goalId, apiUpdates)
+      console.log('🔄 [USER] API response:', response)
+      
       if (response.error) {
         error.value = response.error
+        console.error('❌ [USER] API error:', response.error)
         return false
       }
-      // Optionally update local state with backend response
+      
+      // Update local state immediately with the response data
       if (response.data) {
+        // Update the goal in the local array
         goals.value[goalIndex] = { ...goals.value[goalIndex], ...response.data }
+        
+        // Also update the profile if this affects coins
+        if (updates.completed && profile.value) {
+          // Refresh the profile to get updated coins
+          try {
+            const coins = await apiService.getCoins(profile.value.id)
+            if (typeof coins === 'number') {
+              profile.value.coins = coins
+            }
+          } catch (err) {
+            console.warn('Failed to refresh coins after goal completion:', err)
+          }
+        }
+        
+        console.log('✅ [USER] Goal updated successfully in local state')
       }
+      
+      // If this is a goal completion, log it for debugging
+      if (updates.completed) {
+        console.log('🎯 [USER] Goal marked as completed! Parent store should refresh to see this.')
+      }
+      
       return true
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to update goal'
+      console.error('❌ [USER] Exception in updateGoal:', err)
       return false
     }
   }
@@ -379,6 +409,12 @@ export const useUserStore = defineStore('user', () => {
       // Use real API for role-specific dashboard
       const userRole = profile.value?.role || localStorage.getItem('user_role') || 'older_child'
       console.log(`📊 [USER] Loading dashboard for role: ${userRole}`)
+      
+      // Only load dashboard data for appropriate roles
+      if (userRole === 'teacher') {
+        console.log('⚠️ [USER] Skipping dashboard load for teacher role in teen context')
+        return
+      }
       
       const response = await apiService.getDashboardData(userRole)
       
@@ -533,29 +569,67 @@ export const useUserStore = defineStore('user', () => {
     try {
       isLoading.value = true
       error.value = null
-      // Optimistically add to ownedItems before API call
-      if (!ownedItems.value.includes(itemId)) {
-        ownedItems.value.push(itemId)
-      }
-      const response = await apiService.purchaseItem(profile.value?.id, itemId)
-      if (response && response.success) {
-        // Optionally update ownedItems again if backend returns new data
-        if (response.item && response.item.id && !ownedItems.value.includes(response.item.id)) {
-          ownedItems.value.push(response.item.id)
-        }
+      // Create a pending purchase request; do not add to owned yet
+      const resp = await apiService.createPurchaseRequest(profile.value?.id as string, itemId)
+      if (resp && resp.success) {
+        // Immediately refresh coins (no deduction yet) and requests list
+        await Promise.all([
+          getOwnedItems(),
+          getShopItems()
+        ])
         return true
-      } else {
-        // Rollback if purchase failed
-        ownedItems.value = ownedItems.value.filter(id => id !== itemId)
-        error.value = response?.message || 'Purchase failed'
-        return false
       }
+      error.value = resp?.message || 'Purchase failed'
+      return false
     } catch (err) {
       error.value = err instanceof Error ? err.message : 'Failed to purchase item'
-      ownedItems.value = ownedItems.value.filter(id => id !== itemId)
       return false
     } finally {
       isLoading.value = false
+    }
+  }
+
+  const refreshCoins = async () => {
+    if (!profile.value) return false
+    
+    try {
+      const coins = await apiService.getCoins(profile.value.id)
+      if (typeof coins === 'number') {
+        profile.value.coins = coins
+        return true
+      }
+      return false
+    } catch (err) {
+      console.error('❌ [USER] Failed to refresh coins:', err)
+      return false
+    }
+  }
+
+  const refreshGoals = async () => {
+    if (!profile.value) {
+      console.warn('⚠️ [USER] Cannot refresh goals: no profile available')
+      return false
+    }
+    
+    try {
+      console.log('🔄 [USER] Refreshing goals for user:', profile.value.id)
+      console.log('🔄 [USER] API service available:', !!apiService)
+      console.log('🔄 [USER] Calling apiService.getGoals...')
+      
+      const freshGoals = await apiService.getGoals(profile.value.id)
+      console.log('🔄 [USER] Raw goals response:', freshGoals)
+      
+      goals.value = freshGoals
+      console.log('✅ [USER] Goals refreshed successfully:', freshGoals.length)
+      return true
+    } catch (err) {
+      console.error('❌ [USER] Failed to refresh goals:', err)
+      console.error('❌ [USER] Error details:', {
+        message: err instanceof Error ? err.message : 'Unknown error',
+        stack: err instanceof Error ? err.stack : 'No stack trace',
+        profileId: profile.value?.id
+      })
+      return false
     }
   }
 
@@ -587,6 +661,8 @@ export const useUserStore = defineStore('user', () => {
     getShopItems,
     ownedItems,
     getOwnedItems,
-    purchaseShopItem
+    purchaseShopItem,
+    refreshCoins,
+    refreshGoals
   }
 })

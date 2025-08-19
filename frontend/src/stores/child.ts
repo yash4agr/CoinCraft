@@ -506,41 +506,30 @@ export const useChildStore = defineStore('child', () => {
   }
 
   const completeTask = async (taskId: string): Promise<boolean> => {
-    console.log('✅ [CHILD] Completing task:', taskId)
-    
+    console.log('✅ [CHILD] Marking task completed:', taskId)
     try {
       const authStore = useAuthStore()
-      
       if (!authStore.isAuthenticated) {
         throw new Error('User not authenticated')
       }
 
-      // Find the task
       const taskIndex = tasks.value.findIndex(t => t.id === taskId)
-      if (taskIndex === -1) {
-        throw new Error('Task not found')
-      }
+      if (taskIndex === -1) throw new Error('Task not found')
 
-      const task = tasks.value[taskIndex]
-      if (!task) {
-        throw new Error('Task not found')
+      // Persist to backend
+      const updated = await apiService.completeTask(taskId)
+
+      // Update local state
+      if (updated) {
+        tasks.value[taskIndex] = updated
+      } else {
+        // Fallback local update
+        tasks.value[taskIndex] = { ...tasks.value[taskIndex], status: 'completed' as const }
       }
       
-      // Update task status locally
-      tasks.value[taskIndex] = {
-        ...task,
-        status: 'completed' as const
-      }
-
-      // Update stats (add coins earned)
-      if (task.coins_reward) {
-        stats.value.coins += task.coins_reward
-        stats.value.completed_tasks += 1
-      }
-
-      console.log('✅ [CHILD] Task completed successfully')
+      // Do NOT grant coins here; coins are awarded upon parent approval
+      console.log('✅ [CHILD] Task marked completed (awaiting parent approval)')
       return true
-
     } catch (err: any) {
       console.error('❌ [CHILD] Failed to complete task:', err.message)
       error.value = err.message

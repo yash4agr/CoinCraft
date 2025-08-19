@@ -6,7 +6,7 @@ This script creates sample teachers, parents, and children for development and t
 
 import asyncio
 import uuid
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 
@@ -64,8 +64,8 @@ async def seed_users():
                     role=teacher_data["role"],
                     is_active=True,
                     is_verified=True,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow()
+                    created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc)
                 )
                 
                 # Hash password using bcrypt (compatible with FastAPI Users)
@@ -131,8 +131,8 @@ async def seed_users():
                     role=parent_data["role"],
                     is_active=True,
                     is_verified=True,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow()
+                    created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc)
                 )
                 
                 # Hash password using bcrypt
@@ -241,8 +241,8 @@ async def seed_users():
                     role=child_data["role"],
                     is_active=True,
                     is_verified=True,
-                    created_at=datetime.utcnow(),
-                    updated_at=datetime.utcnow()
+                    created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc)
                 )
                 
                 # Hash password using bcrypt
@@ -264,9 +264,8 @@ async def seed_users():
                     coins=100,  # Start with 100 coins
                     level=1,
                     streak_days=0,
-                    last_activity_date=datetime.utcnow() - timedelta(days=2),
-                    parent_id=parent_user.id,
-                    temporary_password=child_data["password"]  # Store password for parent visibility
+                    last_activity_date=datetime.now(timezone.utc) - timedelta(days=2),
+                    parent_id=parent_user.id
                 )
                 
                 session.add(child_profile)

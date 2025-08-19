@@ -21,10 +21,12 @@ from models import (
     UserAchievement,
     Module,
     UserModuleProgress,
+    RedemptionRequest,
+    ShopItem,
+    PurchaseRequest,
 )
 from schemas import (
     UserRead,
-    UserWithProfilesRead,
     ChildProfileRead,
     TaskRead,
     TaskCreate,
@@ -42,6 +44,7 @@ from schemas import (
     ParentSettingsResponse,
     ActivityRead,
     AchievementRead,
+    ChildSummaryRead,
 )
 
 router = APIRouter()
@@ -118,7 +121,7 @@ async def get_parent_dashboard(
     max_level = 1
     max_streak = 0
     
-    # Prepare children list as UserRead objects
+    # Prepare children list including age for UI display
     children_list = []
     for user, child_profile in children_data:
         # Calculate stats for this child
@@ -146,12 +149,20 @@ async def get_parent_dashboard(
         max_level = max(max_level, child_profile.level)
         max_streak = max(max_streak, child_profile.streak_days)
 
-        # Add child as UserWithProfilesRead object with profile data
-        child_with_profile = UserWithProfilesRead.model_validate({
-            **user.__dict__,
-            "child_profile": ChildProfileRead.model_validate(child_profile)
+        # Add child as summary including age
+        children_list.append({
+            "id": user.id,
+            "email": user.email,
+            "name": user.name,
+            "role": user.role,
+            "avatar_url": user.avatar_url,
+            "created_at": user.created_at,
+            "updated_at": user.updated_at,
+            "is_active": user.is_active,
+            "is_superuser": user.is_superuser,
+            "is_verified": user.is_verified,
+            "age": child_profile.age
         })
-        children_list.append(child_with_profile)
 
     # Get recent transactions for the family
     if children_data:
@@ -227,7 +238,8 @@ async def add_child(
     import secrets
     import string
 
-    password = "".join(
+    # Use provided password if given; otherwise generate one
+    password = child_data.get("password") or "".join(
         secrets.choice(string.ascii_letters + string.digits) for _ in range(8)
     )
 
@@ -252,14 +264,16 @@ async def add_child(
         )
 
     # Create child profile
-    child_profile = ChildProfile(
-        user_id=child_user.id,
-        age=child_data["age"],
-        parent_id=current_user.id,
-        temporary_password=password  # Store the generated password
-    )
-
     try:
+        child_profile = ChildProfile(
+            user_id=child_user.id,
+            age=child_data["age"],
+            coins=0,
+            level=1,
+            streak_days=0,
+            parent_id=current_user.id,
+        )
+
         session.add(child_profile)
         await session.commit()
         print(f"[BACKEND] Child profile committed to database: {child_profile.user_id}")
@@ -294,11 +308,13 @@ async def add_child(
     # Store password for parent temporarily (in real app, send via secure channel)
     print(f"[BACKEND] Generated password for child {child_user.name}: {password}")
 
-    # Return proper ChildCreateResponse
+    # Return ChildCreateResponse with credentials and age for UI display
     return ChildCreateResponse(
         success=True,
         message=f"Child account created successfully for {child_user.name}",
-        child=UserRead.model_validate(child_user)
+        child=UserRead.model_validate(child_user),
+        password=password,
+        age=child_data.get("age")
     )
 
 
@@ -760,3 +776,64 @@ async def update_parent_settings(
             "auto_approval_limit": parent_profile.auto_approval_limit,
         },
     }
+
+
+@router.get("/children/goals", response_model=List[dict])
+async def get_all_children_goals(
+    current_user: User = Depends(current_active_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    """Get all goals for all children of the current parent."""
+    
+    if current_user.role != "parent":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only parents can view children's goals",
+        )
+
+    # Get all children of this parent
+    children_stmt = (
+        select(ChildProfile.user_id, User.name)
+        .join(User, ChildProfile.user_id == User.id)
+        .where(ChildProfile.parent_id == current_user.id)
+    )
+    children_result = await session.execute(children_stmt)
+    children_data = children_result.all()
+
+    if not children_data:
+        return []
+
+    children_ids = [child_id for child_id, _ in children_data]
+    child_names = {child_id: name for child_id, name in children_data}
+
+    # Get all goals for these children
+    goals_stmt = (
+        select(Goal)
+        .where(Goal.user_id.in_(children_ids))
+        .order_by(Goal.created_at.desc())
+    )
+    goals_result = await session.execute(goals_stmt)
+    goals = goals_result.scalars().all()
+
+    # Build response with child information
+    goals_list = []
+    for goal in goals:
+        goal_dict = {
+            "id": goal.id,
+            "user_id": goal.user_id,
+            "title": goal.title,
+            "description": goal.description,
+            "target_amount": goal.target_amount,
+            "current_amount": goal.current_amount,
+            "icon": goal.icon,
+            "color": goal.color,
+            "deadline": goal.deadline,
+            "is_completed": goal.is_completed,
+            "created_at": goal.created_at,
+            "updated_at": goal.updated_at,
+            "child_name": child_names.get(goal.user_id, "Unknown"),
+            "child_id": goal.user_id
+        }
+        goals_list.append(goal_dict)
+
+    return goals_list

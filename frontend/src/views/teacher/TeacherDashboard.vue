@@ -1,16 +1,38 @@
 <template>
   <div class="min-h-screen bg-gray-50 p-4 pb-20">
-    <!-- Welcome Section -->
+    <!-- Header Section -->
     <div class="mb-8">
-      <h1 class="text-3xl font-bold text-gray-800 mb-2">
-        Welcome back, Teacher! 👋
-      </h1>
-      <p class="text-gray-600">Here's an overview of your classes and student progress</p>
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <h1 class="text-3xl font-bold text-gray-800 mb-2">Teacher Dashboard</h1>
+          <p class="text-gray-600">Manage your classes, modules, and student progress</p>
+        </div>
+        <div class="flex gap-3">
+          <!-- Refresh Button -->
+          <button 
+            @click="refreshDashboard"
+            :disabled="teacherStore.isLoading"
+            class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors disabled:opacity-50"
+          >
+            <i class="ri-refresh-line mr-2"></i>
+            {{ teacherStore.isLoading ? 'Refreshing...' : 'Refresh' }}
+          </button>
+          
+          <!-- Add New Class Button -->
+          <button 
+            @click="openCreateClassModal"
+            class="px-6 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-medium transition-colors"
+          >
+            <i class="ri-add-line mr-2"></i>
+            Add New Class
+          </button>
+        </div>
+      </div>
     </div>
 
     <!-- Quick Stats Section -->
     <div class="mb-8">
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div class="bg-white rounded-xl p-6 shadow-sm">
           <div class="flex items-center justify-between mb-2">
             <h3 class="text-lg font-semibold text-gray-800">Total Classes</h3>
@@ -32,28 +54,6 @@
           <div class="text-3xl font-bold text-green-600">{{ totalStudents }}</div>
           <p class="text-sm text-gray-500 mt-1">Enrolled students</p>
         </div>
-
-        <div class="bg-white rounded-xl p-6 shadow-sm">
-          <div class="flex items-center justify-between mb-2">
-            <h3 class="text-lg font-semibold text-gray-800">Avg. Performance</h3>
-            <div class="w-10 h-10 rounded-full bg-yellow-100 flex items-center justify-center">
-              <i class="ri-line-chart-line text-yellow-600"></i>
-            </div>
-          </div>
-          <div class="text-3xl font-bold text-yellow-600">{{ averagePerformance }}%</div>
-          <p class="text-sm text-gray-500 mt-1">Across all classes</p>
-        </div>
-
-        <div class="bg-white rounded-xl p-6 shadow-sm">
-          <div class="flex items-center justify-between mb-2">
-            <h3 class="text-lg font-semibold text-gray-800">Need Support</h3>
-            <div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-              <i class="ri-error-warning-line text-red-600"></i>
-            </div>
-          </div>
-          <div class="text-3xl font-bold text-red-600">{{ studentsNeedingSupport }}</div>
-          <p class="text-sm text-gray-500 mt-1">Students requiring attention</p>
-        </div>
       </div>
     </div>
 
@@ -70,7 +70,7 @@
             <span>AI Assist</span>
           </button>
           <button 
-            @click="showCreateClassModal = true"
+            @click="openCreateClassModal"
             class="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors flex items-center gap-2"
           >
             <i class="ri-add-line"></i>
@@ -103,7 +103,7 @@
         <h3 class="text-xl font-semibold text-gray-800 mb-2">No Classes Yet</h3>
         <p class="text-gray-600 mb-6">Get started by creating your first class</p>
         <button 
-          @click="showCreateClassModal = true"
+          @click="openCreateClassModal"
           class="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors"
         >
           Create Your First Class
@@ -120,69 +120,33 @@
           <!-- Class Header -->
           <div class="p-6 border-b border-gray-100">
             <div class="flex items-center justify-between mb-2">
-              <h3 class="text-xl font-bold text-gray-800">{{ classItem.name }}</h3>
-              <span class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm">
-                Class {{ classItem.name }}
+              <h3 class="text-lg font-semibold text-gray-800">{{ classItem.name }}</h3>
+              <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-xs">
+                {{ classItem.students_count || 0 }} students
               </span>
             </div>
-            <p class="text-gray-600 text-sm mb-2">
-              Created {{ formatDate(new Date(classItem.created_at)) }}
+            <p v-if="classItem.description" class="text-sm text-gray-600 mb-4">
+              {{ classItem.description }}
             </p>
-            <p class="text-sm text-gray-500">
-              Age Group: <span class="font-medium text-gray-700">{{ classItem.age_group || 'Not specified' }}</span>
-            </p>
-          </div>
-
-          <!-- Class Stats -->
-          <div class="p-6">
-            <div class="grid grid-cols-2 gap-4 mb-6">
-              <div class="text-center">
-                <div class="text-2xl font-bold text-blue-600">{{ classItem.students_count || 0 }}</div>
-                <p class="text-sm text-gray-600">Students</p>
-              </div>
-              <div class="text-center">
-                <div class="text-2xl font-bold" :class="getPerformanceColorClass(classItem.average_performance || 0)">
-                  {{ Math.round(classItem.average_performance || 0) }}%
-                </div>
-                <p class="text-sm text-gray-600">Avg. Performance</p>
+            <div class="flex items-center justify-between text-sm text-gray-500">
+              <span>Created {{ formatDate(classItem.created_at) }}</span>
               </div>
             </div>
 
-            <!-- Progress Bar -->
-            <div class="mb-4">
-              <div class="flex justify-between text-sm text-gray-600 mb-1">
-                <span>Overall Progress</span>
-                <span>{{ calculateOverallProgress(classItem) }}%</span>
-              </div>
-              <div class="w-full bg-gray-200 rounded-full h-2.5">
-                <div 
-                  class="bg-blue-500 h-2.5 rounded-full" 
-                  :style="{ width: `${calculateOverallProgress(classItem)}%` }"
-                ></div>
-              </div>
-            </div>
-
-            <!-- Students Needing Support -->
-            <div v-if="getStudentsNeedingSupportCount(classItem) > 0" class="mb-4">
-              <div class="flex items-center text-red-500 text-sm">
-                <i class="ri-error-warning-line mr-1"></i>
-                <span>{{ getStudentsNeedingSupportCount(classItem) }} students need support</span>
-              </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="flex gap-2 mt-4">
+          <!-- Class Actions -->
+          <div class="p-4 bg-gray-50">
+            <div class="flex gap-2">
               <button 
                 @click="navigateToClassProgress(classItem.id)"
                 class="flex-1 py-2 px-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-sm"
               >
-                View Progress
+                <i class="ri-chart-line mr-1"></i> Progress
               </button>
               <button 
                 @click="navigateToClassManagement(classItem.id)"
-                class="flex-1 py-2 px-3 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors text-sm"
+                class="flex-1 py-2 px-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors text-sm"
               >
-                Manage Class
+                <i class="ri-settings-line mr-1"></i> Manage
               </button>
             </div>
           </div>
@@ -246,11 +210,11 @@
 
     <!-- Create Class Modal -->
     <div v-if="showCreateClassModal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div class="bg-white rounded-2xl p-6 max-w-md w-full">
+      <div class="bg-white rounded-2xl p-6 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div class="flex items-center justify-between mb-6">
           <h3 class="text-xl font-bold text-gray-800">Create New Class</h3>
           <button 
-            @click="closeCreateClassModal"
+            @click="showCreateClassModal = false"
             class="text-gray-400 hover:text-gray-600 transition-colors"
           >
             <i class="ri-close-line text-2xl"></i>
@@ -258,92 +222,108 @@
         </div>
         
         <!-- Class Creation Form -->
-        <form @submit.prevent="handleCreateClass" class="space-y-4">
+        <form @submit.prevent="createNewClass" class="space-y-6">
+          <!-- Class Name -->
           <div>
-            <label for="className" class="block text-sm font-medium text-gray-700 mb-1">
-              Class Name *
-            </label>
-            <input
-              id="className"
-              v-model="classForm.name"
+            <label class="block text-sm font-medium text-gray-700 mb-2">Class Name</label>
+            <input 
+              v-model="newClassData.name"
               type="text"
               required
               placeholder="e.g., Financial Literacy 101"
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              :disabled="isCreatingClass"
+              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             />
           </div>
 
+          <!-- Class Description -->
           <div>
-            <label for="classDescription" class="block text-sm font-medium text-gray-700 mb-1">
-              Description
-            </label>
-            <textarea
-              id="classDescription"
-              v-model="classForm.description"
+            <label class="block text-sm font-medium text-gray-700 mb-2">Description (Optional)</label>
+            <textarea 
+              v-model="newClassData.description"
               rows="3"
-              placeholder="Describe what this class will cover..."
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-              :disabled="isCreatingClass"
+              placeholder="Brief description of the class..."
+              class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             ></textarea>
           </div>
 
-          <div>
-            <label for="ageGroup" class="block text-sm font-medium text-gray-700 mb-1">
-              Age Group *
+          <!-- Student Selection -->
+          <div class="mb-6">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Select Students *
             </label>
-            <select
-              id="ageGroup"
-              v-model="classForm.age_group"
-              required
-              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              :disabled="isCreatingClass"
-            >
-              <option value="">Select age group</option>
-              <option value="8-10">8-10 years (Younger Children)</option>
-              <option value="11-14">11-14 years (Older Children)</option>
-            </select>
-          </div>
-
-          <!-- Error Message -->
-          <div v-if="classError" class="p-3 bg-red-50 border border-red-200 rounded-lg">
-            <p class="text-sm text-red-600">{{ classError }}</p>
-          </div>
-
-          <!-- Success Message -->
-          <div v-if="classSuccess" class="p-3 bg-green-50 border border-green-200 rounded-lg">
-            <p class="text-sm text-green-600">{{ classSuccess }}</p>
+            <div class="max-h-60 overflow-y-auto border border-gray-300 rounded-lg p-3">
+              <div v-if="teacherStore.isLoading" class="text-center py-4">
+                <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+                <p class="text-gray-500 mt-2">Loading students...</p>
+              </div>
+              <div v-else-if="teacherStore.availableStudents.length === 0" class="text-center py-4">
+                <p class="text-gray-500">No students available</p>
+              </div>
+              <div v-else class="space-y-2">
+                <div
+                  v-for="student in teacherStore.availableStudents"
+                  :key="student.id"
+                  class="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-lg cursor-pointer"
+                  :class="{ 'bg-indigo-50 border border-indigo-200': selectedStudentIds.includes(student.id) }"
+                  @click="toggleStudentSelection(student.id)"
+                >
+                  <input
+                    type="checkbox"
+                    :checked="selectedStudentIds.includes(student.id)"
+                    @change="toggleStudentSelection(student.id)"
+                    class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  />
+                  <div class="flex-1">
+                    <div class="flex items-center justify-between">
+                      <span class="font-medium text-gray-900">{{ student.name }}</span>
+                      <span class="text-sm text-gray-500">{{ student.age }} years old</span>
+                    </div>
+                    <div class="flex items-center space-x-2 text-sm text-gray-600">
+                      <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs">
+                        {{ student.type }}
+                      </span>
+                      <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
+                        Level {{ student.level }}
+                      </span>
+                      <span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">
+                        {{ student.coins }} coins
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <p class="text-sm text-gray-500 mt-1">
+              Selected {{ selectedStudentIds.length }} student(s)
+            </p>
           </div>
 
           <!-- Action Buttons -->
-          <div class="flex gap-3 pt-2">
-            <button 
+          <div class="flex gap-3 pt-4">
+          <button 
               type="button"
-              @click="closeCreateClassModal"
-              class="flex-1 py-3 px-4 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-colors"
-              :disabled="isCreatingClass"
-            >
-              Cancel
-            </button>
-            <button 
+            @click="showCreateClassModal = false"
+            class="flex-1 py-3 px-4 bg-gray-200 text-gray-800 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+          >
+            Cancel
+          </button>
+          <button 
               type="submit"
+              :disabled="!newClassData.name || selectedStudentIds.length === 0 || isCreatingClass"
               class="flex-1 py-3 px-4 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              :disabled="isCreatingClass || !classForm.name.trim() || !classForm.age_group"
-            >
-              <span v-if="isCreatingClass" class="flex items-center justify-center">
-                <i class="ri-loader-4-line animate-spin mr-2"></i>
-                Creating...
-              </span>
+          >
+              <span v-if="isCreatingClass">Creating...</span>
               <span v-else>Create Class</span>
-            </button>
-          </div>
+          </button>
+        </div>
         </form>
       </div>
     </div>
 
     <!-- AI Assist Component -->
     <AIAssistComponent 
-      v-model="showAIAssist"
+      :model-value="showAIAssist"
+      @update:model-value="showAIAssist = $event"
       @module-saved="handleModuleSaved"
     />
   </div>
@@ -355,6 +335,7 @@ import { useRouter } from 'vue-router'
 import { useTeacherStore } from '@/stores/teacher'
 import AIAssistComponent from '@/components/teacher/AIAssistComponent.vue'
 import type { Class } from '@/types'
+import { apiService } from '@/services/api'
 
 const router = useRouter()
 const teacherStore = useTeacherStore()
@@ -363,47 +344,26 @@ const teacherStore = useTeacherStore()
 const showCreateClassModal = ref(false)
 const showAIAssist = ref(false)
 const isCreatingClass = ref(false)
-const classError = ref('')
-const classSuccess = ref('')
-
-// Class form data
-const classForm = ref({
+const newClassData = ref({
   name: '',
-  description: '',
-  age_group: ''
+  description: ''
 })
+const selectedStudentIds = ref<string[]>([])
 
 // Computed properties
 const totalStudents = computed(() => {
   return teacherStore.classes.reduce((total, classItem) => total + (classItem.students_count || 0), 0)
 })
 
-const averagePerformance = computed(() => {
-  if (teacherStore.classes.length === 0) return 0
-  
-  const totalPerformance = teacherStore.classes.reduce(
-    (sum, classItem) => sum + (classItem.average_performance || 0), 0
-  )
-  
-  return Math.round(totalPerformance / teacherStore.classes.length)
-})
-
-const studentsNeedingSupport = computed(() => {
-  return teacherStore.classes.reduce((total, classItem) => {
-    if (!classItem.students) return total
-    return total + classItem.students.filter((student: any) => student.needsSupport).length
-  }, 0)
-})
-
 // Methods
 const calculateOverallProgress = (_classItem: Class) => {
-  // TODO: Implement when student/module data is available
-  return 75 // Default placeholder
+  // Simple progress based on student count - will be replaced with real data later
+  return _classItem.students_count ? Math.min(_classItem.students_count * 10, 100) : 0
 }
 
 const getStudentsNeedingSupportCount = (_classItem: Class) => {
-  // TODO: Implement when student data is available  
-  return 0 // Default placeholder
+  // Simple placeholder - will be replaced with real data later
+  return 0
 }
 
 const getPerformanceColorClass = (performance: number) => {
@@ -413,8 +373,9 @@ const getPerformanceColorClass = (performance: number) => {
   return 'text-error'
 }
 
-const formatDate = (date: Date) => {
-  return new Date(date).toLocaleDateString('en-US', {
+const formatDate = (dateString: string | Date) => {
+  const date = typeof dateString === 'string' ? new Date(dateString) : dateString
+  return date.toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',
     day: 'numeric'
@@ -425,57 +386,105 @@ const navigateToClassProgress = (classId: string) => {
   router.push(`/teacher/class-progress/${classId}`)
 }
 
-const navigateToClassManagement = (classId: string) => {
-  router.push(`/teacher/class-management/${classId}`)
+const navigateToClassManagement = async (classId: string) => {
+  await router.push(`/teacher/class-management/${classId}`)
 }
 
 const handleModuleSaved = (module: any) => {
   console.log('🎉 [TEACHER] AI-generated module saved:', module)
-  // Optionally refresh modules list or show success message
+  
+  // Close the AI Assist modal
+  showAIAssist.value = false
+  
+  // Show success message
+  alert(`Module "${module.title || 'AI Generated Module'}" saved successfully!`)
+  
+  // Refresh modules list
+  teacherStore.loadModules()
 }
 
-const closeCreateClassModal = () => {
-  showCreateClassModal.value = false
-  classForm.value = { name: '', description: '', age_group: '' }
-  classError.value = ''
-  classSuccess.value = ''
+// Toggle student selection
+const toggleStudentSelection = (studentId: string) => {
+  const index = selectedStudentIds.value.indexOf(studentId)
+  if (index > -1) {
+    selectedStudentIds.value.splice(index, 1)
+  } else {
+    selectedStudentIds.value.push(studentId)
+  }
 }
 
-const handleCreateClass = async () => {
-  if (!classForm.value.name.trim()) {
-    classError.value = 'Class name is required'
+// Create new class
+const createNewClass = async () => {
+  if (!newClassData.value.name || selectedStudentIds.value.length === 0) {
+    alert('Please provide a class name and select at least one student')
     return
   }
 
-  if (!classForm.value.age_group) {
-    classError.value = 'Age group is required'
-    return
-  }
-
-  isCreatingClass.value = true
-  classError.value = ''
-  classSuccess.value = ''
+  console.log('🏫 [TEACHER] Creating new class:', {
+    name: newClassData.value.name,
+    description: newClassData.value.description,
+    students: selectedStudentIds.value
+  })
 
   try {
-    const newClass = await teacherStore.createClass({
-      name: classForm.value.name.trim(),
-      description: classForm.value.description.trim(),
-      age_group: classForm.value.age_group
+    isCreatingClass.value = true
+    
+    // Call the real API to create the class
+    const response = await teacherStore.createClass({
+      name: newClassData.value.name,
+      description: newClassData.value.description,
+      student_ids: selectedStudentIds.value
     })
 
-    if (newClass) {
-      classSuccess.value = `Class "${newClass.name}" created successfully!`
-      // Close modal after a short delay to show success message
-      setTimeout(() => {
-        closeCreateClassModal()
-      }, 1500)
+    if (response) {
+      // Show success message
+      alert(`Class "${newClassData.value.name}" created successfully with ${selectedStudentIds.value.length} students!`)
+      
+      // Reset form and close modal
+      resetCreateClassForm()
+      showCreateClassModal.value = false
+      
+      // FORCE REFRESH from API to get real data from database
+      console.log('🔄 [TEACHER] Force refreshing all data from API...')
+      await teacherStore.forceRefresh()
+      
+      console.log('✅ [TEACHER] Dashboard refreshed with real data from database')
     } else {
-      classError.value = 'Failed to create class. Please try again.'
+      alert('Failed to create class. Please try again.')
     }
-  } catch (error: any) {
-    classError.value = error.message || 'An error occurred while creating the class'
+  } catch (error) {
+    console.error('❌ [TEACHER] Error creating class:', error)
+    alert('Error creating class. Please try again.')
   } finally {
     isCreatingClass.value = false
+  }
+}
+
+const resetCreateClassForm = () => {
+  newClassData.value = {
+    name: '',
+    description: ''
+  }
+  selectedStudentIds.value = []
+}
+
+// Load available students when modal opens
+const openCreateClassModal = () => {
+  console.log('🏫 [TEACHER] Opening create class modal...')
+  showCreateClassModal.value = true
+  // Load real student data from the database
+  teacherStore.loadAvailableStudents()
+}
+
+// Refresh dashboard data
+const refreshDashboard = async () => {
+  console.log('🔄 [TEACHER] Refreshing dashboard data...')
+  try {
+    await teacherStore.forceRefresh()
+    console.log('✅ [TEACHER] Dashboard refreshed successfully')
+  } catch (error) {
+    console.error('❌ [TEACHER] Error refreshing dashboard:', error)
+    alert('Failed to refresh dashboard data. Please try again.')
   }
 }
 

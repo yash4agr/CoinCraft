@@ -487,7 +487,7 @@ Ensure the module is practical, engaging, and educationally sound for teachers t
         { role: "system", content: systemPrompt },
         { role: "user", content: userPrompt }
       ],
-      model: 'qwen-3-235b-a22b-thinking-2507',
+      model: 'qwen-3-235b-a22b-instruct-2507',
       stream: false,
       max_completion_tokens: 40000,
       temperature: 0.6,
@@ -643,7 +643,7 @@ Each section should have:
 Make the content age-appropriate and practical for teachers to implement.`
         }
       ],
-      model: 'qwen-3-235b-a22b-thinking-2507',
+      model: 'qwen-3-235b-a22b-instruct-2507',
       response_format: {
         type: "json_schema",
         json_schema: {
@@ -678,7 +678,7 @@ Create diverse activity types like exercises, simulations, case studies, group w
 - Be age-appropriate and practical for classroom use`
         }
       ],
-      model: 'qwen-3-235b-a22b-thinking-2507',
+      model: 'qwen-3-235b-a22b-instruct-2507',
       response_format: {
         type: "json_schema",
         json_schema: {
@@ -713,7 +713,7 @@ Create a mix of multiple choice and true/false questions. Each question should:
 - Be neither too easy nor too difficult for the age group`
         }
       ],
-      model: 'qwen-3-235b-a22b-thinking-2507',
+      model: 'qwen-3-235b-a22b-instruct-2507',
       response_format: {
         type: "json_schema",
         json_schema: {

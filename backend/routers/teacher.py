@@ -1,7 +1,7 @@
 """Teacher management router for CoinCraft."""
 
 from typing import List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_, desc
@@ -19,10 +19,12 @@ from models import (
     QuizQuestion,
     QuizOption,
     UserModuleProgress,
+    ModuleClassAssignment,
     Transaction,
     Goal,
     Achievement,
     UserAchievement,
+    ChildProfile,
 )
 from schemas import UserRead, TeacherDashboardResponse
 
@@ -45,7 +47,6 @@ class StudentSummary:
         self.id = user.id
         self.name = user.name
         self.avatar = user.avatar_url
-        self.grade = progress_data.get("grade", 0)
         self.performance = progress_data.get("performance", 0)
         self.needs_support = progress_data.get("needs_support", False)
         self.last_activity = progress_data.get("last_activity")
@@ -181,25 +182,22 @@ async def get_teacher_dashboard(
             "name": current_user.name,
             "email": current_user.email,
             "role": current_user.role,
+            "avatar_url": current_user.avatar_url,
+            "created_at": current_user.created_at,
+            "updated_at": current_user.updated_at,
             "is_active": current_user.is_active,
             "is_superuser": current_user.is_superuser,
-            "is_verified": current_user.is_verified,
-            "avatar_url": current_user.avatar_url,
-            "created_at": current_user.created_at.isoformat() if current_user.created_at else None,
-            "updated_at": current_user.updated_at.isoformat() if current_user.updated_at else None,
+            "is_verified": current_user.is_verified
         },
         "stats": {
             "total_classes": len(classes),
             "total_students": total_students,
             "avg_performance": round(overall_avg_performance, 1),
             "students_needing_support": students_needing_support,
-            "school": teacher_profile.school_name,
-            "grade_level": teacher_profile.grade_level,
-            "subject": teacher_profile.subject,
         },
         "classes": classes,
-        "recent_modules": [],  # TODO: Implement recent modules functionality
-        "student_progress": [],  # TODO: Implement student progress tracking
+        "recent_modules": [],  # TODO: Implement when modules are available
+        "student_progress": []  # TODO: Implement when student progress tracking is available
     }
 
 
@@ -209,12 +207,19 @@ async def create_class(
     current_user: User = Depends(current_active_user),
     session: AsyncSession = Depends(get_async_session),
 ):
-    """Create a new class."""
+    """Create a new class with students."""
 
     if current_user.role != "teacher":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only teachers can create classes",
+        )
+
+    # Validate required fields
+    if not class_data.get("name"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Class name is required"
         )
 
     # Get teacher profile
@@ -229,40 +234,70 @@ async def create_class(
             status_code=status.HTTP_404_NOT_FOUND, detail="Teacher profile not found"
         )
 
-    # Generate unique class code
-    import secrets
-    import string
-
-    class_code = "".join(
-        secrets.choice(string.ascii_uppercase + string.digits) for _ in range(6)
+    # Check if class name already exists for this teacher
+    existing_class_stmt = select(Class).where(
+        and_(Class.name == class_data["name"], Class.teacher_id == teacher_profile.id)
     )
+    existing_class_result = await session.execute(existing_class_stmt)
+    if existing_class_result.scalar_one_or_none():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Class with name '{class_data['name']}' already exists"
+        )
 
-    # Create class
-    new_class = Class(
-        name=class_data["name"],
-        teacher_id=teacher_profile.id,
-        description=class_data.get("description", ""),
-        age_group=class_data["age_group"],  # Add age_group field
-        class_code=class_code,
-        is_active=True,
-    )
+    try:
+        # Create class (no class code needed)
+        new_class = Class(
+            name=class_data["name"],
+            teacher_id=teacher_profile.id,
+            description=class_data.get("description", ""),
+            class_code="",  # No class code needed
+            is_active=True,
+        )
 
-    session.add(new_class)
-    await session.commit()
+        session.add(new_class)
+        await session.flush()  # Get the ID without committing yet
 
-    print(f"[BACKEND] Created class: {new_class.name} (ID: {new_class.id})")
+        # Add students to the class if provided
+        student_ids = class_data.get("student_ids", [])
+        if student_ids:
+            for student_id in student_ids:
+                # Verify student exists and is a child
+                student_stmt = select(User).where(
+                    and_(User.id == student_id, User.role.in_(["younger_child", "older_child"]))
+                )
+                student_result = await session.execute(student_stmt)
+                student = student_result.scalar_one_or_none()
+                
+                if student:
+                    class_student = ClassStudent(
+                        class_id=new_class.id,
+                        student_id=student_id
+                    )
+                    session.add(class_student)
 
-    return {
-        "message": "Class created successfully",
-        "class": {
-            "id": new_class.id,
-            "name": new_class.name,
-            "description": new_class.description,
-            "age_group": new_class.age_group,  # Include age_group in response
-            "class_code": new_class.class_code,
-            "created_at": new_class.created_at.isoformat(),
-        },
-    }
+        await session.commit()
+
+        print(f"[BACKEND] Created class: {new_class.name} (ID: {new_class.id}) with {len(student_ids)} students")
+
+        return {
+            "message": "Class created successfully",
+            "class": {
+                "id": new_class.id,
+                "name": new_class.name,
+                "description": new_class.description,
+                "created_at": new_class.created_at.isoformat(),
+                "student_count": len(student_ids)
+            },
+        }
+
+    except Exception as e:
+        await session.rollback()
+        print(f"[BACKEND] Error creating class: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to create class: {str(e)}"
+        )
 
 
 @router.get("/classes", response_model=List[dict])
@@ -337,7 +372,6 @@ async def get_teacher_classes(
                 "id": class_obj.id,
                 "name": class_obj.name,
                 "description": class_obj.description,
-                "class_code": class_obj.class_code,
                 "student_count": student_count,
                 "avg_performance": avg_performance,
                 "is_active": class_obj.is_active,
@@ -436,7 +470,6 @@ async def get_class_details(
         "id": class_obj.id,
         "name": class_obj.name,
         "description": class_obj.description,
-        "class_code": class_obj.class_code,
         "students": students,
         "avg_performance": sum(s["performance"] for s in students) / len(students)
         if students
@@ -518,6 +551,76 @@ async def add_student_to_class(
             "email": student.email,
             "avatar": student.avatar_url,
         },
+    }
+
+
+@router.get("/classes/{class_id}/students", response_model=dict)
+async def get_class_students(
+    class_id: str,
+    current_user: User = Depends(current_active_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    """Get all students enrolled in a specific class."""
+    
+    if current_user.role != "teacher":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only teachers can view class students",
+        )
+
+    # Get teacher profile
+    teacher_stmt = select(TeacherProfile).where(
+        TeacherProfile.user_id == current_user.id
+    )
+    teacher_result = await session.execute(teacher_stmt)
+    teacher_profile = teacher_result.scalar_one_or_none()
+
+    if not teacher_profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Teacher profile not found"
+        )
+
+    # Get class and verify teacher owns it
+    class_stmt = select(Class).where(
+        and_(Class.id == class_id, Class.teacher_id == teacher_profile.id)
+    )
+    class_result = await session.execute(class_stmt)
+    class_obj = class_result.scalar_one_or_none()
+
+    if not class_obj:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Class not found"
+        )
+
+    # Get students in this class
+    students_stmt = (
+        select(ClassStudent, User, ChildProfile)
+        .join(User, ClassStudent.student_id == User.id)
+        .join(ChildProfile, User.id == ChildProfile.user_id)
+        .where(ClassStudent.class_id == class_id)
+    )
+    students_result = await session.execute(students_stmt)
+    students_data = students_result.all()
+
+    students = []
+    for class_student, user, child_profile in students_data:
+        students.append({
+            "id": user.id,
+            "name": user.name,
+            "email": user.email,
+            "role": user.role,
+            "avatar": user.avatar_url,
+            "age": child_profile.age if child_profile else None,
+            "coins": child_profile.coins if child_profile else 0,
+            "level": child_profile.level if child_profile else 1,
+            "enrolled_at": class_student.enrolled_at.isoformat()
+        })
+
+    return {
+        "class_id": class_id,
+        "class_name": class_obj.name,
+        "total_students": len(students),
+        "students": students
     }
 
 
@@ -790,6 +893,137 @@ async def get_teacher_modules(
     return modules_data
 
 
+@router.post("/modules/{module_id}/assign", response_model=dict)
+async def assign_module_to_class(
+    module_id: str,
+    assignment_data: dict,
+    current_user: User = Depends(current_active_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    """Assign a module to a specific class."""
+    
+    if current_user.role != "teacher":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only teachers can assign modules",
+        )
+
+    # Get teacher profile
+    teacher_stmt = select(TeacherProfile).where(
+        TeacherProfile.user_id == current_user.id
+    )
+    teacher_result = await session.execute(teacher_stmt)
+    teacher_profile = teacher_result.scalar_one_or_none()
+
+    if not teacher_profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Teacher profile not found"
+        )
+
+    # Get the module
+    module_stmt = select(Module).where(Module.id == module_id)
+    module_result = await session.execute(module_stmt)
+    module = module_result.scalar_one_or_none()
+
+    if not module:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Module not found"
+        )
+
+    # Get the class and verify teacher owns it
+    class_id = assignment_data.get("class_id")
+    class_stmt = select(Class).where(
+        and_(Class.id == class_id, Class.teacher_id == teacher_profile.id)
+    )
+    class_result = await session.execute(class_stmt)
+    class_obj = class_result.scalar_one_or_none()
+
+    if not class_obj:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Class not found"
+        )
+
+    # Get students in this class
+    students_stmt = select(ClassStudent).where(ClassStudent.class_id == class_id)
+    students_result = await session.execute(students_stmt)
+    class_students = students_result.scalars().all()
+
+    if not class_students:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, detail="No students in this class"
+        )
+
+    try:
+        # Create module assignments for each student
+        assignments_created = 0
+        
+        # Convert due_date string to datetime if provided
+        due_date_obj = None
+        if assignment_data.get("due_date"):
+            try:
+                due_date_obj = datetime.fromisoformat(assignment_data["due_date"].replace('Z', '+00:00'))
+            except ValueError:
+                print(f"[BACKEND] Invalid due_date format: {assignment_data['due_date']}")
+                due_date_obj = None
+        
+        # Create module-class assignment record
+        module_class_assignment = ModuleClassAssignment(
+            module_id=module_id,
+            class_id=class_id,
+            assigned_by=current_user.id,
+            assigned_at=datetime.now(timezone.utc),
+            due_date=due_date_obj
+        )
+        session.add(module_class_assignment)
+        
+        for class_student in class_students:
+            # Check if assignment already exists
+            existing_assignment = select(UserModuleProgress).where(
+                and_(
+                    UserModuleProgress.user_id == class_student.student_id,
+                    UserModuleProgress.module_id == module_id
+                )
+            )
+            existing_result = await session.execute(existing_assignment)
+            
+            if not existing_result.scalar_one_or_none():
+                # Create new assignment
+                print(f"[BACKEND] Creating UserModuleProgress for student {class_student.student_id} and module {module_id}")
+                assignment = UserModuleProgress(
+                    user_id=class_student.student_id,
+                    module_id=module_id,
+                    assigned_by=current_user.id,
+                    assigned_at=datetime.now(timezone.utc),
+                    due_date=due_date_obj,
+                    status="assigned"
+                )
+                session.add(assignment)
+                assignments_created += 1
+                print(f"[BACKEND] Created assignment {assignment.id} for student {class_student.student_id}")
+            else:
+                print(f"[BACKEND] Assignment already exists for student {class_student.student_id} and module {module_id}")
+
+        await session.commit()
+        print(f"[BACKEND] Module {module.title} assigned to class {class_obj.name} for {assignments_created} students")
+        print(f"[BACKEND] Total students in class: {len(class_students)}")
+
+        return {
+            "message": f"Module '{module.title}' assigned to class '{class_obj.name}' successfully",
+            "module_id": module_id,
+            "class_id": class_id,
+            "students_assigned": assignments_created,
+            "total_students": len(class_students)
+        }
+
+    except Exception as e:
+        await session.rollback()
+        print(f"[BACKEND] Error assigning module: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to assign module: {str(e)}"
+        )
+
+
 @router.get("/analytics/performance", response_model=dict)
 async def get_performance_analytics(
     timeframe: str = "month",
@@ -805,7 +1039,7 @@ async def get_performance_analytics(
         )
 
     # Calculate timeframe
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     if timeframe == "week":
         start_date = now - timedelta(days=7)
     elif timeframe == "month":
@@ -891,86 +1125,208 @@ async def get_performance_analytics(
     }
 
 
-@router.get("/search-students")
-async def search_students(
-    query: str = "",  # Make query optional with default empty string
-    age_group: Optional[str] = None,  # Add age_group parameter
+@router.get("/students/available", response_model=List[dict])
+async def get_available_students(
     current_user: User = Depends(current_active_user),
     session: AsyncSession = Depends(get_async_session),
 ):
-    """Search for students by name that can be added to classes."""
+    """Get all available students for teachers to select from when creating classes."""
+    
     if current_user.role != "teacher":
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, 
-            detail="Only teachers can search for students"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only teachers can access this endpoint",
         )
     
-    try:
-        # First get the teacher's profile ID
-        teacher_profile_stmt = select(TeacherProfile).where(
-            TeacherProfile.user_id == current_user.id
-        )
-        teacher_profile_result = await session.execute(teacher_profile_stmt)
-        teacher_profile = teacher_profile_result.scalar_one_or_none()
-        
-        if not teacher_profile:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Teacher profile not found"
-            )
-        
-        # Determine which student roles to include based on age_group
-        if age_group == "8-10":
-            student_roles = ["younger_child"]
-        elif age_group == "11-14":
-            student_roles = ["older_child"]
-        else:
-            # If no age_group specified, include both
-            student_roles = ["younger_child", "older_child"]
-        
-        # Get students that are not already in any of the teacher's classes
-        base_stmt = select(User).where(
-            and_(
-                User.is_active == True,
-                User.role.in_(student_roles),  # Filter by compatible age group
-                User.id.notin_(
-                    select(ClassStudent.student_id).join(Class).where(
-                        Class.teacher_id == teacher_profile.id
-                    )
-                )
-            )
-        )
-        
-        # If query is provided, add name filter
-        if query.strip():
-            search_query = f"%{query.strip()}%"
-            base_stmt = base_stmt.where(User.name.ilike(search_query))
-        
-        # Limit results to prevent overwhelming
-        stmt = base_stmt.limit(50)
-        
-        result = await session.execute(stmt)
-        students = result.scalars().all()
-        
-        # Format student data
-        student_list = []
-        for student in students:
-            student_list.append({
+    # Get all users with child profiles (younger_child and older_child roles)
+    stmt = select(User).join(ChildProfile, User.id == ChildProfile.user_id).where(
+        User.role.in_(["younger_child", "older_child"])
+    ).options(selectinload(User.child_profile))
+    
+    result = await session.execute(stmt)
+    students = result.scalars().all()
+    
+    # Format student data for class creation
+    available_students = []
+    for student in students:
+        child_profile = student.child_profile
+        if child_profile:
+            available_students.append({
                 "id": student.id,
                 "name": student.name,
-                "email": student.email,
-                "avatar": student.avatar_url,
-                "created_at": student.created_at.isoformat()
+                "age": child_profile.age,
+                "role": student.role,  # "younger_child" or "older_child"
+                "type": "Younger Child" if student.role == "younger_child" else "Older Child/Teen",
+                "coins": child_profile.coins,
+                "level": child_profile.level,
+                "avatar": student.avatar_url
             })
-        
-        return {
-            "students": student_list,
-            "total": len(student_list)
-        }
-        
-    except Exception as e:
-        print(f"BACKEND ERROR in search_students: {e}")
+    
+    return available_students
+
+
+@router.get("/students/{student_id}/modules/{module_id}/progress")
+async def get_student_module_progress(
+    student_id: str,
+    module_id: str,
+    current_user: User = Depends(current_active_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    """Get a specific student's progress in a specific module."""
+    
+    print(f"[BACKEND] get_student_module_progress called for student {student_id} on module {module_id}")
+    
+    if current_user.role != "teacher":
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail="Failed to search students"
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only teachers can access this endpoint",
         )
+    
+    # Get teacher profile first
+    teacher_stmt = select(TeacherProfile).where(TeacherProfile.user_id == current_user.id)
+    teacher_result = await session.execute(teacher_stmt)
+    teacher_profile = teacher_result.scalar_one_or_none()
+    
+    if not teacher_profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Teacher profile not found"
+        )
+    
+    # Verify the teacher has access to this student (through classes)
+    student_access_stmt = select(ClassStudent).join(Class).where(
+        and_(
+            ClassStudent.student_id == student_id,
+            Class.teacher_id == teacher_profile.id  # Use teacher_profile.id, not current_user.id
+        )
+    )
+    student_access_result = await session.execute(student_access_stmt)
+    
+    print(f"[BACKEND] Checking access for teacher {current_user.id} (profile: {teacher_profile.id}) to student {student_id}")
+    print(f"[BACKEND] SQL query: SELECT ClassStudent.* FROM class_students ClassStudent JOIN classes Class ON ClassStudent.class_id = Class.id WHERE ClassStudent.student_id = '{student_id}' AND Class.teacher_id = '{teacher_profile.id}'")
+    
+    if not student_access_result.scalar_one_or_none():
+        print(f"[BACKEND] Teacher {current_user.id} (profile: {teacher_profile.id}) doesn't have access to student {student_id}")
+        print(f"[BACKEND] Checking if student {student_id} is in any of teacher's classes...")
+        
+        # Let's also check what classes the teacher has
+        teacher_classes_stmt = select(Class).where(Class.teacher_id == teacher_profile.id)
+        teacher_classes_result = await session.execute(teacher_classes_stmt)
+        teacher_classes = teacher_classes_result.scalars().all()
+        print(f"[BACKEND] Teacher has classes: {[c.name for c in teacher_classes]}")
+        
+        # Check what students are in the teacher's classes
+        for cls in teacher_classes:
+            students_stmt = select(ClassStudent).where(ClassStudent.class_id == cls.id)
+            students_result = await session.execute(students_stmt)
+            students = students_result.scalars().all()
+            print(f"[BACKEND] Class '{cls.name}' has students: {[s.student_id for s in students]}")
+        
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You don't have access to this student's progress",
+        )
+    
+    print(f"[BACKEND] Teacher {current_user.id} has access to student {student_id}")
+    
+    # Get the student's progress in this module
+    progress_stmt = select(UserModuleProgress).where(
+        and_(
+            UserModuleProgress.user_id == student_id,
+            UserModuleProgress.module_id == module_id
+        )
+    )
+    
+    progress_result = await session.execute(progress_stmt)
+    progress = progress_result.scalar_one_or_none()
+    
+    print(f"[BACKEND] Found progress record: {progress}")
+    
+    if not progress:
+        print(f"[BACKEND] No progress record found, returning default values")
+        return {
+            "status": "not_started",
+            "progress_percentage": 0,
+            "score": None,
+            "started_at": None,
+            "completed_at": None,
+            "time_spent": 0
+        }
+    
+    result = {
+        "status": progress.status,
+        "progress_percentage": progress.progress_percentage,
+        "score": progress.score,
+        "started_at": progress.started_at.isoformat() if progress.started_at else None,
+        "completed_at": progress.completed_at.isoformat() if progress.completed_at else None,
+        "time_spent": progress.time_spent
+    }
+    
+    print(f"[BACKEND] Returning progress data: {result}")
+    return result
+
+
+@router.get("/classes/{class_id}/assigned-modules", response_model=List[dict])
+async def get_modules_assigned_to_class(
+    class_id: str,
+    current_user: User = Depends(current_active_user),
+    session: AsyncSession = Depends(get_async_session),
+):
+    """Get all modules assigned to a specific class."""
+    
+    if current_user.role != "teacher":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only teachers can access this endpoint",
+        )
+    
+    # Get teacher profile
+    teacher_stmt = select(TeacherProfile).where(
+        TeacherProfile.user_id == current_user.id
+    )
+    teacher_result = await session.execute(teacher_stmt)
+    teacher_profile = teacher_result.scalar_one_or_none()
+
+    if not teacher_profile:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Teacher profile not found"
+        )
+    
+    # Verify the teacher owns this class
+    class_stmt = select(Class).where(
+        and_(Class.id == class_id, Class.teacher_id == teacher_profile.id)
+    )
+    class_result = await session.execute(class_stmt)
+    class_obj = class_result.scalar_one_or_none()
+
+    if not class_obj:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Class not found"
+        )
+    
+    # Get modules assigned to this class
+    stmt = select(ModuleClassAssignment).where(
+        and_(
+            ModuleClassAssignment.class_id == class_id,
+            ModuleClassAssignment.is_active == True
+        )
+    ).options(selectinload(ModuleClassAssignment.module))
+    
+    result = await session.execute(stmt)
+    assignments = result.scalars().all()
+    
+    # Format module data for frontend
+    modules_data = []
+    for assignment in assignments:
+        if assignment.module:
+            modules_data.append({
+                "id": assignment.module.id,
+                "title": assignment.module.title,
+                "description": assignment.module.description,
+                "difficulty": assignment.module.difficulty,
+                "category": assignment.module.category,
+                "assigned_at": assignment.assigned_at.isoformat() if assignment.assigned_at else None,
+                "due_date": assignment.due_date.isoformat() if assignment.due_date else None
+            })
+    
+    return modules_data
