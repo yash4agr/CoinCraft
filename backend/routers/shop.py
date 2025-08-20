@@ -7,19 +7,27 @@ from sqlalchemy import select, and_
 
 from database import get_async_session
 from auth import current_active_user
-from models import User, ShopItem, ChildProfile, Transaction, UserOwnedItem, PurchaseRequest
+from models import User, ShopItem, ChildProfile, ParentProfile, Transaction, UserOwnedItem, PurchaseRequest, TeenShopItem, TeenOwnedItem
 from schemas import ShopItemRead, ShopItemRequest, PurchaseRequestRead
 
 router = APIRouter()
 
 
 @router.get("/shop/items", response_model=List[ShopItemRead])
-async def get_shop_items(session: AsyncSession = Depends(get_async_session)):
+async def get_shop_items(current_user: User = Depends(current_active_user),
+                        session: AsyncSession = Depends(get_async_session)):
     """Get all shop items."""
-    stmt = select(ShopItem)
-    result = await session.execute(stmt)
-    shop_items = result.scalars().all()
-    return [ShopItemRead.model_validate(item) for item in shop_items]
+    if current_user.role == "younger_child":
+        stmt = select(ShopItem)
+        result = await session.execute(stmt)
+        shop_items = result.scalars().all()
+        return [ShopItemRead.model_validate(item) for item in shop_items]
+    elif current_user.role == "older_child":
+        stmt = select(TeenShopItem)
+        result = await session.execute(stmt)
+        teen_shop_items = result.scalars().all()
+        print(teen_shop_items)
+        return [ShopItemRead.model_validate(item) for item in teen_shop_items]
 
 
 @router.post("/shop/{user_id}/purchase", response_model=dict)
@@ -29,73 +37,126 @@ async def purchase_item(
     session: AsyncSession = Depends(get_async_session),
     current_user: User = Depends(current_active_user),
 ):
-    # This function now uses user_id and item_id, removes the deprecated 'available' clause, and checks ownership via UserOwnedItem.
-
-    """Purchase an item from the shop."""
-
-    # Get the shop item from database
-    stmt = select(ShopItem).where(ShopItem.id == request.item_id)
-    result = await session.execute(stmt)
-    shop_item = result.scalar_one_or_none()
-
-    if not shop_item:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Item not found",
+    
+        # Separate logic for younger_child and older_child
+    if current_user.role == "younger_child":
+        # Get the shop item from ShopItem
+        stmt = select(ShopItem).where(ShopItem.id == request.item_id)
+        result = await session.execute(stmt)
+        shop_item = result.scalar_one_or_none()
+        if not shop_item:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Item not found",
+            )
+        # Check if user already owns the item
+        owned_stmt = select(UserOwnedItem).where(
+            UserOwnedItem.user_id == current_user.id,
+            UserOwnedItem.shop_item_id == shop_item.id
         )
-
-    # Check if user already owns the item
-    owned_stmt = select(UserOwnedItem).where(
-        UserOwnedItem.user_id == current_user.id,
-        UserOwnedItem.shop_item_id == shop_item.id
-    )
-    owned_result = await session.execute(owned_stmt)
-    owned_item = owned_result.scalar_one_or_none()
-    if owned_item:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="User already owns this item"
+        owned_result = await session.execute(owned_stmt)
+        owned_item = owned_result.scalar_one_or_none()
+        if owned_item:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User already owns this item"
+            )
+        # Get user's child profile to check coins
+        child_stmt = select(ChildProfile).where(ChildProfile.user_id == current_user.id)
+        child_result = await session.execute(child_stmt)
+        child_profile = child_result.scalar_one_or_none()
+        if not child_profile:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Child profile not found"
+            )
+        # Create a pending purchase request
+        purchase_request = PurchaseRequest(
+            user_id=current_user.id,
+            shop_item_id=shop_item.id,
+            price=shop_item.price,
+            status="pending",
         )
-
-    # Get user's child profile to check coins
-    child_stmt = select(ChildProfile).where(ChildProfile.user_id == current_user.id)
-    child_result = await session.execute(child_stmt)
-    child_profile = child_result.scalar_one_or_none()
-
-    if not child_profile:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Child profile not found"
-        )
-
-    # Create a pending purchase request instead of immediate purchase
-    purchase_request = PurchaseRequest(
-        user_id=current_user.id,
-        shop_item_id=shop_item.id,
-        price=shop_item.price,
-        status="pending",
-    )
-    session.add(purchase_request)
-    await session.commit()
-
-    return {
-        "success": True,
-        "message": f"Purchase request created for {shop_item.name}",
-        "request": {
-            "id": purchase_request.id,
-            "user_id": purchase_request.user_id,
-            "shop_item_id": purchase_request.shop_item_id,
-            "price": purchase_request.price,
-            "status": purchase_request.status,
-            "created_at": purchase_request.created_at,
-            "item_info": {
-                "id": shop_item.id,
-                "name": shop_item.name,
-                "price": shop_item.price,
-                "emoji": shop_item.emoji,
-                "category": shop_item.category
+        session.add(purchase_request)
+        await session.commit()
+        return {
+            "success": True,
+            "message": f"Purchase request created for {shop_item.name}",
+            "request": {
+                "id": purchase_request.id,
+                "user_id": purchase_request.user_id,
+                "shop_item_id": purchase_request.shop_item_id,
+                "price": purchase_request.price,
+                "status": purchase_request.status,
+                "created_at": purchase_request.created_at,
+                "item_info": {
+                    "id": shop_item.id,
+                    "name": shop_item.name,
+                    "price": shop_item.price,
+                    "emoji": shop_item.emoji,
+                    "category": shop_item.category
+                }
             }
         }
-    }
+    elif current_user.role == "older_child":
+        # Get the shop item from TeenShopItem
+        stmt = select(TeenShopItem).where(TeenShopItem.id == request.item_id)
+        result = await session.execute(stmt)
+        shop_item = result.scalar_one_or_none()
+        if not shop_item:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Item not found",
+            )
+        # Check if user already owns the item
+        owned_stmt = select(TeenOwnedItem).where(
+            TeenOwnedItem.user_id == current_user.id,
+            TeenOwnedItem.shop_item_id == shop_item.id
+        )
+        owned_result = await session.execute(owned_stmt)
+        owned_item = owned_result.scalar_one_or_none()
+        if owned_item:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="User already owns this item"
+            )
+        # Get user's child profile to check coins
+        child_stmt = select(ChildProfile).where(ChildProfile.user_id == current_user.id)
+        child_result = await session.execute(child_stmt)
+        child_profile = child_result.scalar_one_or_none()
+        if not child_profile:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Child profile not found"
+            )
+        # Create a pending purchase request
+        purchase_request = PurchaseRequest(
+            user_id=current_user.id,
+            shop_item_id=shop_item.id,
+            price=shop_item.price,
+            status="pending",
+        )
+        session.add(purchase_request)
+        await session.commit()
+        return {
+            "success": True,
+            "message": f"Purchase request created for {shop_item.name}",
+            "request": {
+                "id": purchase_request.id,
+                "user_id": purchase_request.user_id,
+                "shop_item_id": purchase_request.shop_item_id,
+                "price": purchase_request.price,
+                "status": purchase_request.status,
+                "created_at": purchase_request.created_at,
+                "item_info": {
+                    "id": shop_item.id,
+                    "name": shop_item.name,
+                    "price": shop_item.price,
+                    "emoji": shop_item.emoji,
+                    "category": shop_item.category
+                }
+            }
+        }
+    else:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Role not allowed to purchase items")
 
 @router.get('/shop/purchase_requests', response_model=List[PurchaseRequestRead])
 async def get_purchase_requests(
@@ -103,17 +164,21 @@ async def get_purchase_requests(
     current_user: User = Depends(current_active_user),
 ):
     """Get all purchase requests for the current user."""
-    
-    if current_user.role not in ["younger_child", "older_child"]:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only children can view purchase requests"
-        )
-    
-    stmt = select(PurchaseRequest).where(PurchaseRequest.user_id == current_user.id)
-    result = await session.execute(stmt)
-    purchase_requests = result.scalars().all()
-    
+    purchase_requests=[]
+    if current_user.role == "parent":
+        children = select(ChildProfile).where(ChildProfile.parent_id == current_user.id)
+        result = await session.execute(children)
+        children = result.scalars().all()
+        for child in children:
+            stmt = select(PurchaseRequest).where(PurchaseRequest.user_id == child.user_id)
+            result = await session.execute(stmt)
+            purchase_requests.extend(result.scalars().all())
+    elif current_user.role in ["younger_child","older_child"]:
+        stmt = select(PurchaseRequest).where(PurchaseRequest.user_id == current_user.id)
+        result = await session.execute(stmt)
+        purchase_requests = result.scalars().all()
+        print(purchase_requests)
+
     return [PurchaseRequestRead.model_validate(req) for req in purchase_requests]
 
 
@@ -187,10 +252,17 @@ async def approve_purchase_request(
     if child_profile.coins < req.price:
         raise HTTPException(status_code=400, detail='Insufficient coins')
 
-    # Deduct coins and grant item
+    # Deduct coins and grant item, split by child role
     child_profile.coins -= req.price
     session.add(child_profile)
-    session.add(UserOwnedItem(user_id=req.user_id, shop_item_id=req.shop_item_id))
+    from models import User, TeenOwnedItem
+    user_stmt = select(User).where(User.id == req.user_id)
+    user_result = await session.execute(user_stmt)
+    user = user_result.scalar_one_or_none()
+    if user and user.role == "older_child":
+        session.add(TeenOwnedItem(user_id=req.user_id, shop_item_id=req.shop_item_id))
+    else:
+        session.add(UserOwnedItem(user_id=req.user_id, shop_item_id=req.shop_item_id))
     session.add(Transaction(
         user_id=req.user_id,
         type='spend',
@@ -255,8 +327,10 @@ async def reject_purchase_request(
 @router.get('/shop/owned_items', response_model=List[ShopItemRead])
 async def get_owned_items(session: AsyncSession = Depends(get_async_session), current_user: User = Depends(current_active_user)):
     """Get all owned items."""
-    print("I HAVE ENTERED THE FUNCTION")
-    stmt = select(ShopItem).join(UserOwnedItem, ShopItem.id == UserOwnedItem.shop_item_id).where(UserOwnedItem.user_id == current_user.id)
+    if current_user.role == "younger_child":
+        stmt = select(ShopItem).join(UserOwnedItem, ShopItem.id == UserOwnedItem.shop_item_id).where(UserOwnedItem.user_id == current_user.id)
+    elif current_user.role == "older_child":
+        stmt = select(TeenShopItem).join(TeenOwnedItem, TeenShopItem.id == TeenOwnedItem.shop_item_id).where(TeenOwnedItem.user_id == current_user.id)
     result = await session.execute(stmt)
     owned_shop_items = result.scalars().all()
     # Return the actual shop items owned by the user

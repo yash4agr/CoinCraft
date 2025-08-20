@@ -161,7 +161,8 @@ async def get_parent_dashboard(
             "is_active": user.is_active,
             "is_superuser": user.is_superuser,
             "is_verified": user.is_verified,
-            "age": child_profile.age
+            "age": child_profile.age,
+            "coins": child_profile.coins
         })
 
     # Get recent transactions for the family

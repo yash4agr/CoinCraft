@@ -28,6 +28,7 @@ class UserRead(schemas.BaseUser[str]):
     is_verified: bool
 class ChildSummaryRead(UserRead):
     age: Optional[int] = None
+    coins: Optional[int] = 0
 
 
 
@@ -421,6 +422,7 @@ class ShopItemRead(BaseModel):
     category: Optional[str] = None
     emoji: Optional[str] = None
     available: bool = True
+    bg_color: Optional[str] = None
 
     class Config:
         from_attributes = True

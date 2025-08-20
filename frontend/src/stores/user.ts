@@ -79,6 +79,16 @@ export const useUserStore = defineStore('user', () => {
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     )
   )
+  const purchaseRequests = ref<any[]>([])
+
+  const loadPurchaseRequests = async (): Promise<void> => {
+    try {
+      const list = await apiService.getPurchaseRequests()
+      purchaseRequests.value = list || []
+    } catch (err: any) {
+      console.error('❌ [PARENT] Failed to load purchase requests:', err.message)
+    }
+  }
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!profile.value) return
@@ -645,6 +655,8 @@ export const useUserStore = defineStore('user', () => {
     completedGoals,
     recentTransactions,
     computedStreak,
+    purchaseRequests,
+    loadPurchaseRequests,
     updateProfile,
     addCoins,
     spendCoins,

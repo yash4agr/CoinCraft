@@ -45,6 +45,8 @@ export const useDashboardStore = defineStore('dashboard', () => {
   const achievements = ref<Achievement[]>([])
   const todaysGoals = ref<ProgressGoal[]>([])
   const learningModules = ref<LearningModule[]>([])
+  // Add tasks state
+  const tasks = ref<any[]>([])
   const quickActions = ref([
     {
       id: 'budget',
@@ -85,6 +87,49 @@ export const useDashboardStore = defineStore('dashboard', () => {
   ])
   const isLoading = ref(false)
   const error = ref<DashboardError | null>(null)
+  // Shop items and owned items for teens (mirroring userStore)
+  const shopItems = ref<any[]>([])
+  const ownedItems = ref<string[]>([])
+  // Loading and error state for shop
+  const shopIsLoading = ref(false)
+  const shopError = ref<string | null>(null)
+
+  // Fetch shop items from backend
+  const getShopItems = async () => {
+    try {
+      shopIsLoading.value = true
+      shopError.value = null
+      const items = await apiService.getShopItems()
+      shopItems.value = items || []
+      return shopItems.value
+    } catch (err) {
+      shopError.value = err instanceof Error ? err.message : 'Failed to load shop items'
+      return []
+    } finally {
+      shopIsLoading.value = false
+    }
+  }
+
+  // Fetch owned items for teens
+  const getOwnedItems = async () => {
+    try {
+      shopIsLoading.value = true
+      shopError.value = null
+      const items = await apiService.getOwnedItems()
+      ownedItems.value = Array.isArray(items) ? items.map((item: any) => item.item_id || item.id) : []
+      return ownedItems.value
+    } catch (err) {
+      shopError.value = err instanceof Error ? err.message : 'Failed to load owned items'
+      return []
+    } finally {
+      shopIsLoading.value = false
+    }
+  }
+  
+  
+  // New state for shop purchase requests and redemption requests
+  const purchaseRequests = ref<any[]>([])
+
 
   const availableActivities = computed(() => 
     activities.value.filter(activity => !activity.completed)
@@ -108,7 +153,41 @@ export const useDashboardStore = defineStore('dashboard', () => {
       .reduce((total, module) => total + module.coins, 0)
   )
 
+  const loadPurchaseRequests = async (): Promise<void> => {
+    try {
+      const list = await apiService.getPurchaseRequests()
+      purchaseRequests.value = list || []
+    } catch (err: any) {
+      console.error('❌ [PARENT] Failed to load purchase requests:', err.message)
+    }
+  }
+
+
+// Load tasks from API and store in dashboard store
+  const loadTasks = async () => {
+    try {
+      isLoading.value = true;
+      error.value = null;
+      if (!apiService.isAuthenticated()) {
+        tasks.value = [];
+        return;
+      }
+      const response = await apiService.getTasks();
+      console.log(response, "CHECK")
+      tasks.value = response || [];
+    } catch (err) {
+      error.value = {
+        message: err instanceof Error ? err.message : 'Failed to load tasks',
+        code: 'TASKS_LOAD_ERROR',
+        timestamp: new Date()
+      };
+      tasks.value = [];
+    } finally {
+      isLoading.value = false;
+    }
+  };
   const loadDashboardData = async (userRole: UserRole) => {
+  
     try {
       isLoading.value = true
       error.value = null
@@ -123,9 +202,45 @@ export const useDashboardStore = defineStore('dashboard', () => {
         }
         return
       }
+    // Shop items and owned items for teens (mirroring userStore)
+    const shopItems = ref<any[]>([])
+    const ownedItems = ref<string[]>([])
       
+    // Loading and error state for shop
+    const shopIsLoading = ref(false)
+    const shopError = ref<string | null>(null)
       console.log('🔐 [DASHBOARD] User authenticated, loading from API...')
+    // Fetch shop items from backend
+    const getShopItems = async () => {
+      try {
+        shopIsLoading.value = true
+        shopError.value = null
+        const items = await apiService.getShopItems()
+        shopItems.value = items || []
+        return shopItems.value
+      } catch (err) {
+        shopError.value = err instanceof Error ? err.message : 'Failed to load shop items'
+        return []
+      } finally {
+        shopIsLoading.value = false
+      }
+    }
       // Use real API data for authenticated users
+    // Fetch owned items for teens
+    const getOwnedItems = async () => {
+      try {
+        shopIsLoading.value = true
+        shopError.value = null
+        const items = await apiService.getOwnedItems()
+        ownedItems.value = Array.isArray(items) ? items.map((item: any) => item.item_id || item.id) : []
+        return ownedItems.value
+      } catch (err) {
+        shopError.value = err instanceof Error ? err.message : 'Failed to load owned items'
+        return []
+      } finally {
+        shopIsLoading.value = false
+      }
+    }
       const response = await apiService.getDashboardData(userRole)
       
       if (response.error) {
@@ -626,11 +741,21 @@ export const useDashboardStore = defineStore('dashboard', () => {
     recentAchievements,
     completedModulesCount,
     totalCoinsFromModules,
+    tasks,
+    purchaseRequests,
+    loadPurchaseRequests,
+    loadTasks,
     loadDashboardData,
     completeActivity,
     completeModule,
     updateTodaysGoalProgress,
     clearError,
-    $reset
+    $reset,
+    shopItems,
+    ownedItems,
+    getShopItems,
+    getOwnedItems,
+    shopIsLoading,
+    shopError
   }
 }) 

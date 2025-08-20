@@ -530,7 +530,7 @@
       </v-card>
 
       <!-- Debug Section (Development Only) -->
-      <v-card class="mb-6" elevation="1" color="grey-lighten-4">
+      <!-- <v-card class="mb-6" elevation="1" color="grey-lighten-4">
         <v-card-title class="text-caption">Debug Info (Development)</v-card-title>
         <v-card-text class="text-caption">
           <div>All Children Goals Count: {{ parentStore.allChildrenGoals?.length || 0 }}</div>
@@ -539,7 +539,7 @@
           <div>Raw All Children Goals: {{ JSON.stringify(parentStore.allChildrenGoals?.slice(0, 2), null, 2) }}</div>
           <div>Raw Completed Goals: {{ JSON.stringify(completedGoals.slice(0, 2), null, 2) }}</div>
         </v-card-text>
-      </v-card>
+      </v-card> -->
 
       <!-- Recommendations -->
       <v-card elevation="2">

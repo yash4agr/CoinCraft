@@ -62,7 +62,7 @@
             
             <!-- Buy Button -->
             <button 
-              @click="handlePurchase(_item)"
+              @click="handlePurchase(item)"
               :disabled="userStore.totalCoins < item.price || item.owned"
               class="w-full py-2 px-3 rounded-lg font-medium transition-colors text-sm"
               :class="item.owned 
@@ -71,7 +71,7 @@
                   ? 'bg-pink-500 text-white hover:bg-pink-600' 
                   : 'bg-gray-200 text-gray-500 cursor-not-allowed'"
             >
-              {{ item.owned ? 'Got it!' : userStore.totalCoins >= item.price ? 'Buy Now' : 'Need More Coins' }}
+            {{ isPendingApproval(item.id) ? 'Pending Approval' : (item.owned ? 'Got it!' : userStore.totalCoins >= item.price ? 'Buy Now' : 'Need More Coins') }}
             </button>
           </div>
         </div>
@@ -242,6 +242,11 @@ import { useUserStore } from '@/stores/user'
 const userStore = useUserStore()
 
 // State
+// Helper: check if item is in purchase requests
+const isPendingApproval = (itemId: string) => {
+  return userStore.purchaseRequests?.some((req: any) => req.shop_item_id === itemId && req.status === 'pending')
+}
+
 const selectedCategory = ref('stickers')
 const showPurchaseModal = ref(false)
 const showRewardModal = ref(false)
@@ -344,6 +349,7 @@ const submitRewardRequest = async () => {
 onMounted(async () => {
   await userStore.getShopItems()
   await userStore.getOwnedItems()
+  await userStore.loadPurchaseRequests()
   myTreasures.value = userStore.shopItems
     .filter((item: any) => userStore.ownedItems.includes(item.id))
     .map((item: any) => ({ ...item, owned: true }))

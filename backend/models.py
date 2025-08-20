@@ -432,6 +432,30 @@ class ShopItem(Base):
     created_at = Column(DateTime, default=datetime.now(timezone.utc)) 
     owners = relationship("UserOwnedItem", back_populates="shop_item", cascade="all, delete")
 
+class TeenOwnedItem(Base):
+    __tablename__ = "teen_owned_items"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    user_id = Column(String, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    shop_item_id = Column(String, ForeignKey("teen_shop_items.id", ondelete="CASCADE"), nullable=False)
+    acquired_at = Column(DateTime, default=datetime.now(timezone.utc))
+
+    # Relationship to ShopItem
+    shop_item = relationship("TeenShopItem", back_populates="owners")
+
+class TeenShopItem(Base):
+
+    __tablename__ = "teen_shop_items"
+
+    id = Column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
+    name = Column(String(200), nullable=False)
+    description = Column(Text, nullable=True)
+    price = Column(Integer, nullable=False)
+    category = Column(String(100), nullable=True)
+    emoji = Column(String(10), nullable=True)
+    bg_color = Column(String(40), nullable=True)
+    created_at = Column(DateTime, default=datetime.now(timezone.utc))
+    owners = relationship("TeenOwnedItem", back_populates="shop_item", cascade="all, delete")
 
 class UserActivity(Base):
     """Links a user to a completed activity/adventure."""

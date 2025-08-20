@@ -129,7 +129,7 @@ export const useParentStore = defineStore('parent', () => {
 
       // Update children list
       if (dashboardData.children) {
-        children.value = dashboardData.children.map((child: User & { age?: number }) => ({
+        children.value = dashboardData.children.map((child: User & { age?: number; coins?: number }) => ({
           ...child,
           // merge transient credentials if we just created this child this session
           ...(childCredentials.value[child.id] || {}),

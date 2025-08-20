@@ -317,6 +317,7 @@ class ApiService {
    */
   async getTasks(): Promise<Task[]> {
     const response = await httpClient.get('/api/tasks')
+    console.log(response, response.data, "CHECKAPI")
     return response.data
   }
 
