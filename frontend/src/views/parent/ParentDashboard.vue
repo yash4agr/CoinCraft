@@ -202,10 +202,11 @@
                 </div>
               </v-col>
             </v-row>
+             
 
             <!-- Recent Activity -->
             <div class="text-subtitle-2 font-weight-medium mb-2">Recent Activity</div>
-            <v-list density="compact">
+            <!-- <v-list density="compact">
               <v-list-item
                 v-for="activity in child.recentActivity"
                 :key="activity.id"
@@ -224,8 +225,17 @@
                   </v-chip>
                 </template>
               </v-list-item>
-            </v-list>
-
+            </v-list> -->
+             <!-- Last Activity Card -->
+              <v-card variant="outlined" class="mb-2 pa-2">
+                <div class="d-flex align-center">
+                  <v-icon color="info" class="me-2">mdi-clock-outline</v-icon>
+                  <v-spacer />
+                  <span class="text-caption text-medium-emphasis">
+                    {{ child.lastActivity ? new Date(child.lastActivity).toLocaleString() : 'No activity' }}
+                  </span>
+                </div>
+              </v-card>
             <!-- Current Goals -->
             <div v-if="child.currentGoals && child.currentGoals.length > 0" class="mt-3">
               <div class="text-subtitle-2 font-weight-medium mb-2">Current Goals</div>
@@ -298,15 +308,7 @@
       <v-icon left>mdi-refresh</v-icon>
       Reload
     </v-btn>
-    <v-btn 
-      color="info" 
-      variant="text" 
-      size="small"
-      @click="showDebugInfo"
-    >
-      <v-icon left>mdi-bug</v-icon>
-      Debug
-    </v-btn>
+  <!-- Debug button removed -->
   </v-card-title>
 
   <div style="overflow-x: auto;">
@@ -542,13 +544,33 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, defineAsyncComponent, watch } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, defineAsyncComponent, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useParentStore } from '@/stores/parent'
 import type { Child } from '@/types'
 
-
+let pollingInterval: number | undefined = undefined;
+const pollFunctions = async () => {
+  await Promise.all([
+    parentStore.loadDashboard(),
+    parentStore.loadTasks(),
+    parentStore.loadRedemptions(),
+    (parentStore as any).loadPurchaseRequests?.()
+  ])
+  // Update each child's completedTasks
+  const completedCountByChild: Record<string, number> = {};
+  parentStore.tasks.forEach(task => {
+    if (task.status === 'approved' && task.assigned_to) {
+      completedCountByChild[task.assigned_to] = (completedCountByChild[task.assigned_to] || 0) + 1;
+    }
+  });
+  parentStore.children.forEach(child => {
+    child.completedTasks = completedCountByChild[child.id] || 0;
+  });
+  // Update familyStats.completedTasks as sum of all children's completedTasks
+  parentStore.familyStats.completedTasks = parentStore.children.reduce((sum, child) => sum + (child.completedTasks || 0), 0);
+};
 
 
 // Stores and router
@@ -848,7 +870,7 @@ const generatedEmail = computed(() => {
   if (!newChild.name) return ''
   const parentName = (authStore.user?.name || 'parent').toLowerCase().replace(/\s+/g, '')
   const childName = newChild.name.toLowerCase().replace(/\s+/g, '')
-  return `${parentName}.${childName}@cc.com`
+  return `${parentName}+${childName}@cc.com`
 })
 
 // Static data
@@ -869,26 +891,6 @@ const regeneratePassword = () => {
   generatedPassword.value = generateRandomPassword()
 }
 
-const formatRelativeTime = (date: Date | string | undefined) => {
-  if (!date) return 'Unknown'
-  
-  try {
-    const dateObj = typeof date === 'string' ? new Date(date) : date
-    if (isNaN(dateObj.getTime())) return 'Invalid date'
-    
-    const now = new Date()
-    const diff = now.getTime() - dateObj.getTime()
-    const hours = Math.floor(diff / (1000 * 60 * 60))
-    const days = Math.floor(hours / 24)
-    
-    if (days > 0) return `${days} day${days > 1 ? 's' : ''} ago`
-    if (hours > 0) return `${hours} hour${hours > 1 ? 's' : ''} ago`
-    return 'Just now'
-  } catch (error) {
-    console.warn('Error formatting date:', date, error)
-    return 'Unknown'
-  }
-}
 
 const sendMessage = (child: Child) => {
   showSuccessSnackbar.value = true
@@ -967,12 +969,12 @@ const addChild = async () => {
   
   try {
     // Generate password
-    const password = generateRandomPassword()
+    const password = generatedPassword.value || generateRandomPassword()
     
     // Generate email using parent name + child name + @cc.com
     const parentName = (authStore.user?.name || 'parent').toLowerCase().replace(/\s+/g, '')
     const childName = newChild.name.toLowerCase().replace(/\s+/g, '')
-    const generatedEmail = `${parentName}.${childName}@cc.com`
+  const generatedEmail = `${parentName}+${childName}@cc.com`
     
     const childData = {
       name: newChild.name,
@@ -1068,39 +1070,7 @@ const reloadDashboard = async () => {
   }
 }
 
-const showDebugInfo = () => {
-  console.log('🐛 [DEBUG] Parent store children:', parentStore.children)
-  console.log('🐛 [DEBUG] Component children:', children.value)
-  
-  // Check authentication status
-  const token = localStorage.getItem('auth_token')
-  const user = localStorage.getItem('coincraft_user')
-  const demoMode = localStorage.getItem('coincraft_demo_mode')
-  
-  console.log('🐛 [DEBUG] Auth status:', {
-    token: token ? 'Present' : 'Missing',
-    user: user ? JSON.parse(user) : 'Missing',
-    demoMode: demoMode === 'true' ? 'ON' : 'OFF'
-  })
-  
-  // Show debug info in UI
-  showSuccessSnackbar.value = true
-  successMessage.value = `Debug info in console. Children: ${parentStore.children.length}, Auth: ${token ? 'Yes' : 'No'}, Demo: OFF (disabled for parents)`
-  
-  // Force update children array if needed
-  if (parentStore.children.length > 0 && children.value.length === 0) {
-    console.log('🔧 [DEBUG] Fixing reactivity issue...')
-    // Force a reactive update by creating a new array
-    parentStore.$patch({ children: [...parentStore.children] })
-  }
-  
-  // If we're in demo mode, disable it and reload
-  if (demoMode === 'true') {
-    console.log('🔧 [DEBUG] Disabling demo mode and reloading...')
-    localStorage.removeItem('coincraft_demo_mode')
-    setTimeout(() => reloadDashboard(), 100)
-  }
-}
+// Debug info function removed
 
 // Use store data with computed for reactivity
 const children = computed(() => {
@@ -1149,10 +1119,59 @@ onMounted(async () => {
       console.log('⚠️ [DASHBOARD] Children array is empty, forcing reload...')
       setTimeout(() => reloadDashboard(), 500)
     }
+    // Set completedTasks for each child after initial load
+    const completedCountByChild: Record<string, number> = {}
+    parentStore.tasks.forEach(task => {
+      if (task.status === 'approved' && task.assigned_to) {
+        completedCountByChild[task.assigned_to] = (completedCountByChild[task.assigned_to] || 0) + 1
+      }
+    })
+    parentStore.children.forEach(child => {
+      child.completedTasks = completedCountByChild[child.id] || 0
+    })
+    // Update familyStats.completedTasks as sum of all children's completedTasks
+    parentStore.familyStats.completedTasks = parentStore.children.reduce((sum, child) => sum + (child.completedTasks || 0), 0)
+    pollingInterval =  window.setInterval(pollFunctions, 10000);
   } catch (error) {
     console.error('❌ [DASHBOARD] Failed to load parent dashboard:', error)
   }
 })
+watch(parentStore.tasks, (newTasks,oldTasks) => {
+
+  // Build maps of completed tasks by assigned_to for old and new
+  const oldCompleted: Record<string, number> = {}
+  const newCompleted: Record<string, number> = {}
+
+  if (Array.isArray(oldTasks)) {
+    oldTasks.forEach(task => {
+      if (task.status === 'approved' && task.assigned_to) {
+        oldCompleted[task.assigned_to] = (oldCompleted[task.assigned_to] || 0) + 1
+      }
+    })
+  }
+  newTasks.forEach(task => {
+    if (task.status === 'completed' && task.assigned_to) {
+      newCompleted[task.assigned_to] = (newCompleted[task.assigned_to] || 0) + 1
+    }
+  })
+
+  // Update only children whose completed count increased
+  parentStore.children.forEach(child => {
+    const oldCount = oldCompleted[child.id] || 0
+    const newCount = newCompleted[child.id] || 0
+    if (newCount !== oldCount) {
+      child.completedTasks = newCount
+    }
+  })
+    // Update familyStats.completedTasks as sum of all children's completedTasks
+    parentStore.familyStats.completedTasks = parentStore.children.reduce((sum, child) => sum + (child.completedTasks || 0), 0)
+}, { deep: true })
+
+onUnmounted(() => {
+  if (pollingInterval) {
+    clearInterval(pollingInterval);
+  }
+});
 </script>
 
 <style scoped>

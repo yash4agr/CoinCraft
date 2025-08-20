@@ -28,6 +28,7 @@ class UserRead(schemas.BaseUser[str]):
     is_verified: bool
 class ChildSummaryRead(UserRead):
     age: Optional[int] = None
+    coins: Optional[int] = 0
 
 
 
@@ -421,6 +422,7 @@ class ShopItemRead(BaseModel):
     category: Optional[str] = None
     emoji: Optional[str] = None
     available: bool = True
+    bg_color: Optional[str] = None
 
     class Config:
         from_attributes = True
@@ -504,17 +506,16 @@ class ProgressGoal(BaseModel):
 
 
 class ActivityRead(BaseModel):
-    id: str
+    id: int
     title: str
     description: str
-    type: str
     difficulty: str
     coins: int
-    duration: int
+    color_scheme: str | None = None
+    emoji: str | None = None
+    button_text: str
+    path: str | None = None
     completed: bool
-    icon: str
-    category: str
-    age_group: str
 
     class Config:
         from_attributes = True

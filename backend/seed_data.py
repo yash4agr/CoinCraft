@@ -1,18 +1,17 @@
 """Seed initial data for CoinCraft application."""
 
 import asyncio
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
-from database import create_db_and_tables, get_async_session
+from database import create_db_and_tables, get_async_session, engine
 from models import (
     User, ChildProfile, ParentProfile, TeacherProfile, Goal, Transaction,
-    Achievement, Module, ShopItem, UserOwnedItem
+    Achievement, Module, ShopItem, UserOwnedItem, Activity, UserActivity, TeenShopItem
 )
-from sqlalchemy import delete
+from sqlalchemy import delete, select
 from auth import get_user_db, get_user_manager
 from schemas import UserCreate
 from fastapi_users import exceptions
-
 
 async def seed_data():
     """Seed initial data for development."""
@@ -44,7 +43,6 @@ async def seed_data():
                 parent_user = await user_manager.get_by_email("sarah@demo.com")
             
             # Create parent profile if it doesn't exist
-            from sqlalchemy import select
             existing_profile_stmt = select(ParentProfile).where(ParentProfile.user_id == parent_user.id)
             existing_profile_result = await session.execute(existing_profile_stmt)
             existing_parent_profile = existing_profile_result.scalar_one_or_none()
@@ -119,7 +117,7 @@ async def seed_data():
                     level=3,
                     streak_days=7,
                     parent_id=parent_user.id,
-                    last_activity_date=datetime.utcnow()
+                    last_activity_date=datetime.now(timezone.utc)
                 )
                 session.add(child1_profile)
                 print("Created child1 profile (Luna)")
@@ -153,7 +151,7 @@ async def seed_data():
                     level=5,
                     streak_days=12,
                     parent_id=parent_user.id,
-                    last_activity_date=datetime.utcnow()
+                    last_activity_date=datetime.now(timezone.utc)
                 )
                 session.add(child2_profile)
                 print("Created child2 profile (Harry)")
@@ -593,23 +591,130 @@ async def seed_data():
                 {
                     "user_id": child1_user.id,
                     "shop_item_id": "1",  # Star Stickers
-                    "acquired_at": datetime.utcnow(),
+                    "acquired_at": datetime.now(timezone.utc),
                 },
                 {
                     "user_id": child1_user.id,
                     "shop_item_id": "5",  # Magic Wand
-                    "acquired_at": datetime.utcnow(),
+                    "acquired_at": datetime.now(timezone.utc),
                 },
                 # child_2 owns one item
                 {
                     "user_id": child2_user.id,
                     "shop_item_id": "2",  # Animal Stickers
-                    "acquired_at": datetime.utcnow(),
+                    "acquired_at": datetime.now(timezone.utc),
                 },
             ]
             for owned_item in owned_items_data:
                 session.add(UserOwnedItem(**owned_item))
             await session.commit()
+
+            await session.commit()
+            await session.execute(delete(TeenShopItem))
+            teen_shop_items_data = [
+                # Digital Rewards
+                {"name": "Spotify Premium", "description": "1 month subscription", "price": 100, "emoji": "🎵", "category": "digital", "bg_color": "from-green-400 to-green-500"},
+                {"name": "Netflix Credit", "description": "$10 streaming credit", "price": 100, "emoji": "📺", "category": "digital", "bg_color": "from-red-400 to-red-500"},
+                {"name": "Gaming Credit", "description": "$5 game store credit", "price": 50, "emoji": "🎮", "category": "digital", "bg_color": "from-blue-400 to-blue-500"},
+                {"name": "App Store Credit", "description": "$10 app store credit", "price": 100, "emoji": "📱", "category": "digital", "bg_color": "from-purple-400 to-purple-500"},
+                # Learning Tools
+                {"name": "Online Course", "description": "Udemy course of choice", "price": 200, "emoji": "🎓", "category": "education", "bg_color": "from-indigo-400 to-indigo-500"},
+                {"name": "E-Book Credit", "description": "$15 book store credit", "price": 150, "emoji": "📚", "category": "education", "bg_color": "from-orange-400 to-orange-500"},
+                {"name": "Language App", "description": "3 months premium access", "price": 180, "emoji": "🗣️", "category": "education", "bg_color": "from-teal-400 to-teal-500"},
+                # Experiences
+                {"name": "Movie Tickets", "description": "2 movie theater tickets", "price": 250, "emoji": "🎬", "category": "experiences", "bg_color": "from-yellow-400 to-yellow-500"},
+                {"name": "Restaurant Voucher", "description": "$20 dining credit", "price": 200, "emoji": "🍕", "category": "experiences", "bg_color": "from-red-400 to-orange-500"},
+                {"name": "Activity Pass", "description": "Local activity center pass", "price": 300, "emoji": "🎯", "category": "experiences", "bg_color": "from-pink-400 to-pink-500"},
+                # Tech Accessories
+                {"name": "Phone Case", "description": "Premium protective case", "price": 150, "emoji": "📱", "category": "tech", "bg_color": "from-gray-400 to-gray-600"},
+                {"name": "Wireless Earbuds", "description": "Bluetooth earbuds", "price": 500, "emoji": "🎧", "category": "tech", "bg_color": "from-blue-500 to-purple-600"},
+                {"name": "Power Bank", "description": "Portable phone charger", "price": 200, "emoji": "🔋", "category": "tech", "bg_color": "from-green-400 to-blue-500"},
+            ]
+            for item_data in teen_shop_items_data:
+                item = TeenShopItem(**item_data)
+                session.add(item)
+            print("Seeded TeenShop items")
+
+
+            await session.commit()
+            await session.execute(delete(Activity))
+            await session.execute(delete(UserActivity))
+            # Seed activities
+            activities_data = [
+                {
+                    "title": "Piggy Bank Adventure",
+                    "description": "Learn how to save money with your digital piggy bank!",
+                    "emoji": "🐷",
+                    "difficulty": "easy",
+                    "coins": 10,
+                    "color_scheme": "pink",
+                    "button_text": "Start Saving!",
+                    "path": "/child/games/piggy-bank-adventure"
+                },
+                {
+                    "title": "Needs vs Wants Game",
+                    "description": "Discover the difference between things you need and want.",
+                    "emoji": "🤔",
+                    "difficulty": "easy",
+                    "coins": 15,
+                    "color_scheme": "teal",
+                    "button_text": "Start Game",
+                    "path": "/child/games/needs-vs-wants"
+                },
+                {
+                    "title": "Coin Counting Challenge",
+                    "description": "Practice counting coins and making change!",
+                    "emoji": "🪙",
+                    "difficulty": "medium",
+                    "coins": 20,
+                    "color_scheme": "blue",
+                    "button_text": "Begin Challenge",
+                    "path": "/child/games/coin-counting-challenge"
+                },
+                {
+                    "title": "Budget Builder",
+                    "description": "Create your first budget and learn to plan ahead.",
+                    "emoji": "📊",
+                    "difficulty": "medium",
+                    "coins": 25,
+                    "color_scheme": "green",
+                    "button_text": "Start Budget",
+                    "path": "/child/games/budget-builder"
+                },
+                {
+                    "title": "Shopping Smart",
+                    "description": "Learn smart shopping tips and compare prices.",
+                    "emoji": "🛒",
+                    "difficulty": "hard",
+                    "coins": 30,
+                    "color_scheme": "yellow",
+                    "button_text": "Shop Smart",
+                    "path": "/child/games/shopping-smart"
+                },
+                {
+                    "title": "Goal Setting Quest",
+                    "description": "Set and achieve your financial goals step by step.",
+                    "emoji": "🎯",
+                    "difficulty": "hard",
+                    "coins": 35,
+                    "color_scheme": "purple",
+                    "button_text": "Begin Quest",
+                    "path": "/child/games/goal-setting-quest"
+                }
+            ]
+            activity_objs = []
+            for activity_data in activities_data:
+                activity = Activity(**activity_data)
+                session.add(activity)
+                activity_objs.append(activity)
+            await session.commit()
+            # Mark Piggy Bank Adventure as completed for Luna
+            piggy_bank_activity = await session.execute(select(Activity).where(Activity.title == "Piggy Bank Adventure"))
+            piggy_bank = piggy_bank_activity.scalar_one_or_none()
+            if piggy_bank:
+                user_activity = UserActivity(user_id=child1_user.id, activity_id=piggy_bank.id)
+                session.add(user_activity)
+                await session.commit()
             
             print("Data seeding completed successfully!")
             
@@ -626,6 +731,6 @@ async def seed_data():
         finally:
             await session.close()
 
-
+        
 if __name__ == "__main__":
     asyncio.run(seed_data())

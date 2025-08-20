@@ -1,7 +1,7 @@
 """Child management router for CoinCraft."""
 
 from typing import List, Optional
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, and_, or_, desc
@@ -389,7 +389,7 @@ async def update_goal_progress(
 
     if goal.current_amount >= goal.target_amount:
         goal.is_completed = True
-        goal.updated_at = datetime.utcnow()
+        goal.updated_at = datetime.now(timezone.utc)
 
     child_profile.coins -= amount
 
@@ -525,7 +525,7 @@ async def complete_activity(
     if existing_progress:
         existing_progress.is_completed = True
         existing_progress.score = score
-        existing_progress.completed_at = datetime.utcnow()
+        existing_progress.completed_at = datetime.now(timezone.utc)
         existing_progress.time_spent = completion_data.get("time_spent", 0)
     else:
         new_progress = UserModuleProgress(
@@ -533,7 +533,7 @@ async def complete_activity(
             module_id=activity_id,
             is_completed=True,
             score=score,
-            completed_at=datetime.utcnow(),
+            completed_at=datetime.now(timezone.utc),
             time_spent=completion_data.get("time_spent", 0),
         )
         session.add(new_progress)

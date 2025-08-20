@@ -169,7 +169,52 @@
       @close="showModuleExecutionModal = false"
       @module-completed="handleModuleCompleted"
     />
-
+    <!-- Assigned Tasks Section -->
+    <div class="mb-8">
+      <h2 class="text-2xl font-bold text-gray-800 mb-6">Assigned Tasks ✅</h2>
+      <div v-if="assignedTasks.length === 0" class="text-gray-500">No tasks assigned yet.</div>
+      <div v-else class="space-y-3">
+        <div
+          v-for="task in assignedTasks"
+          :key="task.id"
+          class="bg-white rounded-lg p-4 shadow flex items-center justify-between"
+        >
+          <div class="flex items-center gap-3">
+            <input
+              type="checkbox"
+              :checked="task.status === 'completed' || task.status === 'approved'"
+              :disabled="task.status === 'completed' || task.status === 'approved'"
+              @change="() => markTaskCompleted(task.id)"
+              class="h-5 w-5"
+              :aria-label="`Mark ${task.title} as completed`"
+            />
+            <div>
+              <div class="font-semibold text-gray-800">{{ task.title }}</div>
+              <div class="text-sm text-gray-500">
+                {{ task.description || 'No description' }}
+              </div>
+              <div class="text-xs text-gray-400 mt-1">
+                Reward: {{ task.coins_reward }} coins
+                <span v-if="task.due_date"> • Due: {{ new Date(task.due_date).toLocaleDateString() }}</span>
+              </div>
+            </div>
+          </div>
+          <div>
+            <span
+              class="px-2 py-1 rounded text-xs"
+              :class="{
+                'bg-yellow-100 text-yellow-800': task.status === 'pending',
+                'bg-blue-100 text-blue-800': task.status === 'in_progress',
+                'bg-green-100 text-green-800': task.status === 'completed',
+                'bg-emerald-100 text-emerald-800': task.status === 'approved'
+              }"
+            >
+              {{ task.status === 'approved' ? 'Approved' : task.status === 'completed' ? 'Awaiting Approval' : task.status.replace('_', ' ') }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
     <!-- Quick Actions -->
     <div class="mb-8">
       <h2 class="text-2xl font-bold text-gray-800 mb-6">Quick Actions 🚀</h2>
@@ -282,12 +327,12 @@
           :key="transaction.id"
           class="p-4 cursor-pointer hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
           :class="{ 'border-b border-gray-100': index < displayedTransactions.length - 1 }"
-          @click="handleTransactionClick(transaction)"
+          @click="handleTransactionClick(_transaction)"
           role="button"
           :aria-label="`View ${transaction.description} transaction details. Amount: ${transaction.type === 'spend' ? '-' : '+'}${transaction.amount} coins`"
           tabindex="0"
-          @keydown.enter="handleTransactionClick(transaction)"
-          @keydown.space.prevent="handleTransactionClick(transaction)"
+          @keydown.enter="handleTransactionClick(_transaction)"
+          @keydown.space.prevent="handleTransactionClick(_transaction)"
         >
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -359,12 +404,12 @@
             :key="transaction.id"
             class="p-4 cursor-pointer hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset"
             :class="{ 'border-b border-gray-100': index < displayedShopTransactions.length - 1 }"
-            @click="handleShopTransactionClick(transaction)"
+            @click="handleShopTransactionClick(_transaction)"
             role="button"
             :aria-label="`View ${transaction.description} purchase details. Amount: ${transaction.amount} coins`"
             tabindex="0"
-            @keydown.enter="handleShopTransactionClick(transaction)"
-            @keydown.space.prevent="handleShopTransactionClick(transaction)"
+            @keydown.enter="handleShopTransactionClick(_transaction)"
+            @keydown.space.prevent="handleShopTransactionClick(_transaction)"
           >
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-3">
@@ -391,6 +436,8 @@
         </div>
       </div>
     </div>
+
+    
 
     <!-- Loading Overlay -->
     <div v-if="isLoading" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -465,14 +512,20 @@ const errorMessage = ref('')
 const successMessage = ref('')
 const showErrorToast = ref(false)
 const showSuccessToast = ref(false)
-const errorTimer = ref<NodeJS.Timeout | null>(null)
-const successTimer = ref<NodeJS.Timeout | null>(null)
+const errorTimer = ref<number | null>(null)
+const successTimer = ref<number | null>(null)
 const assignedModules = ref<any[]>([])
 const isLoadingModules = ref(false)
 const showModuleExecutionModal = ref(false)
 const currentModule = ref<any>(null)
 const isLoadingShopTransactions = ref(false)
 const shopTransactions = ref<any[]>([])
+const assignedTasks = computed(() => {
+  // Only show tasks assigned to this user
+  if (!userStore.profile?.id) return [];
+  return dashboardStore.tasks.filter(task => task.assigned_to === userStore.profile.id)
+})
+let assignedTasksInterval: number | undefined = undefined
 
 // Computed properties
 const displayedGoals = computed(() => userStore.activeGoals.slice(0, 2))
@@ -552,7 +605,7 @@ const handleCreateGoalClick = async () => {
   }
 }
 
-const handleTransactionClick = async (transaction: any) => {
+const handleTransactionClick = async (_transaction: any) => {
   try {
     // show success - could open modal or navigate to detailed view
     showSuccess('Transaction details loaded!')
@@ -585,7 +638,7 @@ const handleViewAllPurchasesClick = async () => {
   }
 }
 
-const handleShopTransactionClick = async (transaction: any) => {
+const handleShopTransactionClick = async (_transaction: any) => {
   try {
     // show success - could open modal or navigate to detailed view
     showSuccess('Purchase details loaded!')
@@ -664,10 +717,10 @@ const formatModuleDate = (date: any) => {
 }
 
 // Utility functions
-const setLoading = (loading: boolean, message = '') => {
-  isLoading.value = loading
-  loadingMessage.value = message
-}
+// const setLoading = (loading: boolean, message = '') => {
+//   isLoading.value = loading
+//   loadingMessage.value = message
+// }
 
 const showError = (message: string) => {
   errorMessage.value = message
@@ -759,6 +812,29 @@ const loadShopTransactions = async () => {
   }
 }
 
+const loadAssignedTasks = async () => {
+  if (!userStore.profile?.id) return
+  try {
+    // Still call API for legacy, but also reload dashboardStore tasks
+    await dashboardStore.loadTasks()
+    // Optionally, you can also fetch assigned tasks from API if needed
+    // const response = await apiService.getAssignedTasks(userStore.profile.id)
+    // assignedTasks.value = response.data || []
+  } catch (e) {
+    // No-op, dashboardStore.tasks will be empty if error
+  }
+}
+
+const markTaskCompleted = async (taskId: string) => {
+  try {
+    await apiService.completeTask(taskId)
+    showSuccess('Task marked as completed! Awaiting parent approval.')
+    await loadAssignedTasks() // Refresh tasks after completion
+  } catch (e) {
+    showError('Failed to mark task completed')
+  }
+}
+
 // Keyboard navigation support
 const handleKeyboardNavigation = (event: KeyboardEvent) => {
   if (event.key === 'Escape') {
@@ -770,13 +846,17 @@ const handleKeyboardNavigation = (event: KeyboardEvent) => {
 // Lifecycle hooks
 onMounted(() => {
   document.addEventListener('keydown', handleKeyboardNavigation)
-  
   // Load initial data if needed
   if (!userStore.activeGoals.length) {
     userStore.loadUserData(userStore.profile?.id || '')
   }
   loadAssignedModules()
   loadShopTransactions()
+  loadAssignedTasks()
+  assignedTasksInterval = window.setInterval(() => {
+    loadAssignedTasks()
+    dashboardStore.loadTasks()
+  }, 10000)
 })
 
 onUnmounted(() => {
@@ -785,6 +865,7 @@ onUnmounted(() => {
   // Clean up timers
   if (errorTimer.value) clearTimeout(errorTimer.value)
   if (successTimer.value) clearTimeout(successTimer.value)
+  if (assignedTasksInterval) clearInterval(assignedTasksInterval)
 })
 </script>
 

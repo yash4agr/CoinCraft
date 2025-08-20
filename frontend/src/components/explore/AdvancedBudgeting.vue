@@ -174,11 +174,11 @@
                   <v-btn
                     v-for="(option, index) in currentQuestion.options"
                     :key="index"
-                    :variant="getOptionVariant(index)"
-                    :color="getOptionColor(index)"
+                    :variant="getOptionVariant(_index)"
+                    :color="getOptionColor(_index)"
                     block
                     class="justify-start text-left"
-                    @click="selectAnswer(index)"
+                    @click="selectAnswer(_index)"
                     :disabled="answerSelected !== null"
                   >
                     <span class="mr-3">{{ String.fromCharCode(65 + index) }}.</span>
@@ -422,7 +422,7 @@ const finishQuiz = async () => {
   // Calculate score
   let correct = 0
   userAnswers.value.forEach((answer, index) => {
-    if (answer === quizQuestions.value[index].correctAnswer) {
+    if (answer === quizQuestions.value[index]?.correctAnswer) {
       correct++
     }
   })

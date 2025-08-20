@@ -33,7 +33,7 @@
 import { computed } from 'vue'
 
 // Emits
-const emit = defineEmits<{
+const _emit = defineEmits<{
   click: []
 }>()
 

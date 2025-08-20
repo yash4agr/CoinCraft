@@ -51,9 +51,9 @@
 import { computed } from 'vue'
 
 // Emits
-const emit = defineEmits<{
-  click: []
-}>()
+// const _emit = defineEmits<{
+//   click: []
+// }>()
 
 interface Props {
   title: string

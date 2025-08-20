@@ -46,7 +46,7 @@
           <div class="text-center">
             <!-- Item Image/Icon -->
             <div class="w-16 h-16 mx-auto mb-3 bg-gradient-to-br rounded-xl flex items-center justify-center text-3xl"
-                 :class="item.bgColor">
+                 :class="item.bg_color">
               {{ item.emoji }}
             </div>
             
@@ -71,7 +71,8 @@
                   ? 'bg-blue-500 text-white hover:bg-blue-600' 
                   : 'bg-gray-200 text-gray-500 cursor-not-allowed'"
             >
-              {{ item.owned ? 'Owned' : userStore.totalCoins >= item.price ? 'Buy Now' : 'Not Enough Coins' }}
+              {{ isPendingApproval(item.id) ? 'Pending Approval' : (item.owned ? 'Owned' : userStore.totalCoins >= item.price ? 'Buy Now' : 'Not Enough Coins') }}
+
             </button>
           </div>
         </div>
@@ -156,7 +157,7 @@
       <div class="bg-white rounded-2xl p-6 max-w-md w-full">
         <div class="text-center">
           <div class="w-20 h-20 mx-auto mb-4 bg-gradient-to-br rounded-xl flex items-center justify-center text-4xl"
-               :class="selectedItem?.bgColor">
+               :class="selectedItem?.bg_color">
             {{ selectedItem?.emoji }}
           </div>
           
@@ -251,11 +252,14 @@
 </template>
 
 <script setup lang="ts">
+
 import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
+import { useDashboardStore } from '@/stores/dashboard'
 import { apiService } from '@/services/api'
 import { formatTransactionDate } from '@/utils/dateUtils'
 
+const dashboardStore = useDashboardStore()
 const userStore = useUserStore()
 
 // State
@@ -267,7 +271,7 @@ const selectedItem = ref<ShopItem | null>(null)
 const selectedConversion = ref<ConversionAmount | null>(null)
 const conversionReason = ref('')
 const successMessage = ref('')
-const recentPurchases = ref<PurchaseHistory[]>([])
+// const recentPurchases = ref<PurchaseHistory[]>([])
 const isLoadingPurchases = ref(false)
 const shopTransactions = ref<any[]>([])
 
@@ -279,7 +283,7 @@ interface ShopItem {
   price: number
   emoji: string
   category: string
-  bgColor: string
+  bg_color: string
   owned: boolean
 }
 
@@ -304,29 +308,13 @@ const categories = [
   { id: 'tech', name: 'Tech Accessories', icon: 'ri-computer-line' }
 ]
 
-// Shop Items for teens
-const shopItems = ref<ShopItem[]>([
-  // Digital Rewards
-  { id: '1', name: 'Spotify Premium', description: '1 month subscription', price: 100, emoji: '🎵', category: 'digital', bgColor: 'from-green-400 to-green-500', owned: false },
-  { id: '2', name: 'Netflix Credit', description: '$10 streaming credit', price: 100, emoji: '📺', category: 'digital', bgColor: 'from-red-400 to-red-500', owned: false },
-  { id: '3', name: 'Gaming Credit', description: '$5 game store credit', price: 50, emoji: '🎮', category: 'digital', bgColor: 'from-blue-400 to-blue-500', owned: false },
-  { id: '4', name: 'App Store Credit', description: '$10 app store credit', price: 100, emoji: '📱', category: 'digital', bgColor: 'from-purple-400 to-purple-500', owned: false },
-  
-  // Learning Tools
-  { id: '5', name: 'Online Course', description: 'Udemy course of choice', price: 200, emoji: '🎓', category: 'education', bgColor: 'from-indigo-400 to-indigo-500', owned: false },
-  { id: '6', name: 'E-Book Credit', description: '$15 book store credit', price: 150, emoji: '📚', category: 'education', bgColor: 'from-orange-400 to-orange-500', owned: false },
-  { id: '7', name: 'Language App', description: '3 months premium access', price: 180, emoji: '🗣️', category: 'education', bgColor: 'from-teal-400 to-teal-500', owned: false },
-  
-  // Experiences
-  { id: '8', name: 'Movie Tickets', description: '2 movie theater tickets', price: 250, emoji: '🎬', category: 'experiences', bgColor: 'from-yellow-400 to-yellow-500', owned: false },
-  { id: '9', name: 'Restaurant Voucher', description: '$20 dining credit', price: 200, emoji: '🍕', category: 'experiences', bgColor: 'from-red-400 to-orange-500', owned: false },
-  { id: '10', name: 'Activity Pass', description: 'Local activity center pass', price: 300, emoji: '🎯', category: 'experiences', bgColor: 'from-pink-400 to-pink-500', owned: false },
-  
-  // Tech Accessories
-  { id: '11', name: 'Phone Case', description: 'Premium protective case', price: 150, emoji: '📱', category: 'tech', bgColor: 'from-gray-400 to-gray-600', owned: false },
-  { id: '12', name: 'Wireless Earbuds', description: 'Bluetooth earbuds', price: 500, emoji: '🎧', category: 'tech', bgColor: 'from-blue-500 to-purple-600', owned: false },
-  { id: '13', name: 'Power Bank', description: 'Portable phone charger', price: 200, emoji: '🔋', category: 'tech', bgColor: 'from-green-400 to-blue-500', owned: false }
-])
+// Use dashboardStore for shop items and owned items
+const shopItems = computed(() =>
+  dashboardStore.shopItems.map((item: any) => ({
+    ...item,
+    owned: dashboardStore.ownedItems.includes(item.id)
+  }))
+)
 
 // Money conversion amounts for teens
 const conversionAmounts: ConversionAmount[] = [
@@ -337,8 +325,8 @@ const conversionAmounts: ConversionAmount[] = [
 ]
 
 // Computed
-const filteredItems = computed(() => 
-  shopItems.value.filter(item => item.category === selectedCategory.value)
+const filteredItems = computed(() =>
+  shopItems.value.filter((item: any) => item.category === selectedCategory.value)
 )
 
 // Methods
@@ -349,29 +337,20 @@ const handlePurchase = (item: ShopItem) => {
   showPurchaseModal.value = true
 }
 
+const isPendingApproval = (itemId: string) => {
+  return dashboardStore.purchaseRequests?.some((req: any) => req.shop_item_id === itemId && req.status === 'pending')
+}
+
 const confirmPurchase = async () => {
   if (!selectedItem.value) return
-  
-  const success = await userStore.spendCoins(
-    selectedItem.value.price, 
-    `Purchased: ${selectedItem.value.name}`,
-    'shop'
-  )
-  
+  const success = await userStore.purchaseShopItem(selectedItem.value.id)
   if (success) {
-    selectedItem.value.owned = true
-    
-    // Refresh shop transactions to show the new purchase
-    await loadShopTransactions()
-    
     showSuccessMessage.value = true
-    successMessage.value = `You bought ${selectedItem.value.name}!`
-    
+    successMessage.value = `Asked parent to buy ${selectedItem.value.name}! 📨`
     setTimeout(() => {
       showSuccessMessage.value = false
     }, 3000)
   }
-  
   showPurchaseModal.value = false
   selectedItem.value = null
 }
@@ -409,6 +388,9 @@ const submitConversionRequest = async () => {
 
 // Load purchase history on mount
 onMounted(async () => {
+  await dashboardStore.getShopItems()
+  await dashboardStore.getOwnedItems()
+  await dashboardStore.loadPurchaseRequests()
   await loadShopTransactions()
 })
 

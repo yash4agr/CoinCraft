@@ -152,12 +152,12 @@
                 <div 
                   v-if="showQuizFeedback && quizAnswers[index] !== undefined"
                   class="mt-4 p-4 rounded-lg"
-                  :class="isAnswerCorrect(index) ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'"
+                  :class="isAnswerCorrect(_index) ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'"
                 >
                   <div class="flex items-center gap-2">
-                    <i :class="isAnswerCorrect(index) ? 'ri-check-line' : 'ri-close-line'"></i>
+                    <i :class="isAnswerCorrect(_index) ? 'ri-check-line' : 'ri-close-line'"></i>
                     <span class="font-medium">
-                      {{ isAnswerCorrect(index) ? 'Correct!' : 'Incorrect.' }}
+                      {{ isAnswerCorrect(_index) ? 'Correct!' : 'Incorrect.' }}
                     </span>
                   </div>
                   <p class="text-sm mt-2">{{ question.explanation }}</p>
@@ -247,7 +247,6 @@
 
 <script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useUserStore } from '@/stores/user'
 import apiService from '@/services/api'
 
 // Props
@@ -265,8 +264,6 @@ interface Emits {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-// Stores
-const userStore = useUserStore()
 
 // State
 const currentMode = ref<'content' | 'quiz'>('content')
@@ -380,6 +377,7 @@ const resetQuiz = () => {
 const isAnswerCorrect = (questionIndex: number) => {
   const question = quizQuestions.value[questionIndex]
   const answer = quizAnswers.value[questionIndex]
+  if (answer ===undefined) return false
   return question.options[answer]?.isCorrect
 }
 
@@ -393,7 +391,7 @@ const checkQuiz = () => {
   
   // Calculate score
   let correct = 0
-  quizQuestions.value.forEach((question, index) => {
+  quizQuestions.value.forEach((_, index) => {
     if (isAnswerCorrect(index)) {
       correct++
     }
@@ -421,7 +419,7 @@ const completeModule = async () => {
     const progressData = {
       status: quizScore.value >= 70 ? 'completed' : 'in_progress',
       score: quizScore.value,
-      completed_at: quizScore.value >= 70 ? new Date().toISOString() : null
+      completed_at: quizScore.value >= 70 ? new Date().toISOString() : undefined
     }
     
     console.log('🔍 [MODAL] Completing module:', props.currentModule.title)

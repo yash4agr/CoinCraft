@@ -700,7 +700,7 @@ const showError = (message: string) => {
   }, 3000)
 }
 
-let notificationInterval: NodeJS.Timeout
+let notificationInterval: number
 
 const simulateRealTimeNotifications = () => {
   notificationInterval = setInterval(() => {

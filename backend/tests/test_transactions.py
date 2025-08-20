@@ -2,13 +2,13 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from backend.models import User, Transaction, ChildProfile
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 @pytest.mark.asyncio
 async def test_get_user_transactions_success(auth_child_client: dict, session: AsyncSession):
     client = auth_child_client["client"]
     child_id = auth_child_client["user_id"]
-    txn = Transaction(user_id=child_id, type="earn", amount=20, description="Allowance", category="bonus", created_at=datetime.utcnow())
+    txn = Transaction(user_id=child_id, type="earn", amount=20, description="Allowance", category="bonus", created_at=datetime.now(timezone.utc))
     session.add(txn)
     await session.commit()
     response = await client.get(f"/api/users/{child_id}/transactions")
@@ -20,7 +20,7 @@ async def test_get_user_transactions_success(auth_child_client: dict, session: A
 async def test_get_user_transactions_filter_type(auth_child_client: dict, session: AsyncSession):
     client = auth_child_client["client"]
     child_id = auth_child_client["user_id"]
-    txn = Transaction(user_id=child_id, type="spend", amount=10, description="Candy", category="food", created_at=datetime.utcnow())
+    txn = Transaction(user_id=child_id, type="spend", amount=10, description="Candy", category="food", created_at=datetime.now(timezone.utc))
     session.add(txn)
     await session.commit()
     response = await client.get(f"/api/users/{child_id}/transactions?type=spend")

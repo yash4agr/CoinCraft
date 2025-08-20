@@ -1,7 +1,7 @@
 """Dashboard data router."""
 
 from typing import List, Union
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_, func, desc
@@ -425,7 +425,7 @@ async def get_todays_goals(
 
     # For children, return daily goals
     if current_user.role in ["younger_child", "older_child"]:
-        today = datetime.utcnow().date()
+        today = datetime.now(timezone.utc).date()
 
         today_start = datetime.combine(today, datetime.min.time())
 

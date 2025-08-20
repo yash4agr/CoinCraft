@@ -30,12 +30,19 @@
             <div class="text-right">
               <div class="text-2xl font-bold text-green-500 flex items-center gap-1">
                 <img src="/coin.svg" class="coin-icon" alt="coin">
-                <span>{{ goal.target_amount }} coins</span>
+                <span>{{ goal.current_amount }} / {{ goal.target_amount }}</span>
               </div>
+              <div class="text-sm text-gray-500">{{ getProgressPercentage(goal) }}% complete</div>
             </div>
           </div>
           
-          <!-- Progress removed per new UX -->
+          <!-- Progress Bar -->
+          <div class="w-full bg-gray-200 rounded-full h-3 mb-4">
+            <div 
+              class="bg-green-500 h-3 rounded-full transition-all duration-500" 
+              :style="{ width: getProgressPercentage(goal) + '%' }"
+            ></div>
+          </div>
           
           <!-- Action Buttons -->
           <div class="flex gap-3">
@@ -152,7 +159,7 @@
               v-for="amount in getQuickAmounts()"
               :key="amount"
               @click="coinsToAdd = amount"
-              :disabled="amount > userStore.totalCoins"
+              :disabled="amount > Math.min(userStore.totalCoins, (selectedGoal?.target_amount || 0) - (selectedGoal?.current_amount || 0))"
               class="py-2 px-3 bg-gray-100 hover:bg-gray-200 disabled:bg-gray-50 disabled:text-gray-400 rounded-lg text-sm font-medium transition-colors"
             >
               {{ amount }}
@@ -345,10 +352,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, watch } from 'vue'
 import { useUserStore } from '@/stores/user'
 import type { Goal } from '@/stores/user'
-import { profile } from 'node:console'
 import { useAuthStore } from '@/stores/auth'
 
 const userStore = useUserStore()
@@ -403,8 +409,9 @@ const getGoalEmoji = (iconClass: string) => {
   return icon ? icon.emoji : '🎯'
 }
 
-// deprecated in new UX
-const getProgressPercentage = (goal: Goal) => 0
+const getProgressPercentage = (goal: Goal) => {
+  return Math.min(Math.round((goal.current_amount / goal.target_amount) * 100), 100)
+}
 
 const getQuickAmounts = () => {
   if (!selectedGoal.value) return [1, 5, 10, 20]
@@ -576,6 +583,14 @@ const markCompleted = async (goal: Goal) => {
     errorMessage.value = 'An error occurred while marking goal as completed'
   }
 }
+
+watch(coinsToAdd, (newValue) => {
+  const compareValue = Math.min(userStore.totalCoins, (selectedGoal.value?.target_amount || 0) - (selectedGoal.value?.current_amount || 0))
+  
+  if (newValue > compareValue) {
+    coinsToAdd.value = compareValue
+  }
+})
 </script>
 
 <style scoped>

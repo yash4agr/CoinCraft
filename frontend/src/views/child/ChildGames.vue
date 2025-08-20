@@ -9,9 +9,9 @@
         </h1>
         <p class="text-gray-600 text-lg">Learn about money while having fun! 🚀</p>
       </div>
-
+      <div v-if="isLoading" class="text-center py-8 text-lg text-gray-500">Loading activities...</div>
       <!-- Adventure Games Grid -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <AdventureCard
           v-for="adventure in adventures"
           :key="adventure.id"
@@ -21,12 +21,11 @@
           :difficulty="adventure.difficulty"
           :coins="adventure.coins"
           :completed="adventure.completed"
-          :color-scheme="adventure.colorScheme"
-          :button-text="adventure.buttonText"
-          @click="handleAdventureClick(adventure)"
+          :color-scheme="adventure.color_scheme"
+          :button-text="adventure.completed ? 'Play Again' : adventure.button_text"
+          :path="adventure.path || `/child/games/${adventure.id}`"
         />
       </div>
-
       <!-- Quick Stats -->
       <div class="mt-12 bg-white rounded-2xl shadow-sm p-6">
         <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
@@ -64,141 +63,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import AdventureCard from '@/components/shared/AdventureCard.vue'
-import PiggyBankAdventure from '@/components/explore/PiggyBankAdventure.vue'
+import { useChildStore } from '@/stores/child'
 
-// Adventures Data - Same as dashboard for consistency
-const adventures = ref([
-  {
-    id: 1,
-    title: 'Piggy Bank Adventure',
-    description: 'Learn how to save money with your digital piggy bank!',
-    emoji: '🐷',
-    difficulty: 'easy' as const,
-    coins: 10,
-    completed: false,
-    colorScheme: 'pink' as const,
-    buttonText: 'Start Saving!'
-  },
-  {
-    id: 2,
-    title: 'Needs vs Wants Game',
-    description: 'Discover the difference between things you need and want.',
-    emoji: '🤔',
-    difficulty: 'easy' as const,
-    coins: 15,
-    completed: true,
-    colorScheme: 'teal' as const,
-    buttonText: 'Play Again'
-  },
-  {
-    id: 3,
-    title: 'Coin Counting Challenge',
-    description: 'Practice counting coins and making change!',
-    emoji: '🪙',
-    difficulty: 'medium' as const,
-    coins: 20,
-    completed: false,
-    colorScheme: 'blue' as const,
-    buttonText: 'Start Challenge'
-  },
-  {
-    id: 4,
-    title: 'Budget Builder',
-    description: 'Create your first budget and learn to plan ahead.',
-    emoji: '📊',
-    difficulty: 'medium' as const,
-    coins: 25,
-    completed: false,
-    colorScheme: 'green' as const,
-    buttonText: 'Build Budget'
-  },
-  {
-    id: 5,
-    title: 'Investment Explorer',
-    description: 'Learn about different ways to grow your money!',
-    emoji: '📈',
-    difficulty: 'hard' as const,
-    coins: 30,
-    completed: false,
-    colorScheme: 'yellow' as const,
-    buttonText: 'Explore'
-  },
-  {
-    id: 6,
-    title: 'Entrepreneur Quest',
-    description: 'Start your own business and earn money!',
-    emoji: '💼',
-    difficulty: 'hard' as const,
-    coins: 40,
-    completed: false,
-    colorScheme: 'purple' as const,
-    buttonText: 'Start Quest'
-  }
-])
+const childStore = useChildStore()
+const isLoading = ref(false)
 
-// Computed stats for progress section
-const completedCount = computed(() => {
-  return adventures.value.filter(adventure => adventure.completed).length
+onMounted(async () => {
+  isLoading.value = true
+  await childStore.loadActivities()
+  isLoading.value = false
 })
 
-const totalCoinsEarned = computed(() => {
-  return adventures.value
-    .filter(adventure => adventure.completed)
-    .reduce((total, adventure) => total + adventure.coins, 0)
-})
+const adventures = computed(() => childStore.activities)
 
-const availableGames = computed(() => {
-  return adventures.value.filter(adventure => !adventure.completed).length
-})
-
+const completedCount = computed(() => adventures.value.filter(adventure => adventure.completed).length)
+const totalCoinsEarned = computed(() => adventures.value.filter(adventure => adventure.completed).reduce((total, adventure) => total + adventure.coins, 0))
+const availableGames = computed(() => adventures.value.filter(adventure => !adventure.completed).length)
 const nextReward = computed(() => {
   const nextGame = adventures.value.find(adventure => !adventure.completed)
   return nextGame ? nextGame.coins : 0
 })
-
-// Handle adventure button clicks
-const handleAdventureClick = (adventure: any) => {
-  console.log('🎮 [CHILD_GAMES] Adventure clicked:', adventure.title)
-  console.log('🎮 [CHILD_GAMES] Adventure data:', adventure)
-  console.log('🎮 [CHILD_GAMES] Event received at:', new Date().toISOString())
-  
-  if (adventure.title === 'Piggy Bank Adventure') {
-    // Open Piggy Bank Adventure modal/game
-    console.log('🐷 [CHILD_GAMES] Opening Piggy Bank Adventure...')
-    openPiggyBankAdventure()
-  } else if (adventure.title === 'Needs vs Wants Game') {
-    // Handle other games
-    console.log('🎮 [CHILD_GAMES] Game not implemented yet:', adventure.title)
-  } else {
-    // Handle other games
-    console.log('🎮 [CHILD_GAMES] Game not implemented yet:', adventure.title)
-  }
-}
-
-// Piggy Bank Adventure functionality
-const showPiggyBankModal = ref(false)
-
-const openPiggyBankAdventure = () => {
-  console.log('🐷 [CHILD_GAMES] Opening Piggy Bank Adventure...')
-  showPiggyBankModal.value = true
-}
-
-// Handle Piggy Bank Adventure completion
-const handlePiggyBankCompleted = async (coinsEarned: number) => {
-  console.log('🎉 [CHILD_GAMES] Piggy Bank Adventure completed! Coins earned:', coinsEarned)
-  
-  // Update the adventure status to completed
-  const piggyBankAdventure = adventures.value.find(a => a.id === 1)
-  if (piggyBankAdventure) {
-    piggyBankAdventure.completed = true
-  }
-  
-  // Close the modal
-  showPiggyBankModal.value = false
-  
-  // Show success message
-  alert(`🎉 Congratulations! You completed the Piggy Bank Adventure and earned ${coinsEarned} coins!`)
-}
-</script> 
+</script>

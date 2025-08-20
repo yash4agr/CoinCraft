@@ -91,7 +91,9 @@
           :key="item.name"
           :to="item.path"
           class="flex items-center gap-3 px-3 py-3 rounded-lg transition-colors hover:bg-orange-50"
-          :class="$route.name === item.name ? 'bg-orange-100 text-orange-600' : 'text-gray-700 hover:text-orange-600'"
+          :class="item.name === 'ChildGames' 
+            ? (isGamesRoute() ? 'bg-orange-100 text-orange-600' : ($route.name === item.name ? 'bg-orange-100 text-orange-600' : 'text-gray-700 hover:text-orange-600')) 
+            : ($route.name === item.name ? 'bg-orange-100 text-orange-600' : 'text-gray-700 hover:text-orange-600')"
         >
           <i :class="item.icon" class="text-xl min-w-[1.25rem]"></i>
           <span v-if="!sidebarCollapsed" class="font-medium">{{ item.label }}</span>
@@ -115,7 +117,9 @@
           :key="item.name"
           :to="item.path"
           class="flex flex-col items-center justify-center gap-1 transition-colors"
-          :class="$route.name === item.name ? 'text-orange-600 bg-orange-50' : 'text-gray-500 hover:text-orange-600'"
+          :class="item.name === 'ChildGames' 
+            ? (isGamesRoute() ? 'text-orange-600 bg-orange-50' : ($route.name === item.name ? 'text-orange-600 bg-orange-50' : 'text-gray-500 hover:text-orange-600')) 
+            : ($route.name === item.name ? 'text-orange-600 bg-orange-50' : 'text-gray-500 hover:text-orange-600')"
         >
           <i :class="item.icon" class="text-xl"></i>
           <span class="text-xs font-medium">{{ item.label }}</span>
@@ -130,11 +134,15 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUserStore } from '@/stores/user'
-import CoinIcon from '@/components/shared/CoinIcon.vue'
 
 const authStore = useAuthStore()
 const userStore = useUserStore()
 const router = useRouter()
+
+// Helper to check if current route is a child games route
+const isGamesRoute = () => {
+  return router.currentRoute.value.path.startsWith('/child/games')
+}
 
 const sidebarCollapsed = ref(false)
 const showProfileMenu = ref(false)

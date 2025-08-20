@@ -124,14 +124,14 @@
       </div>
 
       <!-- Debug Section (Development Only) -->
-      <v-card class="mb-6" elevation="1" color="grey-lighten-4">
+      <!-- <v-card class="mb-6" elevation="1" color="grey-lighten-4">
         <v-card-title class="text-caption">Debug Info (Development)</v-card-title>
         <v-card-text class="text-caption">
           <div>All Children Goals Count: {{ parentStore.allChildrenGoals?.length || 0 }}</div>
           <div>Completed Goals Count: {{ completedGoals.length }}</div>
           <div>Raw Goals Data: {{ JSON.stringify(parentStore.allChildrenGoals?.slice(0, 3), null, 2) }}</div>
-        </v-card-text>
-      </v-card>
+        </v-card-text> -->
+      <!-- </v-card> -->
 
       <!-- Task History Section -->
       <div class="report-section">

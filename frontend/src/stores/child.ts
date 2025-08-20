@@ -83,6 +83,16 @@ export const useChildStore = defineStore('child', () => {
       .reduce((sum, t) => sum + t.amount, 0)
   )
 
+  const purchaseRequests = ref<any[]>([])
+
+  const loadPurchaseRequests = async (): Promise<void> => {
+    try {
+      const list = await apiService.getPurchaseRequests()
+      purchaseRequests.value = list || []
+    } catch (err: any) {
+      console.error('❌ [PARENT] Failed to load purchase requests:', err.message)
+    }
+  }
   // Actions
   const loadDashboard = async (): Promise<void> => {
     console.log('📊 [CHILD] Loading child dashboard...')
@@ -162,16 +172,13 @@ export const useChildStore = defineStore('child', () => {
 
     try {
       const activitiesData = await apiService.getActivities()
-      
       activities.value = activitiesData.map((activity: any) => ({
         ...activity,
-        completed: false,
-        progress: 0,
-        coins: activity.points_reward || 10
+        completed: activity.completed ?? false,
+        progress: activity.progress ?? 0,
+        coins: activity.coins ?? activity.points_reward ?? 10
       }))
-      
       console.log('✅ [CHILD] Activities loaded successfully:', activities.value.length)
-
     } catch (err: any) {
       console.error('❌ [CHILD] Failed to load activities:', err.message)
       error.value = err.message
@@ -552,6 +559,7 @@ export const useChildStore = defineStore('child', () => {
     budgetAllocation,
     isLoading,
     error,
+    purchaseRequests,
 
     // Getters
     availableGoals,
@@ -565,6 +573,7 @@ export const useChildStore = defineStore('child', () => {
     loadDashboard,
     loadActivities,
     completeActivity,
+    loadPurchaseRequests,
     loadGoals,
     createGoal,
     addGoalProgress,

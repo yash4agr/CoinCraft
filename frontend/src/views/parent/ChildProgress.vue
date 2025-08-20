@@ -447,7 +447,7 @@
                 <span class="font-weight-medium">{{ item.target_amount }}</span>
               </div>
             </template>
-            <template #item.status="{ item }">
+            <template #item.status>
               <v-chip size="small" color="success" variant="tonal">
                 <v-icon start size="16">mdi-check-circle</v-icon>
                 Completed
@@ -530,7 +530,7 @@
       </v-card>
 
       <!-- Debug Section (Development Only) -->
-      <v-card class="mb-6" elevation="1" color="grey-lighten-4">
+      <!-- <v-card class="mb-6" elevation="1" color="grey-lighten-4">
         <v-card-title class="text-caption">Debug Info (Development)</v-card-title>
         <v-card-text class="text-caption">
           <div>All Children Goals Count: {{ parentStore.allChildrenGoals?.length || 0 }}</div>
@@ -539,7 +539,7 @@
           <div>Raw All Children Goals: {{ JSON.stringify(parentStore.allChildrenGoals?.slice(0, 2), null, 2) }}</div>
           <div>Raw Completed Goals: {{ JSON.stringify(completedGoals.slice(0, 2), null, 2) }}</div>
         </v-card-text>
-      </v-card>
+      </v-card> -->
 
       <!-- Recommendations -->
       <v-card elevation="2">
@@ -641,8 +641,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, onMounted, onErrorCaptured } from 'vue'
-import type { User, Goal, Achievement, ChildProgress } from '@/types'  
+import { ref, computed, reactive, onMounted } from 'vue'
+import type { ChildProgress } from '@/types'  
 import { useParentStore } from '@/stores/parent'
 
 // Store
@@ -672,11 +672,11 @@ const setError = (message: string) => {
 }
 
 // Error boundary
-const onErrorCaptured = (error: Error, instance: any, info: string) => {
-  console.error('🚨 [CHILD_PROGRESS] Vue error captured:', error, info)
-  setError('A component error occurred. Please refresh the page.')
-  return false // Prevent error from propagating
-}
+// const onErrorCaptured = (error: Error, instance: any, info: string) => {
+//   console.error('🚨 [CHILD_PROGRESS] Vue error captured:', error, info)
+//   setError('A component error occurred. Please refresh the page.')
+//   return false // Prevent error from propagating
+// }
 
 // Use real children data from parent store
 const children = computed(() => {
@@ -1153,7 +1153,7 @@ const showSnackbar = (message: string, color: string = 'success') => {
 onMounted(async () => {
   try {
     // Set up error handling
-    window.addEventListener('error', (event) => {
+    window.addEventListener('error', (_event) => {
       console.error('🚨 [CHILD_PROGRESS] Global error:', event.error)
       setError('An unexpected error occurred. Please refresh the page.')
     })

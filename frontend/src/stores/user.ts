@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
 import { apiService } from '@/services/api'
 import { useAuthStore } from './auth'
-import { isPartOfTypeOnlyImportOrExportDeclaration } from 'typescript'
 
 
 export interface UserProfile {
@@ -80,6 +79,16 @@ export const useUserStore = defineStore('user', () => {
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     )
   )
+  const purchaseRequests = ref<any[]>([])
+
+  const loadPurchaseRequests = async (): Promise<void> => {
+    try {
+      const list = await apiService.getPurchaseRequests()
+      purchaseRequests.value = list || []
+    } catch (err: any) {
+      console.error('❌ [PARENT] Failed to load purchase requests:', err.message)
+    }
+  }
 
   const updateProfile = async (updates: Partial<UserProfile>) => {
     if (!profile.value) return
@@ -108,7 +117,7 @@ export const useUserStore = defineStore('user', () => {
       }
 
       transactions.value.push(transaction)
-      let response = await apiService.createTransaction(profile.value.id, transaction)
+      await apiService.createTransaction(profile.value.id, transaction)
       profile.value.coins += amount
       authStore.user.coins=profile.value.coins
       profile.value.totalCoinsEarned += amount
@@ -520,7 +529,6 @@ export const useUserStore = defineStore('user', () => {
 
   // ✅ Keep profile.streak always in sync
   watch(computedStreak, (val) => {
-    console.log("I AM CHECKING")
     if (profile.value) {
       profile.value.streak = val
     }
@@ -647,6 +655,8 @@ export const useUserStore = defineStore('user', () => {
     completedGoals,
     recentTransactions,
     computedStreak,
+    purchaseRequests,
+    loadPurchaseRequests,
     updateProfile,
     addCoins,
     spendCoins,
