@@ -734,9 +734,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { useUserStore } from '@/stores/user'
 
-const userStore = useUserStore()
 
 // State
 const showCreateModal = ref(false)
