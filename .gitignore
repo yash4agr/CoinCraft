@@ -22,10 +22,12 @@ share/python-wheels/
 *.manifest
 *.spec
 
-# Virtualenv
+backend/coincraft.db
+
+# Virtualenv 
 .env
 .venv
-env/
+env/``
 venv/
 ENV/
 env.bak/
@@ -53,7 +55,7 @@ package-lock.json # If team decides to only commit yarn.lock or vice-versa
 dist/ # Vue CLI build output
 .output/ # Nuxt 3 build output
 # Add other framework specific build/cache folders if necessary
-
+fix-eslint.sh
 # IDE / Editor specific
 .vscode/
 .idea/
@@ -66,3 +68,5 @@ dist/ # Vue CLI build output
 # OS specific
 .DS_Store
 Thumbs.db
+
+TEACHER_FUNCTIONALITY_TRACKING.md

@@ -1,10 +1,10 @@
 <template>
-  <div class="landing-page">
+  <div class="main">
     <!-- Navigation -->
     <nav class="navbar">
       <div class="nav-container">
         <div class="logo">
-          <span class="logo-icon">🪙</span>
+          <img src="/coin.svg" class="logo-icon" alt="coin">
           <span class="logo-text">CoinCraft</span>
         </div>
         <div class="nav-buttons">
@@ -15,8 +15,8 @@
     </nav>
 
     <!-- Hero Section -->
-    <section class="hero">
-      <div class="hero-container">
+    <section class="section hero">
+      <div class="container hero-container">
         <div class="hero-content">
           <div class="hero-badge">
             <span class="badge-icon">⭐</span>
@@ -57,12 +57,12 @@
         </div>
         <div class="hero-visual">
           <div class="floating-elements">
-            <div class="floating-coin coin-1">🪙</div>
-            <div class="floating-coin coin-2">💰</div>
-            <div class="floating-coin coin-3">⭐</div>
-            <div class="floating-coin coin-4">🎯</div>
-            <div class="floating-coin coin-5">🏆</div>
-            <div class="floating-coin coin-6">💎</div>
+            <div class="floating-coin coin-1"><CoinIcon size="xl" /></div>
+            <div class="floating-coin coin-2"><CoinIcon size="lg" /></div>
+            <div class="floating-coin coin-3"><CoinIcon size="xl" /></div>
+            <div class="floating-coin coin-4"><CoinIcon size="md" /></div>
+            <div class="floating-coin coin-5"><CoinIcon size="lg" /></div>
+            <div class="floating-coin coin-6"><CoinIcon size="xl" /></div>
           </div>
           <div class="hero-character">
             <div class="character-circle">
@@ -74,7 +74,7 @@
     </section>
 
     <!-- Features Section -->
-    <section id="features" class="features">
+    <section id="features" class="section features">
       <div class="container">
         <h2 class="section-title">Why Kids Love CoinCraft! 🌟</h2>
         <div class="features-grid">
@@ -88,7 +88,7 @@
     </section>
 
     <!-- CTA Section -->
-    <section class="cta">
+    <section class="section cta">
       <div class="container">
         <div class="cta-content">
           <h2>Ready to Start Your Money Adventure? 🚀</h2>
@@ -105,6 +105,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import CoinIcon from '@/components/shared/CoinIcon.vue'
 
 const features = ref([
   {
@@ -164,9 +165,13 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.landing-page {
-  min-height: 100vh;
+.nav-buttons {
+  display: flex;
+  gap: var(--spacing-sm);
+  align-items: center;
 }
+
+/* Buttons */
 
 /* Hero Section */
 .hero {
@@ -177,9 +182,6 @@ onMounted(() => {
 }
 
 .hero-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 var(--spacing-lg);
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: var(--spacing-xxl);
@@ -200,7 +202,7 @@ onMounted(() => {
   border-radius: var(--radius-full);
   font-weight: 600;
   margin-bottom: var(--spacing-lg);
-  animation: pulse 2s infinite;
+  /* animation: pulse 2s infinite; */
 }
 
 .badge-icon {
@@ -278,7 +280,6 @@ onMounted(() => {
 
 .floating-coin {
   position: absolute;
-  font-size: 2rem;
   animation: float 3s ease-in-out infinite;
 }
 
@@ -314,7 +315,7 @@ onMounted(() => {
 
 /* Features Section */
 .features {
-  padding: var(--spacing-xxl) 0;
+  padding: var(--spacing-xxxl) 0;
   background: var(--white);
 }
 
@@ -388,6 +389,22 @@ onMounted(() => {
 
 /* Responsive Design */
 @media (max-width: 768px) {
+  .nav-container {
+    padding: var(--spacing-md) var(--spacing-md);
+  }
+  
+  .nav-buttons {
+    flex-direction: row;
+    gap: var(--spacing-sm);
+    flex-wrap: nowrap;
+  }
+  
+  .nav-buttons .btn {
+    padding: var(--spacing-sm) var(--spacing-md);
+    font-size: 0.875rem;
+    white-space: nowrap;
+  }
+  
   .hero-container {
     grid-template-columns: 1fr;
     text-align: center;
@@ -423,6 +440,22 @@ onMounted(() => {
   
   .hero-description {
     font-size: 1rem;
+  }
+  
+  .nav-buttons {
+    flex-direction: row;
+    gap: var(--spacing-xs);
+    justify-content: flex-end;
+  }
+  
+  .nav-buttons .btn {
+    padding: var(--spacing-xs) var(--spacing-sm);
+    font-size: 0.8rem;
+    min-width: auto;
+  }
+  
+  .features-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>
